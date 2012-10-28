@@ -4,13 +4,17 @@ if [ -f /etc/bashrc ]; then
 	. /etc/bashrc
 fi
 
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+    source ~/github/dot.config/aliases/dot.bashrc.redhat
+elif [[ "$unamestr" == 'Darwin' ]]; then
+    source ~/github/dot.config/aliases/dot.bashrc.osx
+fi
+
 ##############################################################################
 # bash command aliases
 ##############################################################################
-alias ll='ls -l --color=auto'
-alias ls='ls --color=auto'
 alias grep='grep --color=auto'
-alias emacs='emacs -nw'
 alias today='date +"%F_%s"'
 
 ##############################################################################

@@ -1,35 +1,16 @@
 #################################################################################
 # Platform specific aliases
 #################################################################################
-# Find out platform of host
-unamestr=`uname`
-if [[ "$unamestr" == 'Linux' ]]; then
-    alias ls='ls --color=auto'
-elif [[ "$unamestr" == 'Darwin' ]]; then
-    export CLICOLOR=1
-    export LS_COLORS='di=01;33'
-    export LSCOLORS=Gxfxcxdxbxegedabagacad
-    alias ls='ls -G'
-    alias ll='ls -G -l'
-    alias eject='drutil eject'
-    alias opentray='drutil tray open'
+export CLICOLOR=1
+export LS_COLORS='di=01;33'
+export LSCOLORS=Gxfxcxdxbxegedabagacad
+alias ls='ls -G'
+alias ll='ls -G -l'
+alias eject='drutil eject'
+alias opentray='drutil tray open'
 
-    alias emacs='/Applications/MyUtilities/Emacs.app/Contents/MacOS/Emacs -nw'
-    alias emacsclient='/Applications/MyUtilities/Emacs.app/Contents/MacOS/bin/emacsclient'
-    alias emacsd_load='sudo launchctl load -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
-    alias emacsd_unload='emacsd_stop; sudo launchctl unload -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
-
-    # ################################################################################
-    # Red Hat aliases
-    #################################################################################
-    alias getvmsips-redhat='ssh mantra "~/bin/getvmsip.sh"'
-    alias sshrh50='ssh $(getvmip-redhat.sh rh50) -i ~/.ssh/virtualmachines-keys/id_rsa.virtualmachines'
-    alias sshrh51='ssh $(getvmip-redhat.sh rh51) -i ~/.ssh/virtualmachines-keys/id_rsa.virtualmachines'
-    alias sshrh52='ssh $(getvmip-redhat.sh rh52) -i ~/.ssh/virtualmachines-keys/id_rsa.virtualmachines'
-    alias sshrh53='ssh $(getvmip-redhat.sh rh53) -i ~/.ssh/virtualmachines-keys/id_rsa.virtualmachines'
-    alias sshrh60='ssh $(getvmip-redhat.sh rh60) -i ~/.ssh/virtualmachines-keys/id_rsa.virtualmachines'
-    alias sshrh61='ssh $(getvmip-redhat.sh rh61) -i ~/.ssh/virtualmachines-keys/id_rsa.virtualmachines'
-    alias sshrh62='ssh $(getvmip-redhat.sh rh62) -i ~/.ssh/virtualmachines-keys/id_rsa.virtualmachines'
-    alias sshrh63='ssh $(getvmip-redhat.sh rh63) -i ~/.ssh/virtualmachines-keys/id_rsa.virtualmachines'
-fi
+alias emacs='/Applications/MyUtilities/Emacs.app/Contents/MacOS/Emacs -nw'
+alias emacsclient='/Applications/MyUtilities/Emacs.app/Contents/MacOS/bin/emacsclient'
+alias emacsd_load='sudo launchctl load -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
+alias emacsd_unload='emacsd_stop; sudo launchctl unload -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
 

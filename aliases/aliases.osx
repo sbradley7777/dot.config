@@ -32,8 +32,8 @@ alias eject='drutil eject'
 alias opentray='drutil tray open'
 
 # Emacs commands
-alias emacs='/Applications/MyUtilities/Emacs.app/Contents/MacOS/Emacs -nw'
-alias emacsclient='/Applications/MyUtilities/Emacs.app/Contents/MacOS/bin/emacsclient'
+alias emacs='/usr/local/bin/emacs'
+alias emacsclient='/usr/local/bin/emacsclient'
 alias emacsd_load='sudo launchctl load -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
 alias emacsd_unload='emacsd_stop; sudo launchctl unload -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
 

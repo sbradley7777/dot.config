@@ -14,6 +14,11 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
 fi
 
 #################################################################################
+# Source in devel aliases
+#################################################################################
+source $HOME/github/dot.config/aliases/aliases.devel
+
+#################################################################################
 # Source in various other aliases
 #################################################################################
 # For private aliases that will only reside on this machine
@@ -21,7 +26,6 @@ if [ -e $HOME/.aliases.priv ]; then
     source $HOME/.aliases.priv
 fi
 
-# source $HOME/github/dot.config/aliases/aliases.devel
 
 
 

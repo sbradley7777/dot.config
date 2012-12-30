@@ -8,20 +8,27 @@ export GREP_OPTIONS='--color=auto'
 export GREP_COLOR='0;31'
 
 ##############################################################################
+# Non-Standard Environment Variables
+##############################################################################
+# Path to location of all the alias files.
+export GITHUB_ALIASES=$HOME/github/dot.config/aliases
+
+##############################################################################
 # Build own hosts file
 ##############################################################################
 # Use our own file instead of /etc/hosts
 export HOSTFILE="${HOME}/.hosts"
-# Collect host names from SSH known hosts file
+
+# Collect host names from SSH known hosts file for tab autocomplete.
 sed  's/\(.*\),.*/\1/; s/ .*//' ${HOME}/.ssh/known_hosts  | sort > ${HOME}/.hosts
 
 ##############################################################################
-# source .bash_profile.priv for private configuration
+# Source in the .bash_profile.priv for private configuration
 ##############################################################################
 source ~/.bash_profile.priv
 
 ##############################################################################
-# source .bashrc for alias and such
+# Source in the .bashrc for alias and such
 ##############################################################################
 source ~/.bashrc
 

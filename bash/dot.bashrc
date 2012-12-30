@@ -1,22 +1,22 @@
 #################################################################################
 # Generic aliases
 #################################################################################
-source $HOME/github/dot.config/aliases/aliases.all
+source $GITHUB_ALIASES/aliases.all
 
 #################################################################################
 # Platform specific aliases
 #################################################################################
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
-    source $HOME/github/dot.config/aliases/aliases.redhat
+    source $GITHUB_ALIASES/aliases.redhat
 elif [[ "$unamestr" == 'Darwin' ]]; then
-    source $HOME/github/dot.config/aliases/aliases.osx
+    source $GITHUB_ALIASES/aliases.osx
 fi
 
 #################################################################################
 # Source in devel aliases
 #################################################################################
-source $HOME/github/dot.config/aliases/aliases.devel
+source $GITHUB_ALIASES/aliases.devel
 
 #################################################################################
 # Source in various other aliases

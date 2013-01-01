@@ -39,8 +39,8 @@ fi
 # Source in various other aliases
 #################################################################################
 # For private aliases that will only reside on this machine
-if [ -f $GITHUB_ALIASES/aliases.priv ]; then
-    source $GITHUB_ALIASES/aliases.priv
+if [ -f $HOME/.bashrc.priv ]; then
+    source $HOME/.bashrc.priv
 fi
 
 

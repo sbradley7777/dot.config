@@ -1,29 +1,39 @@
+#!/bin/sh
+# .bashrc
+
 #################################################################################
 # Generic aliases
 #################################################################################
-source $GITHUB_ALIASES/aliases.all
+if [ -f $GITHUB_ALIASES/aliases.all ]; then
+    source $GITHUB_ALIASES/aliases.all
+fi
 
 #################################################################################
 # Platform specific aliases
 #################################################################################
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
-    source $GITHUB_ALIASES/aliases.redhat
+   if [ -f $GITHUB_ALIASES/.aliases.redhat ]; then
+       source $GITHUB_ALIASES/aliases.redhat
+   fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
-    source $GITHUB_ALIASES/aliases.osx
+   if [ -f $GITHUB_ALIASES/.aliases.osx ]; then
+       source $GITHUB_ALIASES/aliases.osx
+   fi
 fi
 
 #################################################################################
 # Source in devel aliases
 #################################################################################
-source $GITHUB_ALIASES/aliases.devel
-
+if [ -f $GITHUB_ALIASES/.aliases.devel ]; then
+    source $GITHUB_ALIASES/aliases.devel
+fi
 #################################################################################
 # Source in various other aliases
 #################################################################################
 # For private aliases that will only reside on this machine
-if [ -e $HOME/.aliases.priv ]; then
-    source $HOME/.aliases.priv
+if [ -f $GITHUB_ALIASES/.aliases.priv ]; then
+    source $GITHUB_ALIASES/.aliases.priv
 fi
 
 

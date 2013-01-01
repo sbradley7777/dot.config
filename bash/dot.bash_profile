@@ -1,3 +1,6 @@
+#!/bin/sh
+# .bash_profile
+
 ##############################################################################
 # Environment Variables
 ##############################################################################
@@ -25,10 +28,12 @@ sed  's/\(.*\),.*/\1/; s/ .*//' ${HOME}/.ssh/known_hosts  | sort > ${HOME}/.host
 ##############################################################################
 # Source in the .bash_profile.priv for private configuration
 ##############################################################################
-source ~/.bash_profile.priv
-
+if [ -f $HOME/.bash_profile.priv ];then
+    source $HOME/.bash_profile.priv
+fi
 ##############################################################################
 # Source in the .bashrc for alias and such
 ##############################################################################
-source ~/.bashrc
-
+if [ -f $HOME/.bashrc ]; then
+    source $HOME/.bashrc
+fi

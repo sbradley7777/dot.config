@@ -16,13 +16,10 @@ $ ln -s ~/github/dot.config/emacs.d/ ~/.emacs.d
 ~~~
 
 ##The autosaves and backup files
-The autosaves files which are files with ~ and backup
-files which are files with # will be saved to the following locations below:
+The autosaves files which are files with *~* and backup files which are files with *#* will be saved to the following locations below:
 
-The autosave files will be located in this directory:
-  ~/.emacs_archive/autosaves/
-The backup files will be located in this directory:
-  ~/.emacs_archive/backups/
+* The autosave files will be located in this directory: ~/.emacs_archive/autosaves/
+* The backup files will be located in this directory: ~/.emacs_archive/backups/
 
 The directories will be automatically created if they do not exist
 when you start emacs and an autosave file or backup file needs to be

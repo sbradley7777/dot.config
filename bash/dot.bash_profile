@@ -6,9 +6,19 @@
 ##############################################################################
 export EDITOR=emacs
 export TODAY=`date '+%F_%s'`
-export PS1='\[\033[01;31m\]\u@\h\[\033[00m\]:\[\033[01;33m\]\W\[\033[00m\]\$ '
 export GREP_OPTIONS='--color=auto'
 export GREP_COLOR='0;31'
+export PATH=$PATH:$HOME/bin:$HOME/Desktop/bin
+
+##############################################################################
+# Change PS prompt if root, else set as normal user
+##############################################################################
+if [ $(id -u) -eq 0 ];then
+    PS1='\[\033[01;36m\]\u@\h\[\033[00m\]:\[\033[01;33m\]\w\[\033[00m\]\$ '
+else
+    PS1='\[\033[01;31m\]\u@\h\[\033[00m\]:\[\033[01;33m\]\W\[\033[00m\]\$ '
+fi
+export PS1
 
 ##############################################################################
 # Non-Standard Environment Variables
@@ -23,7 +33,9 @@ export GITHUB_ALIASES=$HOME/github/dot.config/aliases
 export HOSTFILE="${HOME}/.hosts"
 
 # Collect host names from SSH known hosts file for tab autocomplete.
-sed  's/\(.*\),.*/\1/; s/ .*//' ${HOME}/.ssh/known_hosts  | sort > ${HOME}/.hosts
+if [ -f $HOME/.ssh/known_hosts ];then
+    sed  's/\(.*\),.*/\1/; s/ .*//' ${HOME}/.ssh/known_hosts  | sort > ${HOME}/.hosts
+fi
 
 ##############################################################################
 # Source in the .bash_profile.priv for private configuration

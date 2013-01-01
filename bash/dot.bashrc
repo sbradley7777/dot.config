@@ -13,27 +13,28 @@ fi
 #################################################################################
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
-   if [ -f $GITHUB_ALIASES/.aliases.redhat ]; then
-       source $GITHUB_ALIASES/aliases.redhat
-   fi
+    if [ -f $GITHUB_ALIASES/aliases.redhat ]; then
+        source $GITHUB_ALIASES/aliases.redhat
+    fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
-   if [ -f $GITHUB_ALIASES/.aliases.osx ]; then
-       source $GITHUB_ALIASES/aliases.osx
-   fi
+    echo "osx"
+    if [ -f $GITHUB_ALIASES/aliases.osx ]; then
+        source $GITHUB_ALIASES/aliases.osx
+    fi
 fi
 
 #################################################################################
 # Source in devel aliases
 #################################################################################
-if [ -f $GITHUB_ALIASES/.aliases.devel ]; then
+if [ -f $GITHUB_ALIASES/aliases.devel ]; then
     source $GITHUB_ALIASES/aliases.devel
 fi
 #################################################################################
 # Source in various other aliases
 #################################################################################
 # For private aliases that will only reside on this machine
-if [ -f $GITHUB_ALIASES/.aliases.priv ]; then
-    source $GITHUB_ALIASES/.aliases.priv
+if [ -f $GITHUB_ALIASES/aliases.priv ]; then
+    source $GITHUB_ALIASES/aliases.priv
 fi
 
 

@@ -14,7 +14,7 @@ export PATH=$PATH:$HOME/bin:$HOME/Desktop/bin
 # Change PS prompt if root, else set as normal user
 ##############################################################################
 if [ $(id -u) -eq 0 ];then
-    export PS1='\[\033[01;36m\]\u@\h\[\033[00m\]:\[\033[01;33m\]\w\[\033[00m\]\# '
+    export PS1='\[\033[01;36m\]\u@\h\[\033[00m\]:\[\033[01;33m\]\w\[\033[00m\]\$ '
 else
     export PS1='\[\033[01;31m\]\u@\h\[\033[00m\]:\[\033[01;33m\]\W\[\033[00m\]\$ '
 fi

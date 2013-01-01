@@ -1,5 +1,4 @@
 #!/bin/sh
-echo "osx aliases"xb
 
 # Eject commands
 alias eject='drutil eject'

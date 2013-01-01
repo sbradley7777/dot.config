@@ -2,6 +2,13 @@
 # .bashrc
 
 #################################################################################
+# Source global definitions
+#################################################################################
+#if [ -f /etc/bashrc ]; then
+#    source  /etc/bashrc
+#fi
+
+#################################################################################
 # Generic aliases
 #################################################################################
 if [ -f $GITHUB_ALIASES/aliases.all ]; then
@@ -17,7 +24,6 @@ if [[ "$unamestr" == 'Linux' ]]; then
         source $GITHUB_ALIASES/aliases.redhat
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
-    echo "osx"
     if [ -f $GITHUB_ALIASES/aliases.osx ]; then
         source $GITHUB_ALIASES/aliases.osx
     fi

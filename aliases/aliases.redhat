@@ -16,6 +16,8 @@ alias rpmwhois='/bin/rpm -qa --queryformat="%{N} %{buildhost}\n" | grep -i ';
 ##############################################################################
 # Systems managment information
 ##############################################################################
+alias logrotate_now='/usr/sbin/logrotate -f /etc/logrotate.conf'
+
 # Display port information
 alias ports='netstat -tulanp'
 

@@ -9,7 +9,7 @@ export TODAY=`date '+%F_%s'`
 export GREP_OPTIONS='--color=auto'
 export GREP_COLOR='0;31'
 export PATH=$PATH:$HOME/bin:$HOME/Desktop/bin
-
+export HISTFILESIZE=10000
 ##############################################################################
 # Change PS prompt if root, else set as normal user
 ##############################################################################

@@ -18,6 +18,7 @@ alias emptytrash="sudo rm -rfv /Volumes/*/.Trashes; sudo rm -rfv ~/.Trash; sudo 
 alias cleanup="find . -type f -name '*.DS_Store' -ls -delete"
 
 # Clean up LaunchServices to remove duplicates in the “Open With” menu
+# http://osxdaily.com/2013/01/22/fix-open-with-menu-mac-os-x/
 alias lscleanup="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user && killall Finder"
 
 # Show/hide hidden files in Finder

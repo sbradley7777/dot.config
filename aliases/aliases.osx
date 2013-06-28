@@ -10,24 +10,37 @@ alias emacsclient='/usr/local/bin/emacsclient'
 alias emacsd_load='sudo launchctl load -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
 alias emacsd_unload='emacsd_stop; sudo launchctl unload -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
 
+# Recursively delete .DS_Store files
+alias findDS_Store="find . -type f -name '*.DS_Store'"
+
+# Recursively delete .DS_Store files
+alias cleanupDS_Store="find . -type f -name '*.DS_Store' -ls -delete"
+
+# Disable of creating of .DS_Store files
+alias disableDS_Store="defaults write com.apple.desktopservices DSDontWriteNetworkStores true"
+
+# Clean up LaunchServices to remove duplicates in the “Open With” menu
+# http://osxdaily.com/2013/01/22/fix-open-with-menu-mac-os-x/
+alias cleanupOpenWith="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user && killall Finder"
+
 # Empty the Trash on all mounted volumes and the main HDD
 # Also, clear Apple’s System Logs to improve shell startup speed
 alias emptytrash="sudo rm -rfv /Volumes/*/.Trashes; sudo rm -rfv ~/.Trash; sudo rm -rfv /private/var/log/asl/*.asl"
 
-# Recursively delete `.DS_Store` files
-alias cleanup="find . -type f -name '*.DS_Store' -ls -delete"
-
-# Clean up LaunchServices to remove duplicates in the “Open With” menu
-# http://osxdaily.com/2013/01/22/fix-open-with-menu-mac-os-x/
-alias lscleanup="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user && killall Finder"
-
+# Found these here:
+# https://github.com/mattbanks/dotfiles/blob/master/osx/aliases.zsh
 # Show/hide hidden files in Finder
-alias show="defaults write com.apple.Finder AppleShowAllFiles -bool true && killall Finder"
-alias hide="defaults write com.apple.Finder AppleShowAllFiles -bool false && killall Finder"
+alias showHiddenFiles="defaults write com.apple.Finder AppleShowAllFiles -bool true && killall Finder"
+alias hideHiddenFiles="defaults write com.apple.Finder AppleShowAllFiles -bool false && killall Finder"
 
 # Hide/show all desktop icons (useful when presenting)
 alias hidedesktop="defaults write com.apple.finder CreateDesktop -bool false && killall Finder"
 alias showdesktop="defaults write com.apple.finder CreateDesktop -bool true && killall Finder"
+
+# Disable Dashboard
+alias dashboardoff="defaults write com.apple.dashboard mcx-disabled -boolean YES && killall Dock"
+# Enable Dashboard
+alias dashboardon="defaults write com.apple.dashboard mcx-disabled -boolean NO && killall Dock"
 
 # Disable Spotlight
 alias spotoff="sudo mdutil -a -i off"

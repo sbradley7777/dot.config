@@ -7,6 +7,12 @@ alias today="date '+%F_%s'"
 alias historyco="history | sed 's/^ *[0-9]* *//'"
 
 #################################################################################
+# Networking
+#################################################################################
+alias getMyIPv1="curl ifconfig.me"
+alias getMyIPv2="dig +short myip.opendns.com @resolver1.opendns.com"
+
+#################################################################################
 # File navigation, stats, or modification
 #################################################################################
 # Make console navigation easier.
@@ -14,10 +20,15 @@ alias ..="cd .."
 alias ...="cd ../.."
 alias ....="cd ../../.."
 alias .....="cd ../../../.."
-alias extractall-tarbz2='for i in *.tar.bz2; do echo Extracting $i; tar jxf $i ; done;'
-alias extractall-targz='for i in *.tar.gz; do echo Extracting $i; tar zxf $i ; done;'
 alias df="df -h"
 alias du="du -h"
+
+#################################################################################
+# Extract Files
+#################################################################################
+alias extractall-tarbz2='for i in *.tar.bz2; do echo Extracting $i; tar jxf $i ; done;'
+alias extractall-targz='for i in *.tar.gz; do echo Extracting $i; tar zxf $i ; done;'
+alias extractall-gz='for i in *.gz; do echo Extracting $i; gunzip -d $i ; done;'
 
 #################################################################################
 # Colorize grep searches

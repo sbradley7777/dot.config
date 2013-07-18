@@ -44,7 +44,12 @@ $ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/
 $ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.config; ~/github/dot.config/install.sh;
 ~~~
 
+##How to Install on multiple hosts
+Clone the repo on some host if it does not exist then run the following command below. This script uses ssh to clone or update the git repo and then installs the configuration files. **The hosts will need to have an ssh keys enabled and configured.**
+~~~
+$ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.config; ~/github/dot.config/install.sh; ~/github/dot.config/install_on_hosts.sh -p /root/github/dot.config -m "rh50 rh42"
+~~~
+
 ##TODO
-- Upload a script that automates the cloning or updating of repo then creates all the required symlinks to be installed for multiple hosts.
 - Upload other misc generic bash scripts.
 - Upload OS specific bash scripts(such as rpmsource.sh).

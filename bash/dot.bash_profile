@@ -61,6 +61,17 @@ export LS_COLORS='no=00:fi=00:di=01;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40
 export LSCOLORS="exgxcxdxcxegedabagacad"
 
 ##############################################################################
+# PATH variable
+##############################################################################
+if [ -d ~/bin ]; then
+    export PATH=$PATH:$HOME/bin
+fi
+
+if [ -d ~/github/dot.config/bin/ ]; then
+    export PATH=$PATH:$HOME/github/dot.config/bin/
+fi
+
+##############################################################################
 # Non-Standard Environment Variables
 ##############################################################################
 # Path to location of all the alias files.

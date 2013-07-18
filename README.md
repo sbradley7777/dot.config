@@ -25,7 +25,7 @@ $ touch ~/.bash_profile.priv;
 $ touch ~/.bashrc.priv;
 ~~~
 
-**Create the symlinks to the emacs configuration files and backup the originals**
+**Create the symlinks to the emacs configuration files and backup the originals:**
 ~~~
 $ mv -f ~/.emacs ~/.emacs.org > /dev/null 2>&1;
 $ mv -f ~/.emacs.d ~/.emacs.org > /dev/null 2>&1;
@@ -45,7 +45,7 @@ $ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/
 ~~~
 
 ##How to Install on multiple hosts
-Clone the repo on some host if it does not exist then run the following command below. This script uses ssh to clone or update the git repo and then installs the configuration files. **The hosts will need to have an ssh keys enabled and configured.**
+Clone the repo on some host if it does not exist then run the following command below. This script uses ssh to clone or update the git repo and then installs the configuration files. **The hosts will need to have an ssh keys enabled and configured:**
 ~~~
 $ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.config; ~/github/dot.config/install.sh; ~/github/dot.config/install_on_hosts.sh -p /root/github/dot.config -m "rh50 rh42"
 ~~~

@@ -63,7 +63,6 @@ fi
 ######################################################################
 # Main
 ######################################################################
-echo "Finding the IP address of the host $DST_HOST from $SRC_HOST."
-dstIP=$(ssh $SRC_HOST "~/bin/getdstip.sh $DST_HOST")
+dstIP=$(ssh $SRC_HOST "~/github/dot.config/bin/getdstip.sh $DST_HOST")
 echo $dstIP
 exit 0;

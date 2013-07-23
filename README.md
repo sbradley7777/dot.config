@@ -15,8 +15,8 @@ $ git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.co
 ~~~
 $ mv -f ~/.bashrc ~/.bashrc.org > /dev/null 2>&1;
 $ mv -f ~/.bash_profile ~/.bash_profile.org > /dev/null 2>&1;
-$ ln -s ~/github/dot.config/bash/dot.bashrc ~/.bashrc;
-$ ln -s ~/github/dot.config/bash/dot.bash_profile ~/.bash_profile;
+$ ln -s ~/github/dot.config/bash/.bashrc ~/.bashrc;
+$ ln -s ~/github/dot.config/bash/.bash_profile ~/.bash_profile;
 ~~~
 
 **Create private bash configuration files that will be sourced in, but not part of this git repo:**
@@ -36,7 +36,7 @@ $ ln -s ~/github/dot.config/emacs.d/ ~/.emacs.d;
 ##How to Install with one-liner
 **This one-liner assumes the local git repo `~/github/dot.config` does not exist:**
 ~~~
-$ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.config; mv -f ~/.bashrc ~/.bashrc.org > /dev/null 2>&1; mv -f ~/.bash_profile ~/.bash_profile.org > /dev/null 2>&1; ln -s ~/github/dot.config/bash/dot.bashrc ~/.bashrc; ln -s ~/github/dot.config/bash/dot.bash_profile ~/.bash_profile; touch ~/.bash_profile.priv; touch ~/.bashrc.priv; mv -f ~/.emacs ~/.emacs.org > /dev/null 2>&1; mv -f ~/.emacs.d ~/.emacs.org > /dev/null 2>&1; ln -s ~/github/dot.config/emacs.d/dot.emacs ~/.emacs; ln -s ~/github/dot.config/emacs.d/ ~/.emacs.d;
+$ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.config; mv -f ~/.bashrc ~/.bashrc.org > /dev/null 2>&1; mv -f ~/.bash_profile ~/.bash_profile.org > /dev/null 2>&1; ln -s ~/github/dot.config/bash/.bashrc ~/.bashrc; ln -s ~/github/dot.config/bash/.bash_profile ~/.bash_profile; touch ~/.bash_profile.priv; touch ~/.bashrc.priv; mv -f ~/.emacs ~/.emacs.org > /dev/null 2>&1; mv -f ~/.emacs.d ~/.emacs.org > /dev/null 2>&1; ln -s ~/github/dot.config/emacs.d/dot.emacs ~/.emacs; ln -s ~/github/dot.config/emacs.d/ ~/.emacs.d;
 ~~~
 
 **This one-liner assumes the local git repo `~/github/dot.config` does not exist and uses an install file to create all the changes:**

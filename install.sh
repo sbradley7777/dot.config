@@ -3,8 +3,8 @@ echo "Installing configs for $(hostname)";
 
 mv -f ~/.bashrc ~/.bashrc.org > /dev/null 2>&1;
 mv -f ~/.bash_profile ~/.bash_profile.org > /dev/null 2>&1;
-ln -s ~/github/dot.config/bash/dot.bashrc ~/.bashrc;
-ln -s ~/github/dot.config/bash/dot.bash_profile ~/.bash_profile;
+ln -s ~/github/dot.config/bash/.bashrc ~/.bashrc;
+ln -s ~/github/dot.config/bash/.bash_profile ~/.bash_profile;
 
 touch ~/.bash_profile.priv;
 touch ~/.bashrc.priv;

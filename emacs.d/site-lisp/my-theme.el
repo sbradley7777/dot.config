@@ -16,14 +16,7 @@
      :foreground "red")
     )))
 
-;; Changes the mode line colors for background.
-(set-face-background 'modeline "black")
-;; Changes the mode line colors for foreground.
-(set-face-foreground 'modeline "orange")
-;; Highlight color you see when you mark text with the mouse
-(set-face-foreground 'region "white")
-
-;;(set-background-color        "red") ; Set emacs bg color 
+(set-background-color        "red") ; Set emacs bg color 
 (set-foreground-color        "white") ; Set emacs fg color 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Detect the version of emacs that is running and operating system:
@@ -48,6 +41,15 @@
  ((string-match "GNU Emacs 21" (emacs-version))
   (message "Detected that emacs is version: GNU Emacs 21.")
   ;; Put in version releated font preferences in here.
+  )
+ ((string-match "GNU Emacs 22" (emacs-version))
+  (message "Detected that emacs is version: GNU Emacs 22.")
+  ;; Changes the mode line colors for background.
+  (set-face-background 'modeline "black")
+  ;; Changes the mode line colors for foreground.
+  (set-face-foreground 'modeline "orange")
+  ;; Highlight color you see when you mark text with the mouse
+  (set-face-foreground 'region "white")
   )
  (t (message "Detected that emacs is not version: GNU Emacs 21.")
     ;; Font for keywords, self, etc.

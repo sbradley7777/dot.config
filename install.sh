@@ -11,7 +11,7 @@ touch ~/.bashrc.priv;
 
 mv -f ~/.emacs ~/.emacs.org > /dev/null 2>&1;
 mv -f ~/.emacs.d ~/.emacs.org > /dev/null 2>&1;
-ln -s ~/github/dot.config/emacs.d/dot.emacs ~/.emacs;
+ln -s ~/github/dot.config/emacs.d/dot.emacs.el ~/.emacs;
 ln -s ~/github/dot.config/emacs.d/ ~/.emacs.d;
 
 echo "Please relogin for configurations to be reloaded.";

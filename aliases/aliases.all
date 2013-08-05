@@ -22,6 +22,7 @@ alias ....="cd ../../.."
 alias .....="cd ../../../.."
 alias df="df -h"
 alias du="du -h"
+alias which="which -a"
 
 #################################################################################
 # Extract Files

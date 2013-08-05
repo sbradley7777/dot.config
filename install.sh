@@ -1,7 +1,9 @@
 #!/bin/sh
 echo "Installing configs for $(hostname)";
 
-mv -f ~/.bashrc ~/.bashrc.org > /dev/null 2>&1;
+if [  ! -L ~/.bashrc ]; then
+    mv -f ~/.bashrc ~/.bashrc.org > /dev/null 2>&1;
+fi 
 mv -f ~/.bash_profile ~/.bash_profile.org > /dev/null 2>&1;
 ln -s ~/github/dot.config/bash/.bashrc ~/.bashrc;
 ln -s ~/github/dot.config/bash/.bash_profile ~/.bash_profile;

@@ -5,10 +5,15 @@ alias eject='drutil eject'
 alias opentray='drutil tray open'
 
 # Emacs commands
-alias emacs='/usr/local/bin/emacs'
-alias emacsclient='/usr/local/bin/emacsclient'
-alias emacsd_load='sudo launchctl load -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
-alias emacsd_unload='emacsd_stop; sudo launchctl unload -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
+if [ -f /usr/local/bin/emacs ]; then
+    # If different version of emacs is installed.
+    alias emacs='/usr/local/bin/emacs -nw'
+    alias emacsclient='/usr/local/bin/emacsclient'
+    alias emacsd_load='sudo launchctl load -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
+    alias emacsd_unload='emacsd_stop; sudo launchctl unload -w /Library/LaunchAgents/gnu.emacs.daemon.plist'
+else
+    alias emacs='emacs -nw'
+fi
 
 # Recursively delete .DS_Store files
 alias findDS_Store="find . -type f -name '*.DS_Store'"

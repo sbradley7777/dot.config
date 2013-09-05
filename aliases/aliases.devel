@@ -16,3 +16,6 @@ alias gitcommit='git commit -m'
 alias gitpushorigin='git push origin'
 alias gitrebasemaster='git rebase master'
 alias gitreset='git reset --hard origin/master'
+
+# Convert camelCase to underscores (camel_case) 
+alias convert_to_camelcase="sed -r 's/([a-z]+)([A-Z][a-z]+)/\1_\l\2/g' "

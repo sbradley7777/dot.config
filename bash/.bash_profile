@@ -8,7 +8,6 @@ export EDITOR=emacs
 export TODAY=`date '+%F_%s'`
 export GREP_OPTIONS='--color=auto'
 export GREP_COLOR='0;31'
-export PATH=$PATH:$HOME/bin:$HOME/Desktop/bin
 export HISTFILESIZE=10000
 ##############################################################################
 # Change PS prompt if root, else set as normal user
@@ -61,31 +60,37 @@ export LS_COLORS='no=00:fi=00:di=01;34:ln=01;36:pi=40;33:so=01;35:do=01;35:bd=40
 export LSCOLORS="exgxcxdxcxegedabagacad"
 
 ##############################################################################
-# PATH variable
-##############################################################################
-if [ -d ~/bin ]; then
-    export PATH=$PATH:$HOME/bin
-fi
-
-if [ -d ~/github/dot.config/bin/ ]; then
-    export PATH=$PATH:$HOME/github/dot.config/bin/
-fi
-
-##############################################################################
 # Non-Standard Environment Variables
 ##############################################################################
 # Path to location of all the alias files.
-export GITHUB_ALIASES=$HOME/github/dot.config/aliases
+export GITHUB_DOT_CONFIGS=$HOME/github/dot.config
+export GITHUB_ALIASES=$GITHUB_DOT_CONFIGS/aliases
+
+##############################################################################
+# PATH variable
+##############################################################################
+if [ -d $HOME/bin ]; then
+    export PATH=$PATH:$HOME/bin
+fi
+
+if [ -L $HOME/bin/bin.utils ]; then
+    export PATH=$PATH:$HOME/bin/bin.utils
+fi
+
+if [ -L $HOME/bin/bin.redhat ]; then
+    export PATH=$PATH:$HOME/bin/bin.redhat
+fi
 
 ##############################################################################
 # Build own hosts file
 ##############################################################################
-# Use our own file instead of /etc/hosts
-export HOSTFILE="${HOME}/.hosts"
-
-# Collect host names from SSH known hosts file for tab autocomplete.
+# Collect host names from SSH known hosts file for tab autocomplete. Use our own
+# file instead of /etc/hosts
 if [ -f $HOME/.ssh/known_hosts ];then
     sed  's/\(.*\),.*/\1/; s/ .*//' ${HOME}/.ssh/known_hosts  | sort > ${HOME}/.hosts
+    if [ -f ${HOME}/.hosts ]; then
+        export HOSTFILE=${HOME}/.hosts
+    fi
 fi
 
 ##############################################################################
@@ -94,6 +99,7 @@ fi
 if [ -f $HOME/.bash_profile.priv ];then
     source $HOME/.bash_profile.priv
 fi
+
 ##############################################################################
 # Source in the .bashrc for alias and such
 ##############################################################################

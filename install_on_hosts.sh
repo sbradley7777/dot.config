@@ -96,7 +96,7 @@ for i in ${!LIST_OF_HOSTS[@]}
                     echo "The git repo $PATH_TO_GIT_REPO_DIR on $currentHostname does exists and will be updated.";
                 fi
                 # result=$(ssh $currentHostname  "cd $PATH_TO_GIT_REPO_DIR; git reset --quiet --hard origin/master; git pull --quiet; ~/github/dot.config/bin/install_configs.sh;");
-                result=$(ssh $currentHostname  "cd $PATH_TO_GIT_REPO_DIR; git reset --quiet --hard origin/master; git pull --quiet; $PATH_TO_GIT_REPO_DIR/bin/install_configs.sh;");
+                result=$(ssh $currentHostname  "cd $PATH_TO_GIT_REPO_DIR; git reset --quiet --hard origin/master; git pull --quiet; $PATH_TO_GIT_REPO_DIR/install.sh;");
                 if [ -n "$result" ] ; then
                     echo "$currentHostname: SUCCESS";
                 else

@@ -63,6 +63,6 @@ fi
 ######################################################################
 # Main
 ######################################################################
-dstIP=$(ssh $SRC_HOST "getdstip.sh $DST_HOST")
+dstIP=$(ssh $SRC_HOST "~/bin/bin.utils/getdstip.sh $DST_HOST")
 echo $dstIP
 exit 0;

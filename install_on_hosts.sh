@@ -85,7 +85,7 @@ for i in ${!LIST_OF_HOSTS[@]}
                 if [ $VERBOSE ]; then
                     echo "The git repo $PATH_TO_GIT_REPO_DIR on $currentHostname does not exists and will be created.";
                 fi
-                result=$(ssh $currentHostname  "mkdir -p $PATH_TO_GIT_REPO_DIR; git clone --quiet git://github.com/sbradley7777/dot.config.git $PATH_TO_GIT_REPO_DIR; $PATH_TO_GIT_REPO_DIR/bin/install_configs.sh;")$
+                result=$(ssh $currentHostname  "mkdir -p $PATH_TO_GIT_REPO_DIR; git clone --quiet git://github.com/sbradley7777/dot.config.git $PATH_TO_GIT_REPO_DIR; $PATH_TO_GIT_REPO_DIR/install.sh;")$
                 if [ -n "$result" ] ; then
                     echo "$currentHostname: SUCCESS";
                 else

@@ -32,6 +32,20 @@ else
 fi
 ln -s $HOME/github/dot.config/bin/bin.utils $HOME/bin/bin.utils
 
+#################################################################################
+# Platform specific aliases
+#################################################################################
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+    if [  ! -L $HOME/bin/bin.redhat ]; then
+        mv -f $HOME/bin/bin.redhat $HOME/bin/bin.redhat.org > /dev/null 2>&1;
+    else
+        rm -f $HOME/bin/bin.redhat
+    fi
+    ln -s $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
+#elif [[ "$unamestr" == 'Darwin' ]]; then
+fi
+
 # Create symbolic links for emacs configuration.
 if [  ! -L $HOME/.emacs ]; then
     mv -f $HOME/.emacs $HOME/.emacs.org > /dev/null 2>&1;

@@ -61,4 +61,5 @@ else
 fi
 ln -s $HOME/github/dot.config/emacs.d/ $HOME/.emacs.d;
 
+echo "Installation successful. Relogin for changes to take affect.";
 exit 0;

@@ -35,9 +35,9 @@ create_symbolic_link $HOME/github/dot.config/bin/bin.utils $HOME/bin/bin.utils
 unamestr=`uname`
 if [[ "$unamestr" == "Linux" ]]; then
     create_symbolic_link $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
-    #if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
-        # do something
-    #fi
+    if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
+        create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha $HOME/bin/bin.clusterha
+    fi
 fi
 
 echo "Installation successful. Relogin for changes to take affect.";

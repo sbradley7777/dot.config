@@ -70,15 +70,14 @@ export GITHUB_ALIASES=$GITHUB_DOT_CONFIGS/aliases
 # PATH variable
 ##############################################################################
 if [ -d $HOME/bin ]; then
+    # export all directories under ~/bin that are symbolic links. There is no
+    # error checking for if link is file or directory.
     export PATH=$PATH:$HOME/bin
-fi
-
-if [ -L $HOME/bin/bin.utils ]; then
-    export PATH=$PATH:$HOME/bin/bin.utils
-fi
-
-if [ -L $HOME/bin/bin.redhat ]; then
-    export PATH=$PATH:$HOME/bin/bin.redhat
+    for dir in $HOME/bin/*; do
+        if [ -L $dir ]; then
+            PATH=$PATH:$dir
+        fi
+    done;
 fi
 
 ##############################################################################

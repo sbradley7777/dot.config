@@ -3,63 +3,42 @@
 # are symbolic links then they will be removed and readded so that paths are
 # correct.
 
-# Create symbolic links for bash configuration.
-if [  ! -L $HOME/.bash_profile ]; then
-    mv -f $HOME/.bash_profile $HOME/.bash_profile.org > /dev/null 2>&1;
-else
-    rm -f $HOME/.bash_profile
-fi
-ln -s $HOME/github/dot.config/bash/.bash_profile $HOME/.bash_profile;
+function create_symbolic_link() {
+    # Create symbolic links for bash configuration. $1 src $2 path to link.
+    if [ -e $1 ]; then
+        if [  ! -L $2 ]; then
+            mv -f $2 $2.org > /dev/null 2>&1;
+        else
+            rm -f $2
+        fi
+        ln -s $1 $2
+    fi
+}
 
-if [  ! -L $HOME/.bashrc ]; then
-    mv -f $HOME/.bashrc $HOME/.bashrc.org > /dev/null 2>&1;
-else
-    rm -f $HOME/.bashrc
-fi
-ln -s $HOME/github/dot.config/bash/.bashrc $HOME/.bashrc;
-
+# Create bash links.
+create_symbolic_link $HOME/github/dot.config/bash/.bash_profile $HOME/.bash_profile
+create_symbolic_link $HOME/github/dot.config/bash/.bashrc $HOME/.bashrc;
 touch $HOME/.bash_profile.priv;
 touch $HOME/.bashrc.priv;
 
-# Create symbolic links for bin scripts configuration.
+# Create symbolic links for emacs configuration.
+create_symbolic_link $HOME/github/dot.config/emacs.d/dot.emacs.el $HOME/.emacs;
+create_symbolic_link $HOME/github/dot.config/emacs.d/ $HOME/.emacs.d;
+
+# Create symbolic links for bin scripts.
 if [ ! -d $HOME/bin ]; then
     mkdir $HOME/bin;
 fi
-if [  ! -L $HOME/bin/bin.utils ]; then
-    mv -f $HOME/bin/bin.utils $HOME/bin/bin.utils.org > /dev/null 2>&1;
-else
-    rm -f $HOME/bin/bin.utils
-fi
-ln -s $HOME/github/dot.config/bin/bin.utils $HOME/bin/bin.utils
+create_symbolic_link $HOME/github/dot.config/bin/bin.utils $HOME/bin/bin.utils
 
-#################################################################################
-# Platform specific aliases
-#################################################################################
+# Platform specific links to add for bin scripts.
 unamestr=`uname`
-if [[ "$unamestr" == 'Linux' ]]; then
-    if [  ! -L $HOME/bin/bin.redhat ]; then
-        mv -f $HOME/bin/bin.redhat $HOME/bin/bin.redhat.org > /dev/null 2>&1;
-    else
-        rm -f $HOME/bin/bin.redhat
-    fi
-    ln -s $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
-#elif [[ "$unamestr" == 'Darwin' ]]; then
+if [[ "$unamestr" == "Linux" ]]; then
+    create_symbolic_link $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
+    #if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
+        # do something
+    #fi
 fi
-
-# Create symbolic links for emacs configuration.
-if [  ! -L $HOME/.emacs ]; then
-    mv -f $HOME/.emacs $HOME/.emacs.org > /dev/null 2>&1;
-else
-    rm -f $HOME/.emacs
-fi
-ln -s $HOME/github/dot.config/emacs.d/dot.emacs.el $HOME/.emacs;
-
-if [  ! -L $HOME/.emacs.d ]; then
-    mv -f $HOME/.emacs.d $HOME/.emacs.org > /dev/null 2>&1;
-else
-    rm -f $HOME/.emacs.d
-fi
-ln -s $HOME/github/dot.config/emacs.d/ $HOME/.emacs.d;
 
 echo "Installation successful. Relogin for changes to take affect.";
 exit 0;

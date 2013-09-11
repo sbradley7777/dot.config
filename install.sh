@@ -3,6 +3,8 @@
 # are symbolic links then they will be removed and readded so that paths are
 # correct.
 
+# The copying of cluster files requires sudo access.
+
 function create_symbolic_link() {
     # Create symbolic links for bash configuration. $1 src $2 path to link.
     if [ -e $1 ]; then
@@ -38,12 +40,14 @@ if [[ "$unamestr" == "Linux" ]]; then
     if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
         create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha $HOME/bin/bin.clusterha
         if [ ! -d /etc/cluster/scripts ]; then
-            mkdir -p /etc/cluster/scripts;
+            # Requires sudo access, setup passwordless or passowrd will be
+            # prompted.
+            sudo mkdir -p /etc/cluster/scripts;
         fi
         # Instead of creating symlink, copy and backup an existing file if it
         # exists. Requires sudo access, setup passwordless or passowrd will be
         # prompted.
-        sudo cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh
+        sudo cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh;
     fi
 fi
 

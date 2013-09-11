@@ -4,12 +4,12 @@ This git repo contains configuration files for `bash` and `emacs`. There is bin 
 This is very useful when there are multiple machines that need to have the same configuration files installed(such as lots of virtual machines).
 
 ##How to Install
-**This one-liner assumes the local git repo `~/github/dot.config` does not exist and uses an install file to create all the changes:**
+This one-liner assumes the local git repo `~/github/dot.config` does not exist and uses an install file to create all the changes:
 ~~~
 $ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.config; ~/github/dot.config/install.sh;
 ~~~
 
-**This one-liner assumes the local git repo `~/github/dot.config` does exist and uses an install file to create all the changes after pulling in latest code:**
+This one-liner assumes the local git repo `~/github/dot.config` does exist and uses an install file to create all the changes after pulling in latest code:
 ~~~
 $ cd ~/github/dot.config; git pull --quiet; ~/github/dot.config/install.sh;
 ~~~

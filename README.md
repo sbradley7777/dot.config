@@ -1,7 +1,7 @@
 ##Introduction
-This git repo contains configuration files for `bash` and `emacs`. There is bin directory that contains some `bash` scripts. The `bash` configuration files are designed to work with `OSX` or `Linux`(only `Red Hat`/`Fedora` tested). In addition there is some **Red Hat Hign- Availability** scripts included if the package `cman` is installed.
+This git repo contains configuration files for `bash` and `emacs`. There is bin directory that contains some `bash` scripts. The `bash` configuration files are designed to work with `OSX` or `Linux`(only `Red Hat`/`Fedora` tested). In addition there is some `Red Hat High-Availability` scripts included if the package `cman` is installed.
 
-This is very useful when there are multiple machines that need to have the same configuration files installed(such as lots of virtual machines).
+When managing multiple physical machines, virtual machines, or operating systems it is very useful to have same configuration files installed.
 
 ##How to Install
 This one-liner assumes the local git repo `~/github/dot.config` does not exist and uses an install file to create all the changes:
@@ -19,4 +19,3 @@ Clone the repo on some host if it does not exist then run the following command 
 ~~~
 $ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.config; ~/github/dot.config/install.sh; ~/github/dot.config/install_on_hosts.sh -p /root/github/dot.config -m "rh50 rh42"
 ~~~
-

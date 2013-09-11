@@ -41,8 +41,9 @@ if [[ "$unamestr" == "Linux" ]]; then
             mkdir -p /etc/cluster/scripts;
         fi
         # Instead of creating symlink, copy and backup an existing file if it
-        # exists.
-        cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh
+        # exists. Requires sudo access, setup passwordless or passowrd will be
+        # prompted.
+        sudo cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh
     fi
 fi
 

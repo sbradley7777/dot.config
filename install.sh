@@ -37,6 +37,12 @@ if [[ "$unamestr" == "Linux" ]]; then
     create_symbolic_link $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
     if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
         create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha $HOME/bin/bin.clusterha
+        if [ ! -d /etc/cluster/scripts ]; then
+            mkdir -p /etc/cluster/scripts;
+        fi
+        # Instead of creating symlink, copy and backup an existing file if it
+        # exists.
+        cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh
     fi
 fi
 

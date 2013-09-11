@@ -95,8 +95,18 @@ fi
 ##############################################################################
 # Use bash-completion, if available
 ##############################################################################
-if [ -f /etc/bash_completion ]; then
-  . /etc/bash_completion
+unamestr=`uname`
+if [[ "$unamestr" == 'Linux' ]]; then
+    if [ -f /etc/bash_completion ]; then
+        source /etc/bash_completion
+    fi
+elif [[ "$unamestr" == 'Darwin' ]]; then
+    # The package bash-completion will need to be installed with brew and the
+    # configuration files will be located here /usr/local/etc/bash_completion.d
+    # on OSX.
+    if [ -f $(brew --prefix)/etc/bash_completion ]; then
+        source $(brew --prefix)/etc/bash_completion
+    fi
 fi
 
 ##############################################################################

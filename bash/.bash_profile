@@ -93,6 +93,13 @@ if [ -f $HOME/.ssh/known_hosts ];then
 fi
 
 ##############################################################################
+# Use bash-completion, if available
+##############################################################################
+if [ -f /etc/bash_completion ]; then
+  . /etc/bash_completion
+fi
+
+##############################################################################
 # Source in the .bash_profile.priv for private configuration
 ##############################################################################
 if [ -f $HOME/.bash_profile.priv ];then

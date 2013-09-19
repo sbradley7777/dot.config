@@ -39,7 +39,7 @@ if [[ "$unamestr" == "Linux" ]]; then
     create_symbolic_link $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
     if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
         create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha $HOME/bin/bin.clusterha
-        create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha_probe/ $HOME/bin/bin.clusterha_probe/
+        create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha_probe $HOME/bin/bin.clusterha_probe
         # Instead of creating symlink, copy and backup an existing file if it
         # exists which will require root access.
         if [ $(id -u) -eq 0 ];then

@@ -39,15 +39,16 @@ if [[ "$unamestr" == "Linux" ]]; then
     create_symbolic_link $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
     if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
         create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha $HOME/bin/bin.clusterha
-        if [ ! -d /etc/cluster/scripts ]; then
-            # Requires sudo access, setup passwordless or passowrd will be
-            # prompted.
-            sudo mkdir -p /etc/cluster/scripts;
-        fi
         # Instead of creating symlink, copy and backup an existing file if it
-        # exists. Requires sudo access, setup passwordless or passowrd will be
-        # prompted.
-        sudo cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh;
+        # exists which will require root access.
+        if [ $(id -u) -eq 0 ];then
+            if [ ! -d /etc/cluster/scripts ]; then
+                # Requires sudo access, setup passwordless or passowrd will be
+                # prompted.
+                mkdir -p /etc/cluster/scripts;
+            fi
+            cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh;
+        fi
     fi
 fi
 

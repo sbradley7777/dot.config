@@ -1,40 +1,40 @@
 #!/bin/sh
-
 #################################################################################
-#  Misc aliases
+# General aliases
 #################################################################################
-alias emacs='emacs -nw'
-alias screenattach='screen -d -r'
+alias emacs='emacs -nw';
+alias screenattach='screen -d -r';
+alias sortlogs='sort -k1M -k2,3 -s';
 
 ##############################################################################
-# RPM and Yum command aliases
+# Adminstrator aliases
 ##############################################################################
+alias logrotate_now='/usr/sbin/logrotate -f /etc/logrotate.conf';
 alias rpm='sudo rpm ';
 alias rpmquery='/bin/rpm -qa --qf "%{NAME}-%{VERSION}-%{RELEASE}-%{ARCH}\n"';
 alias rpmwhois='/bin/rpm -qa --queryformat="%{N} %{buildhost}\n" | grep -i ';
 
 ##############################################################################
-# Systems managment information
+# Network and Firewall
 ##############################################################################
-alias logrotate_now='/usr/sbin/logrotate -f /etc/logrotate.conf'
+# Display all rules
+alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers';
+alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers';
+alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers';
+alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers';
+alias firewall=iptlist;
 
 # Display port information
-alias ports='netstat -tulanp'
+alias ports='netstat -tulanp';
 
-# Display all rules #
-alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers'
-alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers'
-alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers'
-alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers'
-alias firewall=iptlist
-
+##############################################################################
+# System Health Aliases
+##############################################################################
 # Display memory usage.
-alias meminfo='free -m -l -t'
-
+alias meminfo='free -m -l -t';
 # Get top process eating memory.
-alias psmem='ps auxf | sort -nr -k 4'
-alias psmem10='ps auxf | sort -nr -k 4 | head -10'
-
+alias psmem='ps auxf | sort -nr -k 4';
+alias psmem10='ps auxf | sort -nr -k 4 | head -10';
 # Get top process eating cpu.
-alias pscpu='ps auxf | sort -nr -k 3'
-alias pscpu10='ps auxf | sort -nr -k 3 | head -10'
+alias pscpu='ps auxf | sort -nr -k 3';
+alias pscpu10='ps auxf | sort -nr -k 3 | head -10';

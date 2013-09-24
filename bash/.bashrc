@@ -4,8 +4,9 @@
 #################################################################################
 # Source global definitions
 #################################################################################
+# Comment out cause there is nothing that is pulled in that I need.
 #if [ -f /etc/bashrc ]; then
-#    source  /etc/bashrc
+#   source  /etc/bashrc
 #fi
 
 #################################################################################

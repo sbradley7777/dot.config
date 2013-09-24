@@ -81,18 +81,6 @@ if [ -d $HOME/bin ]; then
 fi
 
 ##############################################################################
-# Build own hosts file
-##############################################################################
-# Collect host names from SSH known hosts file for tab autocomplete. Use our own
-# file instead of /etc/hosts
-if [ -f $HOME/.ssh/known_hosts ];then
-    sed  's/\(.*\),.*/\1/; s/ .*//' ${HOME}/.ssh/known_hosts  | sort > ${HOME}/.hosts
-    if [ -f ${HOME}/.hosts ]; then
-        export HOSTFILE=${HOME}/.hosts
-    fi
-fi
-
-##############################################################################
 # Use bash-completion, if available
 ##############################################################################
 unamestr=`uname`
@@ -106,8 +94,35 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
     # on OSX.
     if [ -f $(brew --prefix)/etc/bash_completion ]; then
         source $(brew --prefix)/etc/bash_completion
+        # Add `killall` tab completion for common apps
+        complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes SystemUIServer Terminal Twitter" killall
     fi
 fi
+SSH_COMPLETE=( $(cut -f1 -d' ' ~/.ssh/known_hosts |\
+                 tr ',' '\n' |\
+                 sort -u |\
+                 grep -e '[:alpha:]') )
+complete -o default -W "${SSH_COMPLETE[*]}" ssh
+
+
+##############################################################################
+# Build own hosts file
+##############################################################################
+# Collect host names from SSH known hosts file for tab autocomplete. Use our own
+# file instead of /etc/hosts
+if [ -f ${HOME}/.hosts ]; then
+    mv ${HOME}/.hosts ${HOME}/.hosts.bk
+fi
+for line in $(cut -f1 -d' ' ~/.ssh/known_hosts |\
+                 tr ',' '\n' |\
+                 sort -u |\
+                 grep -e '[:alpha:]'); do
+    currentHost=$([[ $line =~ [[:space:]]*([^[:space:]]|[^[:space:]].*[^[:space:]])[[:space:]]* ]]; echo -n "${BASH_REMATCH[1]}")
+    if [ ! -z $currentHost ]; then
+        echo $currentHost >>  ${HOME}/.hosts;
+    fi
+done
+
 
 ##############################################################################
 # Source in the .bash_profile.priv for private configuration

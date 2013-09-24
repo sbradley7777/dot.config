@@ -9,6 +9,23 @@ export TODAY=`date '+%F_%s'`
 export GREP_OPTIONS='--color=auto'
 export GREP_COLOR='0;31'
 export HISTFILESIZE=10000
+
+# The variable used for OS detection.
+unamestr=`uname`
+##############################################################################
+# Bash shell preferences
+##############################################################################
+# Run the following with no arguments for complete list: $ shopt
+
+# Append to the Bash history file, rather than overwriting it.
+shopt -s histappend;
+# Autocorrect typos in path names when using `cd`.
+shopt -s cdspell;
+
+if [[ "$unamestr" == 'Darwin' ]]; then
+    # Case-insensitive globbing (used in pathname expansion).
+    shopt -s nocaseglob
+fi
 ##############################################################################
 # Change PS prompt if root, else set as normal user
 ##############################################################################
@@ -83,7 +100,6 @@ fi
 ##############################################################################
 # Use bash-completion, if available
 ##############################################################################
-unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
     if [ -f /etc/bash_completion ]; then
         source /etc/bash_completion
@@ -94,6 +110,8 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
     # on OSX.
     if [ -f $(brew --prefix)/etc/bash_completion ]; then
         source $(brew --prefix)/etc/bash_completion
+        # Add tab completion for `defaults read|write NSGlobalDomain`.
+        complete -W "NSGlobalDomain" defaults
         # Add `killall` tab completion for common apps
         complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes SystemUIServer Terminal Twitter" killall
     fi

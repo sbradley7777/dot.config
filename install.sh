@@ -51,6 +51,8 @@ if [[ "$unamestr" == "Linux" ]]; then
             cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh;
         fi
     fi
+elif [[ "$unamestr" == 'Darwin' ]]; then
+   create_symbolic_link $HOME/github/dot.config/bash/osx/automator $HOME/Desktop
 fi
 
 echo "Installation successful. Relogin for changes to take affect.";

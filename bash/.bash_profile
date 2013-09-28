@@ -155,3 +155,10 @@ fi
 if [ -f $HOME/.bashrc ]; then
     source $HOME/.bashrc
 fi
+
+##############################################################################
+# Configuration setting for OSX
+##############################################################################
+if [[ "$unamestr" == 'Darwin' ]]; then
+    source $GITHUB_DOT_CONFIGS/osx/prefs.sh
+fi

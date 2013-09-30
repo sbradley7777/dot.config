@@ -108,38 +108,51 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
     # The package bash-completion will need to be installed with brew and the
     # configuration files will be located here /usr/local/etc/bash_completion.d
     # on OSX.
-    if [ -f $(brew --prefix)/etc/bash_completion ]; then
-        source $(brew --prefix)/etc/bash_completion
-        # Add tab completion for `defaults read|write NSGlobalDomain`.
-        complete -W "NSGlobalDomain" defaults
-        # Add `killall` tab completion for common apps
-        complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes SystemUIServer Terminal Twitter" killall
+    if which brew >/dev/null; then
+        if [ -f $(brew --prefix)/etc/bash_completion ]; then
+            source $(brew --prefix)/etc/bash_completion
+            # Add tab completion for `defaults read|write NSGlobalDomain`.
+            complete -W "NSGlobalDomain" defaults
+            # Add `killall` tab completion for common apps
+            complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes SystemUIServer Terminal Twitter" killall
+        fi
     fi
 fi
-SSH_COMPLETE=( $(cut -f1 -d' ' ~/.ssh/known_hosts |\
-                 tr ',' '\n' |\
-                 sort -u |\
-                 grep -e '[:alpha:]') )
-complete -o default -W "${SSH_COMPLETE[*]}" ssh
-
 
 ##############################################################################
-# Build own hosts file
+# Build own hosts file and auto completion
 ##############################################################################
+# Build hostname autocomplete
+if [ ! -d $HOME/.ssh ]; then
+    mkdir $HOME/.ssh;
+    chmod 700 $HOME/.ssh;
+fi
+if [ ! -f $HOME/.ssh/known_hosts ]; then
+    touch $HOME/.ssh/known_hosts
+fi
 # Collect host names from SSH known hosts file for tab autocomplete. Use our own
 # file instead of /etc/hosts
 if [ -f ${HOME}/.hosts ]; then
     mv ${HOME}/.hosts ${HOME}/.hosts.bk
 fi
+touch ${HOME}/.hosts
 for line in $(cut -f1 -d' ' ~/.ssh/known_hosts |\
                  tr ',' '\n' |\
                  sort -u |\
                  grep -e '[:alpha:]'); do
     currentHost=$([[ $line =~ [[:space:]]*([^[:space:]]|[^[:space:]].*[^[:space:]])[[:space:]]* ]]; echo -n "${BASH_REMATCH[1]}")
     if [ ! -z $currentHost ]; then
-        echo $currentHost >>  ${HOME}/.hosts;
+        echo -e "$currentHost\n" >>  ${HOME}/.hosts;
     fi
 done
+# Load text file lines into a bash array. Save the old delimetter for breaking
+# up files, then after creating the array restore the original.
+OLD_IFS=$IFS
+IFS=$' \t\n’'
+ssh_hosts=( $(cat ${HOME}/.hosts) )
+IFS=$OLD_IFS
+complete -o default -W "${ssh_hosts[*]}" ssh
+
 
 
 ##############################################################################

@@ -14,6 +14,8 @@ function create_symbolic_link() {
             rm -f $2
         fi
         ln -s $1 $2
+    else
+        echo "$1";
     fi
 }
 
@@ -52,7 +54,7 @@ if [[ "$unamestr" == "Linux" ]]; then
         fi
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
-   create_symbolic_link $HOME/github/dot.config/bash/osx/automator $HOME/Desktop
+   create_symbolic_link $HOME/github/dot.config/osx/automator $HOME/bin/automator
 fi
 
 echo "Installation successful. Relogin for changes to take affect.";

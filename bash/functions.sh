@@ -44,11 +44,11 @@ function mkd() {
 #        fi
 #    fi
 
-    echo "Compressing .tar using \`${cmd}\`…"
-    "${cmd}" -v "${tmpFile}" || return 1
-    [ -f "${tmpFile}" ] && rm "${tmpFile}"
-    echo "${tmpFile}.gz created successfully."
-}
+#    echo "Compressing .tar using \`${cmd}\`…"
+#    "${cmd}" -v "${tmpFile}" || return 1
+#    [ -f "${tmpFile}" ] && rm "${tmpFile}"
+#    echo "${tmpFile}.gz created successfully."
+#}
 
 # Determine size of a file or total size of a directory
 function fs() {

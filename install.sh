@@ -23,13 +23,17 @@ function gcopy() {
     # Copies the files to a directory. $1 is the source $2 is the destination.
     if [ -e $1 ]; then
         if [  ! -L $2 ]; then
-            mv -f $2 $2.org > /dev/null 2>&1;
+
+            basename=${2##*/};
+            basepath=${2%/*};
+            case $basename in
+                .*) mv -f $2 $2.org > /dev/null 2>&1;;
+                *)  mv -f $2 $basepath/.$basename  > /dev/null 2>&1;;
+            esac
         else
             rm -f $2
         fi
         cp -rf $1 $2
-    #else
-    #    echo "$1";
     fi
 }
 
@@ -41,26 +45,26 @@ touch $HOME/.bash_profile.priv;
 touch $HOME/.bashrc.priv;
 
 # Create symbolic links for emacs configuration.
-create_symbolic_link $HOME/github/dot.config/emacs.d/dot.emacs.el $HOME/.emacs;
-create_symbolic_link $HOME/github/dot.config/emacs.d/ $HOME/.emacs.d;
+gcopy $HOME/github/dot.config/emacs.d/dot.emacs.el $HOME/.emacs;
+gcopy $HOME/github/dot.config/emacs.d/ $HOME/.emacs.d;
 
 # Create symbolic links for git configs
 gcopy $HOME/github/dot.config/conf/.gitconfig $HOME/.gitconfig
 gcopy $HOME/github/dot.config/conf/.gitignore $HOME/.gitignore
 
-# Create symbolic links for bin scripts.
+# Copy bin scripts.
 if [ ! -d $HOME/bin ]; then
     mkdir $HOME/bin;
 fi
-create_symbolic_link $HOME/github/dot.config/bin/bin.utils $HOME/bin/bin.utils
+gcopy $HOME/github/dot.config/bin/bin.utils $HOME/bin/bin.utils
 
 # Platform specific links to add for bin scripts.
 unamestr=`uname`
 if [[ "$unamestr" == "Linux" ]]; then
-    create_symbolic_link $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
+    gcopy $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
     if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
-        create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha $HOME/bin/bin.clusterha
-        create_symbolic_link $HOME/github/dot.config/bin/bin.clusterha_probe $HOME/bin/bin.clusterha_probe
+        gcopy $HOME/github/dot.config/bin/bin.clusterha $HOME/bin/bin.clusterha
+        gcopy $HOME/github/dot.config/bin/bin.clusterha_probe $HOME/bin/bin.clusterha_probe
         # Instead of creating symlink, copy and backup an existing file if it
         # exists which will require root access.
         if [ $(id -u) -eq 0 ];then
@@ -68,12 +72,14 @@ if [[ "$unamestr" == "Linux" ]]; then
                 # Requires sudo access, setup passwordless or passowrd will be
                 # prompted.
                 mkdir -p /etc/cluster/scripts;
+                if [ -d /etc/cluster/scripts ]; then
+                    cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh;
+                fi
             fi
-            cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh;
         fi
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
-   create_symbolic_link $HOME/github/dot.config/osx/automator $HOME/bin/automator
+   gcopy $HOME/github/dot.config/osx/automator $HOME/bin/automator
 fi
 
 echo "Installation successful. Relogin for changes to take affect.";

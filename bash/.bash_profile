@@ -78,8 +78,11 @@ if [ -d $HOME/bin ]; then
     # error checking for if link is file or directory.
     export PATH=$PATH:$HOME/bin;
     for dir in $HOME/bin/*; do
-        if [ -L $dir ]; then
-            PATH=$PATH:$dir;
+        if [ -d $dir ]; then
+            case $dir in
+                *.org) continue;;
+                *)PATH="$PATH:$dir";;
+            esac
         fi
     done;
 fi

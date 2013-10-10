@@ -14,10 +14,25 @@ function create_symbolic_link() {
             rm -f $2
         fi
         ln -s $1 $2
-    else
-        echo "$1";
+    #else
+    #    echo "$1";
     fi
 }
+
+function gcopy() {
+    # Copies the files to a directory. $1 is the source $2 is the destination.
+    if [ -e $1 ]; then
+        if [  ! -L $2 ]; then
+            mv -f $2 $2.org > /dev/null 2>&1;
+        else
+            rm -f $2
+        fi
+        cp -rf $1 $2
+    #else
+    #    echo "$1";
+    fi
+}
+
 
 # Create bash links.
 create_symbolic_link $HOME/github/dot.config/bash/.bash_profile $HOME/.bash_profile
@@ -28,6 +43,10 @@ touch $HOME/.bashrc.priv;
 # Create symbolic links for emacs configuration.
 create_symbolic_link $HOME/github/dot.config/emacs.d/dot.emacs.el $HOME/.emacs;
 create_symbolic_link $HOME/github/dot.config/emacs.d/ $HOME/.emacs.d;
+
+# Create symbolic links for git configs
+gcopy $HOME/github/dot.config/conf/.gitconfig $HOME/.gitconfig
+gcopy $HOME/github/dot.config/conf/.gitignore $HOME/.gitignore
 
 # Create symbolic links for bin scripts.
 if [ ! -d $HOME/bin ]; then

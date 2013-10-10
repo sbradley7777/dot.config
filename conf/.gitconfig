@@ -24,21 +24,19 @@
         # Interactive rebase with the given number of latest commits
         reb = "!r() { git rebase -i HEAD~$1; }; r"
 
-[apply]
-        # Detect whitespace errors when applying a patch
-        whitespace = fix
-
 [core]
         # Use custom `.gitignore` and `.gitattributes`
-        excludesfile = ~/.gitignore_global
+        excludesfile = ~/.gitignore
         # attributesfile = ~/.gitattributes
         # Treat spaces before tabs, lines that are indented with 8 or more spaces, and
         # all kinds of trailing whitespace as an error.
         # [default] trailing-space: looks for spaces at the end of a line
         # [default] space-before-tab: looks for spaces before tabs at the beginning of
         # a line
-        whitespace = space-before-tab,indent-with-non-tab,trailing-space
-
+        # whitespace = space-before-tab,indent-with-non-tab,trailing-space
+        # Set the editor that will be used. 
+        editor=emacs
+# Color highlighting
 [color]
         # Use colors in Git commands that are capable of colored output when
         # outputting to the terminal. (This is the default setting in Git ≥ 1.8.4.)
@@ -56,9 +54,6 @@
        added = yellow
        changed = green
        untracked = cyan
-[merge]
-        # Include summaries of merged commits in newly created merge commit messages
-        log = true
 
 # URL shorthands
 [url "git@github.com:"]
@@ -67,12 +62,14 @@
      pushInsteadOf = "git://github.com/"
 [url "git://github.com/"]
      insteadOf = "github:"
-[url "git@gist.github.com:"]
-     insteadOf = "gst:"
-     pushInsteadOf = "gist:"
-     pushInsteadOf = "git://gist.github.com/"
-[url "git://gist.github.com/"]
-     insteadOf = "gist:"
 
-[push]
-     default = matching
+#[apply]
+        # Detect whitespace errors when applying a patch
+        # whitespace = fix
+
+#[merge]
+        # Include summaries of merged commits in newly created merge commit messages
+        # log = true
+
+#[push]
+     # default = matching

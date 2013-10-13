@@ -5,7 +5,7 @@
 ##############################################################################
 alias kcscope='cscope -Rk -p4'
 alias pycscope='find -name *.py > cscope.files; cscope -b; cscope'
-alias diff='diff -pruN'
+alias diff='/usr/bin/diff -pruN '
 
 ##############################################################################
 # Git commands

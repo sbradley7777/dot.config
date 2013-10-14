@@ -34,14 +34,11 @@ export MANPAGER="less -X";
 ##############################################################################
 # The variable used for OS detection.
 unamestr=`uname`;
-# Path to location of all the alias files.
-export GITHUB_DOT_CONFIGS=$HOME/github/dot.config;
-export GITHUB_ALIASES=$GITHUB_DOT_CONFIGS/aliases;
 
 ##############################################################################
 # Bash shell preferences and function import
 ##############################################################################
-source $GITHUB_DOT_CONFIGS/bash/functions.sh;
+#source $GITHUB_DOT_CONFIGS/bash/functions.sh;
 
 # Autocorrect typos in path names when using `cd`.
 shopt -s cdspell;
@@ -49,7 +46,7 @@ shopt -s cdspell;
 if [[ "$unamestr" == 'Darwin' ]]; then
     # Case-insensitive globbing (used in pathname expansion).
     shopt -s nocaseglob;
-    source $GITHUB_DOT_CONFIGS/osx/functions.sh;
+    #source $GITHUB_DOT_CONFIGS/osx/functions.sh;
 fi
 
 ##############################################################################
@@ -160,6 +157,6 @@ fi
 ##############################################################################
 # Configuration setting for OSX
 ##############################################################################
-if [[ "$unamestr" == 'Darwin' ]]; then
-    source $GITHUB_DOT_CONFIGS/osx/prefs.sh;
-fi
+#if [[ "$unamestr" == 'Darwin' ]]; then
+#    source $GITHUB_DOT_CONFIGS/osx/prefs.sh;
+#fi

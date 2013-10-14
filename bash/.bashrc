@@ -8,6 +8,9 @@
 #if [ -f /etc/bashrc ]; then
 #   source  /etc/bashrc
 #fi
+# Path to location of all the alias files.
+export GITHUB_DOT_CONFIGS=$HOME/github/dot.config;
+export GITHUB_ALIASES=$GITHUB_DOT_CONFIGS/aliases;
 
 #################################################################################
 # Generic aliases

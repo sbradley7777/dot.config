@@ -39,7 +39,7 @@ function gcopy() {
 
 
 # Create bash links.
-create_symbolic_link $HOME/github/dot.config/bash/.bash_profile $HOME/.bash_profile
+gcopy $HOME/github/dot.config/bash/.bash_profile $HOME/.bash_profile
 create_symbolic_link $HOME/github/dot.config/bash/.bashrc $HOME/.bashrc;
 touch $HOME/.bash_profile.priv;
 touch $HOME/.bashrc.priv;

@@ -8,37 +8,33 @@
 #if [ -f /etc/bashrc ]; then
 #   source  /etc/bashrc
 #fi
-# Path to location of all the alias files.
-export GITHUB_DOT_CONFIGS=$HOME/github/dot.config;
-export GITHUB_ALIASES=$GITHUB_DOT_CONFIGS/aliases;
+
 
 #################################################################################
-# Generic aliases
+# Source in all aliases.
 #################################################################################
-if [ -f $GITHUB_ALIASES/aliases.all ]; then
-    source $GITHUB_ALIASES/aliases.all
-fi
+for i in $( ls $HOME/.aliases.*); do
+    if [[ ! "${i##*.}" == org ]]
+    then
+        source $i
+    fi
+done
 
 #################################################################################
 # Platform specific aliases
 #################################################################################
 unamestr=`uname`
 if [[ "$unamestr" == 'Linux' ]]; then
-    if [ -f $GITHUB_ALIASES/aliases.redhat ]; then
-        source $GITHUB_ALIASES/aliases.redhat
+    if [ -f $HOME/.aliases.redhat ]; then
+        source $HOME/.aliases.redhat
+        source $HOME/.aliases.sx
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
-    if [ -f $GITHUB_ALIASES/aliases.osx ]; then
-        source $GITHUB_ALIASES/aliases.osx
+    if [ -f $HOME/.aliases.osx ]; then
+        source $HOME/.aliases.osx
     fi
 fi
 
-#################################################################################
-# Source in devel aliases
-#################################################################################
-if [ -f $GITHUB_ALIASES/aliases.devel ]; then
-    source $GITHUB_ALIASES/aliases.devel
-fi
 #################################################################################
 # Source in various other aliases
 #################################################################################

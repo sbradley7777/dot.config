@@ -40,7 +40,9 @@ function gcopy() {
 
 # Create bash links.
 gcopy $HOME/github/dot.config/bash/.bash_profile $HOME/.bash_profile
-create_symbolic_link $HOME/github/dot.config/bash/.bashrc $HOME/.bashrc;
+gcopy $HOME/github/dot.config/bash/.bashrc $HOME/.bashrc;
+gcopy $HOME/github/dot.config/bash/.aliases.all $HOME/.aliases.all;
+gcopy $HOME/github/dot.config/bash/.aliases.devel $HOME/.aliases.devel;
 touch $HOME/.bash_profile.priv;
 touch $HOME/.bashrc.priv;
 
@@ -61,6 +63,9 @@ gcopy $HOME/github/dot.config/bin/bin.utils $HOME/bin/bin.utils
 # Platform specific links to add for bin scripts.
 unamestr=`uname`
 if [[ "$unamestr" == "Linux" ]]; then
+    gcopy $HOME/github/dot.config/bash/.aliases.devel $HOME/.aliases.devel;
+    gcopy $HOME/github/dot.config/bash/.aliases.redhat $HOME/.aliases.redhat;
+    gcopy $HOME/github/dot.config/bash/.aliases.sx $HOME/.aliases.sx;
     gcopy $HOME/github/dot.config/bin/bin.redhat $HOME/bin/bin.redhat
     if [[ `rpm --qf %{NAME} -q cman` == "cman" ]]; then
         gcopy $HOME/github/dot.config/bin/bin.clusterha $HOME/bin/bin.clusterha
@@ -79,7 +84,8 @@ if [[ "$unamestr" == "Linux" ]]; then
         fi
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
-   gcopy $HOME/github/dot.config/osx/automator $HOME/bin/automator
+    gcopy $HOME/github/dot.config/bash/.aliases.osx $HOME/.aliases.osx;
+    gcopy $HOME/github/dot.config/osx/automator $HOME/bin/automator
 fi
 
 echo "Installation successful. Relogin for changes to take affect.";

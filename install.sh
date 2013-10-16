@@ -45,6 +45,7 @@ gcopy $HOME/github/dot.config/bash/.aliases.all $HOME/.aliases.all;
 gcopy $HOME/github/dot.config/bash/.aliases.devel $HOME/.aliases.devel;
 touch $HOME/.bash_profile.priv;
 touch $HOME/.bashrc.priv;
+gcopy $HOME/github/dot.config/bash/.functions.sh $HOME/.functions.sh;
 
 # Create symbolic links for emacs configuration.
 gcopy $HOME/github/dot.config/emacs.d/dot.emacs.el $HOME/.emacs;

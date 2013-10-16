@@ -38,7 +38,7 @@ unamestr=`uname`;
 ##############################################################################
 # Bash shell preferences and function import
 ##############################################################################
-#source $GITHUB_DOT_CONFIGS/bash/functions.sh;
+source $HOME/.functions.sh;
 
 # Autocorrect typos in path names when using `cd`.
 shopt -s cdspell;
@@ -46,7 +46,6 @@ shopt -s cdspell;
 if [[ "$unamestr" == 'Darwin' ]]; then
     # Case-insensitive globbing (used in pathname expansion).
     shopt -s nocaseglob;
-    #source $GITHUB_DOT_CONFIGS/osx/functions.sh;
 fi
 
 ##############################################################################
@@ -154,9 +153,3 @@ if [ -f $HOME/.bashrc ]; then
     source $HOME/.bashrc;
 fi
 
-##############################################################################
-# Configuration setting for OSX
-##############################################################################
-#if [[ "$unamestr" == 'Darwin' ]]; then
-#    source $GITHUB_DOT_CONFIGS/osx/prefs.sh;
-#fi

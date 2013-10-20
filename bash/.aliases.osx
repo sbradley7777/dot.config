@@ -55,3 +55,8 @@ alias spoton="sudo mdutil -a -i on"
 # Restart remote desktop client
 alias rdrestart="sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -restart -agent"
 
+#################################################################################
+# Plex
+#################################################################################
+alias kill_plexconnect="sudo pkill -9 -f PlexConnect.py";
+alias ps_plexconnect="pgrep -l -f PlexConnect.py";

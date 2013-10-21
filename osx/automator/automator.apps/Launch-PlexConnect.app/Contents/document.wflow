@@ -51,45 +51,7 @@
 				<key>ActionParameters</key>
 				<dict>
 					<key>source</key>
-					<string>global py
-global un
-global theKeychainItem
-global thePassword
-set py to "/YOUR/PATH/TO/PlexConnect.py"
-set theKeychainItem to "PlexConnect"
-set un to getUsername(theKeychainItem)
-set thePassword to getPassword(theKeychainItem)
-
-do shell script "screen -A -m -d -S PlexConnect " &amp; py user name un password thePassword with administrator privileges
-
-on quit
-	do shell script "kill `ps -u root | grep [P]lexConnect | grep [Pp]ython | awk '{print $2}'`" user name un password thePassword with administrator privileges
-	continue quit
-end quit
-
-on getPassword(KeychainItem)
-	set theResult to do shell script "security 2&gt;&amp;1 find-generic-password -gs " &amp; KeychainItem
-	set theResult to extractData(theResult, "password: \"", "\"", 0)
-	return theResult
-end getPassword
-
-on getUsername(KeychainItem)
-	set theResult to do shell script "security 2&gt;&amp;1 find-generic-password -gs " &amp; KeychainItem
-	set theResult to extractData(theResult, "\"acct\"&lt;blob&gt;=\"", "\"", 0)
-	return theResult
-end getUsername
-
-on extractData(theText, theFieldName, theEndDelimiter, spaces)
-	set theDataStart to the offset of theFieldName in theText
-	if theDataStart = 0 then
-		return ""
-	else
-		set theDataStart to theDataStart + (length of theFieldName) + spaces
-		set theData to text theDataStart through end of theText
-		set theDataEnd to ((offset of theEndDelimiter in theData) - 1)
-		set theData to text 1 through theDataEnd of theData
-	end if
-end extractData</string>
+					<string>global pyglobal unglobal theKeychainItemglobal thePasswordset py to "~/bin/PlexConnect.py"set theKeychainItem to "PlexConnect"set un to getUsername(theKeychainItem)set thePassword to getPassword(theKeychainItem)do shell script "screen -A -m -d -S PlexConnect " &amp; py user name un password thePassword with administrator privilegeson quit	do shell script "kill `ps -u root | grep [P]lexConnect | grep [Pp]ython | awk '{print $2}'`" user name un password thePassword with administrator privileges	continue quitend quiton getPassword(KeychainItem)	set theResult to do shell script "security 2&gt;&amp;1 find-generic-password -gs " &amp; KeychainItem	set theResult to extractData(theResult, "password: \"", "\"", 0)	return theResultend getPasswordon getUsername(KeychainItem)	set theResult to do shell script "security 2&gt;&amp;1 find-generic-password -gs " &amp; KeychainItem	set theResult to extractData(theResult, "\"acct\"&lt;blob&gt;=\"", "\"", 0)	return theResultend getUsernameon extractData(theText, theFieldName, theEndDelimiter, spaces)	set theDataStart to the offset of theFieldName in theText	if theDataStart = 0 then		return ""	else		set theDataStart to theDataStart + (length of theFieldName) + spaces		set theData to text theDataStart through end of theText		set theDataEnd to ((offset of theEndDelimiter in theData) - 1)		set theData to text 1 through theDataEnd of theData	end ifend extractData</string>
 				</dict>
 				<key>BundleIdentifier</key>
 				<string>com.apple.Automator.RunScript</string>
@@ -140,12 +102,10 @@ end run</string>
 						<string>0</string>
 					</dict>
 				</dict>
-				<key>conversionLabel</key>
-				<integer>0</integer>
 				<key>isViewVisible</key>
 				<true/>
 				<key>location</key>
-				<string>309.500000:374.000000</string>
+				<string>393.000000:703.000000</string>
 				<key>nibPath</key>
 				<string>/System/Library/Automator/Run AppleScript.action/Contents/Resources/English.lproj/main.nib</string>
 			</dict>

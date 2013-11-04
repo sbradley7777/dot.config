@@ -75,8 +75,7 @@ if [[ "$unamestr" == "Linux" ]]; then
         # exists which will require root access.
         if [ $(id -u) -eq 0 ];then
             if [ ! -d /etc/cluster/scripts ]; then
-                # Requires sudo access, setup passwordless or passowrd will be
-                # prompted.
+                # Requires to be ran as root.
                 mkdir -p /etc/cluster/scripts;
                 if [ -d /etc/cluster/scripts ]; then
                     cp --backup $HOME/github/dot.config/etc/cluster/scripts/test_script.sh /etc/cluster/scripts/test_script.sh;
@@ -86,8 +85,7 @@ if [[ "$unamestr" == "Linux" ]]; then
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
     gcopy $HOME/github/dot.config/bash/.aliases.osx $HOME/.aliases.osx;
-    gcopy $HOME/github/dot.config/osx/automator $HOME/bin/automator
 fi
 
-echo "Installation successful. Relogin for changes to take affect.";
+echo "Installation complete. Relogin for changes to take affect.";
 exit 0;

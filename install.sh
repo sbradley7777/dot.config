@@ -28,12 +28,15 @@ function gcopy() {
             basepath=${2%/*};
             case $basename in
                 .*) mv -f $2 $2.org > /dev/null 2>&1;;
-                *)  mv -f $2 $basepath/.$basename  > /dev/null 2>&1;;
+                *)  mv -f $2 $basepath/.$basename.org  > /dev/null 2>&1;;
             esac
         else
             rm -f $2
         fi
+        printf "INFO: Copying the files $1 to $2.\n"
         cp -rf $1 $2
+        # Remove all the README.md files that were copied over.
+        find $2 -name README.md -exec rm -f {}  \;
     fi
 }
 
@@ -87,5 +90,5 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
     gcopy $HOME/github/dot.config/bash/.aliases.osx $HOME/.aliases.osx;
 fi
 
-echo "Installation complete. Relogin for changes to take affect.";
+printf "INFO: Installation complete. Relogin for changes to take affect.\n";
 exit 0;

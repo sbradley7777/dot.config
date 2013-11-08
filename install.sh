@@ -1,4 +1,4 @@
-#!/bin/sh
+   #!/bin/sh
 # If the files are not symbolic links then they will be backed up. If the files
 # are symbolic links then they will be removed and readded so that paths are
 # correct.

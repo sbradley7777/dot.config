@@ -14,6 +14,11 @@ will run a lot slower in my tests. Results will vary. Normally the parent
 directory would only by `fsync()` after writing has completed and not after every
 write.
 
+#Usage
+~~~
+# ./fsync_files <path to mount point 1> <path to mount point 2>
+~~~
+
 #Compile
 The maximum number of iterations in the loop can be set by changing the
 variable: `MAXIMUM_INTEGER`. Which is the last integer that will be written.

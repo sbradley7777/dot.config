@@ -1,7 +1,13 @@
 #Introduction
-The two files are used for testing the network with client and server binaries. The server can be set to listen on `ipv4` or `ipv6` addresses.
+The two files are used for testing the network with client and server binaries
+using [getaddrinfo](http://linux.die.net/man/3/getaddrinfo). The server can be
+set to listen on `ipv4` or `ipv6` addresses.
 
-This example is from the `man` pages of [getaddrinfo](http://linux.die.net/man/3/getaddrinfo).
+#Usage
+~~~
+# ./getaddrinfo-server <port number>
+# ./getaddrinfo-client <hostname or IP address> <port number> <some text message>
+~~~
 
 #Compile
 ~~~

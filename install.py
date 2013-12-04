@@ -19,12 +19,16 @@ import shutil
 # #####################################################################
 # Global vars:
 # #####################################################################
-"""
-@cvar VERSION_NUMBER: The current version number of sxconsole.
-@type VERSION_NUMBER: String
-"""
-VERSION_NUMBER = "0.05-2"
-MAIN_LOGGER_NAME="Configs_Installer"
+VERSION_NUMBER = "0.05-3"
+MAIN_LOGGER_NAME = "Configs_Installer"
+FILES_TO_INSTALL_MAP = {"bash/.bash_profile": os.path.join(os.getenv("HOME"), ".bash_profile"),
+                        "bash/.bashrc": os.path.join(os.getenv("HOME"), ".bashrc"),
+                        "bash/.aliases.all": os.path.join(os.getenv("HOME"), ".aliases.all"),
+                        "bash/.aliases.devel": os.path.join(os.getenv("HOME"), ".aliases.devel"),
+                        "bash/.functions.sh": os.path.join(os.getenv("HOME"), ".functions.sh")}
+
+FILES_TO_CREATE = [os.path.join(os.getenv("HOME"), ".bash_profile.priv"),
+                   os.path.join(os.getenv("HOME"), ".bashrc.priv")]
 
 # ##############################################################################
 # Functions for files and directories
@@ -190,6 +194,38 @@ def backupDirectory(pathToDSTDir):
     return (not os.path.exists(pathToDSTDir))
 
 # ##############################################################################
+# Installation Functions
+# ##############################################################################
+def install(pathToConfigFiles):
+    filesFailedInstall = {}
+    if (os.path.isdir(pathToConfigFiles)):
+        message = "The files in the following directory will be installed: %s." %(pathToConfigFiles)
+        logging.getLogger(MAIN_LOGGER_NAME).info(message)
+        keys = FILES_TO_INSTALL_MAP.keys()
+        keys.sort()
+        for key in keys:
+            pathToSrcFile = os.path.join(pathToConfigFiles, key)
+            pathToDstFile = FILES_TO_INSTALL_MAP.get(key)
+            message = "Copying the file %s to %s." %(pathToSrcFile, pathToDstFile)
+            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+            result = copyFile(pathToSrcFile, pathToDstFile)
+            if (not result):
+                filesFailedInstall[pathToDstFile] = pathToSrcFile
+
+        # Copy the directories"
+        print "\n\nCOPY THE DIRECTOIRES."
+
+        # Create some empty files
+        print "CREATE THE EMPTY FILE FUNCTION.\n\n"
+        for pathToNewFile in FILES_TO_CREATE:
+            continue
+    else:
+        filesFailedInstall.append(pathToConfigFiles)
+        message = "The path to the configuration files is invalid: %s" %(pathToConfigFiles)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+    return (not len(filesFailedInstall) > 0)
+
+# ##############################################################################
 # Misc Functions
 # ##############################################################################
 def exitScript(errorCode=0):
@@ -238,7 +274,19 @@ def __getOptions(version) :
                          dest="disableQuestions",
                          help="disables all questions and assumes yes",
                          default=False)
+    cmdParser.add_option("-p", "--path_to_configs",
+                         action="store",
+                         dest="pathToConfigFiles",
+                         help="path to the root directory for the configuration files",
+                         type="string",
+                         default=os.path.join(os.getenv("HOME"), "github/dot.config"))
 
+    #cmdParser.add_option("-o", "--options",
+    #                     action="extend",
+    #                     dest="options",
+    #                     help="",
+    #                     type="string",
+    #                     default=[])
     # Get the options and return the result.
     (cmdLineOpts, cmdLineArgs) = cmdParser.parse_args()
     return (cmdLineOpts, cmdLineArgs)
@@ -324,7 +372,6 @@ class ExtendOption (Option):
 # Main Function
 # ###############################################################################
 if __name__ == "__main__":
-
     try:
         # #######################################################################
         # Get the options from the commandline.
@@ -340,14 +387,6 @@ if __name__ == "__main__":
         # Create a new status function and level.
         logging.STATUS = logging.INFO + 2
         logging.addLevelName(logging.STATUS, "STATUS")
-
-        # Log to main system logger that script has started then close the
-        # handler before the other handlers are created.
-        sysLogHandler = logging.handlers.SysLogHandler(address = '/dev/log')
-        logger.addHandler(sysLogHandler)
-        logger.info("Capturing of the data to analyze GFS2 lockdumps.")
-        logger.removeHandler(sysLogHandler)
-
         # Create a function for the STATUS_LEVEL since not defined by python. This
         # means you can call it like the other predefined message
         # functions. Example: logging.getLogger("loggerName").status(message)
@@ -356,10 +395,6 @@ if __name__ == "__main__":
         streamHandler.setLevel(logLevel)
         streamHandler.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
         logger.addHandler(streamHandler)
-
-        # Please note there will not be a global log file created. If a log file
-        # is needed then redirect the output. There will be a log file created
-        # for each run in the corresponding directory.
 
         # #######################################################################
         # Set the logging levels.
@@ -394,9 +429,19 @@ if __name__ == "__main__":
                         exitScript(removePidFile=True, errorCode=1)
                 else:
                     sys.stdout.write("Please respond with '(y)es' or '(n)o'.\n")
+        # Install the configuration files
+        errorCode = 0
+        if (install(cmdLineOpts.pathToConfigFiles)):
+            message = "The installation was successful."
+            logging.getLogger(MAIN_LOGGER_NAME).info(message)
+        else:
+            errorCode = 1
+            message = "The installation was unsuccessful. There was errors detected during the installation of the files."
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        # Exit the script.
         message = "The script has completed."
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
-        exitScript()
+        exitScript(errorCode)
     except KeyboardInterrupt:
         message =  "This script will exit since control-c was executed by end user."
         sys.exit(2)

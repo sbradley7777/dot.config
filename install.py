@@ -6,6 +6,12 @@ This script will install all the required files on the host.
 @contact   :  sbradley@redhat.com
 @version   :  0.05
 @copyright :  GPLv2
+
+TODO:
+* In install() change the list of failed files to list of successfully installed
+  files then do diff. send note in function.
+* Move my FILES_TO_INSTALL_MAP and DIRS_TO_INSTALL_MAP to 1 map. If src file is
+  dir do X, if src file is file then do Y.
 """
 import sys
 import os
@@ -89,67 +95,47 @@ def copyDirectory(pathToSrcDir, pathToDstDir):
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         return False
     else:
-        #if (not mkdirs(pathToDstDir)) :
-            # The path to the directory was not created so file
-            # could not be copied.
-        #    return False
-        # Copy the file to the dst path.
-        dst = os.path.join(pathToDstDir, os.path.basename(pathToSrcDir))
+        result = removeDirectory(pathToDstDir)
+        [parentDir, filename] = os.path.split(pathToDstDir)
+        if (mkdirs(parentDir)):
+            try:
+                shutil.copytree(pathToSrcDir, pathToDstDir)
+            except shutil.Error:
+                message = "Cannot copy the directory %s to %s." %(pathToSrcDir, pathToDstDir)
+                logging.getLogger(MAIN_LOGGER_NAME).error(message)
+                return False
+            except OSError:
+                message = "Cannot copy the directory %s to %s." %(pathToSrcDir, pathToDstDir)
+                logging.getLogger(MAIN_LOGGER_NAME).error(message)
+                return False
+            except IOError:
+                message = "Cannot copy the directory %s to %s." %(pathToSrcDir, pathToDstDir)
+                logging.getLogger(MAIN_LOGGER_NAME).error(message)
+                return False
+        else:
+            message = "The parent directory could not be created: %s." %(parentDir)
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            return False
+        return (os.path.exists(pathToDstDir))
+
+def removeDirectory(pathToDirectory):
+    if (os.path.isdir(pathToDirectory)):
         try:
-            shutil.copytree(pathToSrcDir, dst)
+            shutil.rmtree(pathToDirectory)
         except shutil.Error:
-            message = "Cannot copy the directory %s to %s." %(pathToSrcDir, dst)
+            message = "An error occurred removing the file: %s." %(pathToDirectory)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
         except OSError:
-            message = "Cannot copy the directory %s to %s." %(pathToSrcDir, dst)
+            message = "An error occurred removing the file: %s." %(pathToDirectory)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
         except IOError:
-            message = "Cannot copy the directory %s to %s." %(pathToSrcDir, dst)
+            message = "An error occurred removing the file: %s." %(pathToDirectory)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
-        return (os.path.exists(dst))
+    return (os.path.exists(pathToDirectory))
 
-def backupDirectory(pathToDSTDir):
-    """
-    This function will return True if the pathToDSTDir does not exist or the
-    directory was successfully rename. If pathToDSTDir exists and was not
-    successfully rename then False is returned.
-
-    @return: Returns True if the pathToDSTDir does not exist or the directory
-    was successfully rename. If pathToDSTDir exists and was not successfully
-    rename then False is returned.
-    @rtype: Boolean
-
-    @param pathToDSTDir: The path to the directory that will be backed up.
-    @type pathToDSTDir: String
-    """
-    if (os.path.exists(pathToDSTDir)):
-        message = "The path already exists and could contain previous lockdump data: %s" %(pathToDSTDir)
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
-        backupIndex = 1
-        pathToDST = ""
-        keepSearchingForIndex = True
-        while (keepSearchingForIndex):
-            pathToDST = "%s.bk-%d" %(pathToDSTDir, backupIndex)
-            if (os.path.exists(pathToDST)):
-                backupIndex += 1
-            else:
-                keepSearchingForIndex = False
-        try:
-            message = "The existing output directory will be renamed: %s to %s." %(pathToDSTDir, pathToDST)
-            logging.getLogger(MAIN_LOGGER_NAME).status(message)
-            shutil.move(pathToDSTDir, pathToDST)
-        except shutil.Error:
-            message = "There was an error renaming the directory: %s to %s." %(pathToDSTDir, pathToDST)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-        except OSError:
-            message = "There was an error renaming the directory: %s to %s." %(pathToDSTDir, pathToDST)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-    # The path should not exists now, else there was an error backing up an
-    # existing output directory.
-    return (not os.path.exists(pathToDSTDir))
 
 # ##############################################################################
 # Functions for files
@@ -246,7 +232,7 @@ def writeToFile(pathToFilename, data="", appendToFile=False):
 # Installation Functions
 # ##############################################################################
 def install(pathToConfigFiles):
-    # TODO: 
+    # TODO:
     # Maybe need to change this to filesInstalledSuccessfully. Then I do a diff
     # to make sure all the files were installed, if there are files for in the
     # filesInstalledSuccessfully list then output their name and return false.
@@ -288,6 +274,7 @@ def install(pathToConfigFiles):
                 message = "The following empty file will be created: %s." %(pathToNewFile)
                 logging.getLogger(MAIN_LOGGER_NAME).debug(message)
                 writeToFile(pathToNewFile, "#!/bin/sh\n", appendToFile=False)
+
     else:
         filesFailedInstallMap.append(pathToConfigFiles)
         message = "The path to the configuration files is invalid so installation will not continue: %s" %(pathToConfigFiles)
@@ -519,10 +506,10 @@ if __name__ == "__main__":
         message =  "This script will exit since control-c was executed by end user."
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         exitScript(1)
-    except Exception, e:
-        message = "An error occurred and the script will exit."
-        logging.getLogger(MAIN_LOGGER_NAME).error(message)
-        exitScript(1)
+    #except Exception, e:
+    #    message = "An error occurred and the script will exit."
+    #    logging.getLogger(MAIN_LOGGER_NAME).error(message)
+    #    exitScript(1)
     # #######################################################################
         # Exit the application with zero exit code since we cleanly exited.
     # #######################################################################

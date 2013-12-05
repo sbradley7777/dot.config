@@ -8,12 +8,6 @@ This script will install all the required files on the host.
 @copyright :  GPLv2
 
 TODO:
-* Create a class that will hold all files. The reason is for OS specific
-  files. The class attributes: pathToSrc, pathToDST, OS="", "Linux", "Darwin"
-* In install() change the list of failed files to list of successfully installed
-  files then do diff. send note in function.
-* Move my FILES_TO_INSTALL_MAP and DIRS_TO_INSTALL_MAP to 1 map. If src file is
-  dir do X, if src file is file then do Y.
 """
 import sys
 import os
@@ -24,26 +18,58 @@ from optparse import OptionParser, Option, SUPPRESS_HELP
 import time
 import platform
 import shutil
+from copy import deepcopy
 # #####################################################################
 # Global vars:
 # #####################################################################
 VERSION_NUMBER = "0.05-3"
 MAIN_LOGGER_NAME = "Configs_Installer"
-FILES_TO_INSTALL_MAP = {"bash/.bash_profile": os.path.join(os.getenv("HOME"), ".bash_profile"),
-                        "bash/.bashrc": os.path.join(os.getenv("HOME"), ".bashrc"),
-                        "bash/.aliases.all": os.path.join(os.getenv("HOME"), ".aliases.all"),
-                        "bash/.aliases.devel": os.path.join(os.getenv("HOME"), ".aliases.devel"),
-                        "bash/.functions.sh": os.path.join(os.getenv("HOME"), ".functions.sh"),
-                        "conf/.emacs.d/dot.emacs.el": os.path.join(os.getenv("HOME"), ".emacs"),
-                        "conf/.gitconfig": os.path.join(os.getenv("HOME"), ".gitconfig"),
-                        "conf/.gitignore": os.path.join(os.getenv("HOME"), ".gitignore")}
 
-DIRS_TO_INSTALL_MAP = {"conf/.emacs.d": os.path.join(os.getenv("HOME"), ".emacs.d"),
-                       "bin/bin.utils": os.path.join(os.getenv("HOME"), "bin/bin.utils")}
+class ConfigurationFile:
+    def __init__(self, pathToSrc, pathToDst, platform=""):
+        # If self.__pathToSrc is empty string then the file will be created if
+        # it does not exist. The path to source is a relative path to the
+        # location f the git repo.
+        self.__pathToSrc = pathToSrc
+        self.__pathToDst = pathToDst
+        # If empty string then it does not require a specific OS platform. The
+        # nost commond platform strings are: "", "Linux", "Darwin".
+        self.__platform = platform
+        # This variable will be set after the file attempts to be installed. If
+        # install fails then set to False, if successfully installed then set to
+        # True.
+        self.__installed = False
 
-FILES_TO_CREATE = [os.path.join(os.getenv("HOME"), ".bash_profile.priv"),
-                   os.path.join(os.getenv("HOME"), ".bashrc.priv")]
+    def getPathToSrc(self):
+        return self.__pathToSrc
 
+    def getPathToDst(self):
+        return self.__pathToDst
+
+    def getPlatform(self):
+        return self.__platform
+
+    def setInstalled(self, installed):
+        self.__installed = installed
+
+    def isInstalled(self):
+        return self.__installed
+
+# ##############################################################################
+# The list of configuration files to install
+# ##############################################################################
+CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.path.join(os.getenv("HOME"), ".bash_profile")),
+                                  ConfigurationFile("bash/.bashrc", os.path.join(os.getenv("HOME"), ".bashrc")),
+                                  ConfigurationFile("", os.path.join(os.getenv("HOME"), ".bash_profile.priv")),
+                                  ConfigurationFile("", os.path.join(os.getenv("HOME"), ".bashrc.priv")),
+                                  ConfigurationFile("bash/.aliases.all", os.path.join(os.getenv("HOME"), ".aliases.all")),
+                                  ConfigurationFile("bash/.aliases.devel", os.path.join(os.getenv("HOME"), ".aliases.devel")),
+                                  ConfigurationFile("bash/.functions.sh", os.path.join(os.getenv("HOME"), ".functions.sh")),
+                                  ConfigurationFile("conf/.emacs.d/dot.emacs.el", os.path.join(os.getenv("HOME"), ".emacs")),
+                                  ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig")),
+                                  ConfigurationFile("conf/.gitignore", os.path.join(os.getenv("HOME"), ".gitignore")),
+                                  ConfigurationFile("conf/.emacs.d", os.path.join(os.getenv("HOME"), ".emacs.d")),
+                                  ConfigurationFile("bin/bin.utils", os.path.join(os.getenv("HOME"), "bin/bin.utils"))]
 
 # ##############################################################################
 # Functions for directories
@@ -235,60 +261,44 @@ def writeToFile(pathToFilename, data="", appendToFile=False):
 # Installation Functions
 # ##############################################################################
 def install(pathToConfigFiles):
-    # TODO:
-    # Maybe need to change this to filesInstalledSuccessfully. Then I do a diff
-    # to make sure all the files were installed, if there are files for in the
-    # filesInstalledSuccessfully list then output their name and return false.
-    filesFailedInstallMap = {}
+    files_to_install_map = deepcopy(CONFIGURATION_FILES_TO_INSTALL)
     if (os.path.isdir(pathToConfigFiles)):
         # Copy files to their location on the host.
         message = "The files in the following directory will be installed: %s." %(pathToConfigFiles)
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
-        keys = FILES_TO_INSTALL_MAP.keys()
-        keys.sort()
-        for key in keys:
-            pathToSrcFile = os.path.join(pathToConfigFiles, key)
-            pathToDstFile = FILES_TO_INSTALL_MAP.get(key)
-            message = "Copying the file %s to %s." %(pathToSrcFile, pathToDstFile)
-            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-            result = copyFile(pathToSrcFile, pathToDstFile)
-            if (not result):
-                filesFailedInstallMap[pathToDstFile] = pathToSrcFile
-
-        # Copy directories to their location on the host.
-        message = "The directories in the following directory will be installed: %s." %(pathToConfigFiles)
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
-        keys = DIRS_TO_INSTALL_MAP.keys()
-        keys.sort()
-        for key in keys:
-            pathToSrcDir = os.path.join(pathToConfigFiles, key)
-            pathToDstDir = DIRS_TO_INSTALL_MAP.get(key)
-            message = "Copying the directory %s to %s." %(pathToSrcDir, pathToDstDir)
-            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-            result = copyDirectory(pathToSrcDir, pathToDstDir)
-            if (not result):
-                filesFailedInstallMap[pathToDstFile] = pathToSrcFile
-
-        # Create some empty files
-        message = "Private empty files will be created if they do not exist that can be edited later."
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
-        for pathToNewFile in FILES_TO_CREATE:
-            if (not os.path.exists(pathToNewFile)):
-                message = "The following empty file will be created: %s." %(pathToNewFile)
+        for configurationFile in CONFIGURATION_FILES_TO_INSTALL:
+            pathToSrcFile = os.path.join(pathToConfigFiles, configurationFile.getPathToSrc())
+            if (not len(configurationFile.getPathToSrc()) > 0):
+                if (not os.path.exists(configurationFile.getPathToDst())):
+                    message = "Creating an empty file %s." %(configurationFile.getPathToDst())
+                    logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+                    configurationFile.setInstalled(writeToFile(configurationFile.getPathToDst(), "", appendToFile=False))
+                else:
+                    # File already exists so do not override it.
+                    configurationFile.setInstalled(True)
+            elif (os.path.isfile(pathToSrcFile)):
+                message = "Copying the file %s to %s." %(pathToSrcFile, configurationFile.getPathToDst())
                 logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-                writeToFile(pathToNewFile, "#!/bin/sh\n", appendToFile=False)
-
+                configurationFile.setInstalled(copyFile(pathToSrcFile, configurationFile.getPathToDst()))
+            elif (os.path.isdir(pathToSrcFile)):
+                message = "Copying the directory %s to %s." %(pathToSrcFile, configurationFile.getPathToDst())
+                logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+                configurationFile.setInstalled(copyDirectory(pathToSrcFile, configurationFile.getPathToDst()))
     else:
         filesFailedInstallMap.append(pathToConfigFiles)
         message = "The path to the configuration files is invalid so installation will not continue: %s" %(pathToConfigFiles)
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
-    # Print all the files that failed to installed
-    if (len(filesFailedInstallMap)):
+    # Loop over list and find any that did not install.
+    configuration_files_failed_install = []
+    for configuration_file in CONFIGURATION_FILES_TO_INSTALL:
+        if (not configuration_file.isInstalled()):
+            configuration_files_failed_install.append(configuration_file)
+    if (len(configuration_files_failed_install) > 0):
         message = "The following files failed to installed:\n"
-        for key in filesFailedInstallMap.keys():
-            message += "\t%s --> %s" %(filesFailedInstallMap.get(key), key)
+        for configuration_file in configuration_files_failed_install:
+            message += "\t%s --> %s\n" %(configuration_file.getPathToSrc(), configuration_file.getPathToDst())
         logging.getLogger(MAIN_LOGGER_NAME).error(message.rstrip())
-    return (not len(filesFailedInstallMap.keys()) > 0)
+    return (len(configuration_files_failed_install) > 0)
 
 # ##############################################################################
 # Misc Functions

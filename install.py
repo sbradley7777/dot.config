@@ -8,7 +8,9 @@ This script will install all the required files on the host.
 @copyright :  GPLv2
 
 TODO:
-* Add in code for platform specific OS and corresponding files.
+* Add in code for specific files for stuff like clusterha on Red Hat. Need to
+  figure out way to do this.
+
 """
 import sys
 import os
@@ -65,6 +67,9 @@ CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.pat
                                   ConfigurationFile("", os.path.join(os.getenv("HOME"), ".bashrc.priv")),
                                   ConfigurationFile("bash/.aliases.all", os.path.join(os.getenv("HOME"), ".aliases.all")),
                                   ConfigurationFile("bash/.aliases.devel", os.path.join(os.getenv("HOME"), ".aliases.devel")),
+                                  ConfigurationFile("bash/.aliases.osx", os.path.join(os.getenv("HOME"), ".aliases.osx"), platform="Darwin"),
+                                  ConfigurationFile("bash/.aliases.redhat", os.path.join(os.getenv("HOME"), ".aliases.redhat"), platform="Linux"),
+                                  ConfigurationFile("bash/.aliases.sx", os.path.join(os.getenv("HOME"), ".aliases.sx"), platform="Linux"),
                                   ConfigurationFile("bash/.functions.sh", os.path.join(os.getenv("HOME"), ".functions.sh")),
                                   ConfigurationFile("conf/.emacs.d/dot.emacs.el", os.path.join(os.getenv("HOME"), ".emacs")),
                                   ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig")),
@@ -269,22 +274,23 @@ def install(pathToConfigFiles):
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
         for configurationFile in CONFIGURATION_FILES_TO_INSTALL:
             pathToSrcFile = os.path.join(pathToConfigFiles, configurationFile.getPathToSrc())
-            if (not len(configurationFile.getPathToSrc()) > 0):
-                if (not os.path.exists(configurationFile.getPathToDst())):
-                    message = "Creating an empty file %s." %(configurationFile.getPathToDst())
+            if ((len(configurationFile.getPlatform()) == 0) or (configurationFile.getPlatform() == platform.system())):
+                if (not len(configurationFile.getPathToSrc()) > 0):
+                    if (not os.path.exists(configurationFile.getPathToDst())):
+                        message = "Creating an empty file %s." %(configurationFile.getPathToDst())
+                        logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+                        configurationFile.setInstalled(writeToFile(configurationFile.getPathToDst(), "", appendToFile=False))
+                    else:
+                        # File already exists so do not override it.
+                        configurationFile.setInstalled(True)
+                elif (os.path.isfile(pathToSrcFile)):
+                    message = "Copying the file %s to %s." %(pathToSrcFile, configurationFile.getPathToDst())
                     logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-                    configurationFile.setInstalled(writeToFile(configurationFile.getPathToDst(), "", appendToFile=False))
-                else:
-                    # File already exists so do not override it.
-                    configurationFile.setInstalled(True)
-            elif (os.path.isfile(pathToSrcFile)):
-                message = "Copying the file %s to %s." %(pathToSrcFile, configurationFile.getPathToDst())
-                logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-                configurationFile.setInstalled(copyFile(pathToSrcFile, configurationFile.getPathToDst()))
-            elif (os.path.isdir(pathToSrcFile)):
-                message = "Copying the directory %s to %s." %(pathToSrcFile, configurationFile.getPathToDst())
-                logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-                configurationFile.setInstalled(copyDirectory(pathToSrcFile, configurationFile.getPathToDst()))
+                    configurationFile.setInstalled(copyFile(pathToSrcFile, configurationFile.getPathToDst()))
+                elif (os.path.isdir(pathToSrcFile)):
+                    message = "Copying the directory %s to %s." %(pathToSrcFile, configurationFile.getPathToDst())
+                    logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+                    configurationFile.setInstalled(copyDirectory(pathToSrcFile, configurationFile.getPathToDst()))
     else:
         filesFailedInstallMap.append(pathToConfigFiles)
         message = "The path to the configuration files is invalid so installation will not continue: %s" %(pathToConfigFiles)

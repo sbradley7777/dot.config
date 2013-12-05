@@ -8,6 +8,8 @@ This script will install all the required files on the host.
 @copyright :  GPLv2
 
 TODO:
+* Create a class that will hold all files. The reason is for OS specific
+  files. The class attributes: pathToSrc, pathToDST, OS="", "Linux", "Darwin"
 * In install() change the list of failed files to list of successfully installed
   files then do diff. send note in function.
 * Move my FILES_TO_INSTALL_MAP and DIRS_TO_INSTALL_MAP to 1 map. If src file is
@@ -41,6 +43,7 @@ DIRS_TO_INSTALL_MAP = {"conf/.emacs.d": os.path.join(os.getenv("HOME"), ".emacs.
 
 FILES_TO_CREATE = [os.path.join(os.getenv("HOME"), ".bash_profile.priv"),
                    os.path.join(os.getenv("HOME"), ".bashrc.priv")]
+
 
 # ##############################################################################
 # Functions for directories

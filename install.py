@@ -25,13 +25,19 @@ FILES_TO_INSTALL_MAP = {"bash/.bash_profile": os.path.join(os.getenv("HOME"), ".
                         "bash/.bashrc": os.path.join(os.getenv("HOME"), ".bashrc"),
                         "bash/.aliases.all": os.path.join(os.getenv("HOME"), ".aliases.all"),
                         "bash/.aliases.devel": os.path.join(os.getenv("HOME"), ".aliases.devel"),
-                        "bash/.functions.sh": os.path.join(os.getenv("HOME"), ".functions.sh")}
+                        "bash/.functions.sh": os.path.join(os.getenv("HOME"), ".functions.sh"),
+                        "emacs.d/dot.emacs.el": os.path.join(os.getenv("HOME"), ".emacs"),
+                        "conf/.gitconfig": os.path.join(os.getenv("HOME"), ".gitconfig"),
+                        "conf/.gitignore": os.path.join(os.getenv("HOME"), ".gitignore")}
+
+DIRS_TO_INSTALL_MAP = {"emacs.d": os.path.join(os.getenv("HOME"), ".emacs.d"),
+                       "bin/bin.utils": os.path.join(os.getenv("HOME"), "bin/bin.utils")}
 
 FILES_TO_CREATE = [os.path.join(os.getenv("HOME"), ".bash_profile.priv"),
                    os.path.join(os.getenv("HOME"), ".bashrc.priv")]
 
 # ##############################################################################
-# Functions for files and directories
+# Functions for directories
 # ##############################################################################
 def mkdirs(pathToDSTDir):
     """
@@ -58,54 +64,6 @@ def mkdirs(pathToDSTDir):
             return False
     return os.path.isdir(pathToDSTDir)
 
-def copyFile(pathToSrcFile, pathToDstFile):
-    """
-    This function will copy a src file to dst file.
-
-    @return: Returns True if the file was copied successfully.
-    @rtype: Boolean
-
-    @param pathToSrcFile: The path to the source file that will be copied.
-    @type pathToSrcFile: String
-    @param pathToDstFile: The path to the destination of the file.
-    @type pathToDstFile: String
-    """
-    if(not os.path.exists(pathToSrcFile)):
-        message = "The file does not exist with the path: %s." %(pathToSrcFile)
-        logging.getLogger(MAIN_LOGGER_NAME).error(message)
-        return False
-    elif (not os.path.isfile(pathToSrcFile)):
-        message = "The path to the source file is not a regular file: %s." %(pathToSrcFile)
-        logging.getLogger(MAIN_LOGGER_NAME).error(message)
-        return False
-    elif (pathToSrcFile == pathToDstFile):
-        message = "The path to the source file and path to destination file cannot be the same: %s." %(pathToDstFile)
-        logging.getLogger(MAIN_LOGGER_NAME).error(message)
-        return False
-    else:
-        # Create the directory structure if it does not exist.
-        (head, tail) = os.path.split(pathToDstFile)
-        if (not mkdirs(head)) :
-            # The path to the directory was not created so file
-            # could not be copied.
-            return False
-        # Copy the file to the dst path.
-        try:
-            shutil.copy(pathToSrcFile, pathToDstFile)
-        except shutil.Error:
-            message = "Cannot copy the file %s to %s." %(pathToSrcFile, pathToDstFile)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            return False
-        except OSError:
-            message = "Cannot copy the file %s to %s." %(pathToSrcFile, pathToDstFile)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            return False
-        except IOError:
-            message = "Cannot copy the file %s to %s." %(pathToSrcFile, pathToDstFile)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            return False
-        return (os.path.exists(pathToDstFile))
-
 def copyDirectory(pathToSrcDir, pathToDstDir):
     """
     This function will copy a src dir to dst dir.
@@ -131,10 +89,10 @@ def copyDirectory(pathToSrcDir, pathToDstDir):
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         return False
     else:
-        if (not mkdirs(pathToDstDir)) :
+        #if (not mkdirs(pathToDstDir)) :
             # The path to the directory was not created so file
             # could not be copied.
-            return False
+        #    return False
         # Copy the file to the dst path.
         dst = os.path.join(pathToDstDir, os.path.basename(pathToSrcDir))
         try:
@@ -194,11 +152,107 @@ def backupDirectory(pathToDSTDir):
     return (not os.path.exists(pathToDSTDir))
 
 # ##############################################################################
+# Functions for files
+# ##############################################################################
+def copyFile(pathToSrcFile, pathToDstFile):
+    """
+    This function will copy a src file to dst file.
+
+    @return: Returns True if the file was copied successfully.
+    @rtype: Boolean
+
+    @param pathToSrcFile: The path to the source file that will be copied.
+    @type pathToSrcFile: String
+    @param pathToDstFile: The path to the destination of the file.
+    @type pathToDstFile: String
+    """
+    if(not os.path.exists(pathToSrcFile)):
+        message = "The file does not exist with the path: %s." %(pathToSrcFile)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        return False
+    elif (not os.path.isfile(pathToSrcFile)):
+        message = "The path to the source file is not a regular file: %s." %(pathToSrcFile)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        return False
+    elif (pathToSrcFile == pathToDstFile):
+        message = "The path to the source file and path to destination file cannot be the same: %s." %(pathToDstFile)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        return False
+    else:
+        # Create the directory structure if it does not exist.
+        (head, tail) = os.path.split(pathToDstFile)
+        if (not mkdirs(head)) :
+            # The path to the directory was not created so file
+            # could not be copied.
+            return False
+        # Copy the file to the dst path.
+        try:
+            shutil.copy(pathToSrcFile, pathToDstFile)
+        except shutil.Error:
+            message = "Cannot copy the file %s to %s." %(pathToSrcFile, pathToDstFile)
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            return False
+        except OSError:
+            message = "Cannot copy the file %s to %s." %(pathToSrcFile, pathToDstFile)
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            return False
+        except IOError:
+            message = "Cannot copy the file %s to %s." %(pathToSrcFile, pathToDstFile)
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            return False
+        return (os.path.exists(pathToDstFile))
+
+def writeToFile(pathToFilename, data="", appendToFile=False):
+    """
+    This function will write a string to a file.
+
+    @return: Returns True if the string was successfully written to the file,
+    otherwise False is returned.
+    @rtype: Boolean
+
+    @param pathToFilename: The path to the file that will have a string written
+    to it.
+    @type pathToFilename: String
+    @param data: The string that will be written to the file.
+    @type data: String
+    @param appendToFile: If True then the data will be appened to the file, if
+    False then the data will overwrite the contents of the file.
+    @type appendToFile: Boolean
+    """
+    [parentDir, filename] = os.path.split(pathToFilename)
+    if (not mkdirs(parentDir)):
+        return False
+    else:
+        if (os.path.isfile(pathToFilename) or os.path.isdir(parentDir)):
+            try:
+                filemode = "w"
+                if (appendToFile):
+                    filemode = "a"
+                fout = open(pathToFilename, filemode)
+                fout.write(data + "\n")
+                fout.close()
+                return True
+            except UnicodeEncodeError, e:
+                message = "There was a unicode encode error writing to the file: %s." %(pathToFilename)
+                logging.getLogger(MAIN_LOGGER_NAME).error(message)
+                return False
+            except IOError:
+                message = "There was an error writing to the file: %s." %(pathToFilename)
+                logging.getLogger(MAIN_LOGGER_NAME).error(message)
+                return False
+    return False
+
+# ##############################################################################
 # Installation Functions
 # ##############################################################################
 def install(pathToConfigFiles):
+    # TODO: 
+    # Maybe need to change this to filesInstalledSuccessfully. Then I do a diff
+    # to make sure all the files were installed, if there are files for in the
+    # filesInstalledSuccessfully list then output their name and return false.
     filesFailedInstall = {}
     if (os.path.isdir(pathToConfigFiles)):
+        # Copy files to their location on the host.
         message = "The files in the following directory will be installed: %s." %(pathToConfigFiles)
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
         keys = FILES_TO_INSTALL_MAP.keys()
@@ -212,17 +266,38 @@ def install(pathToConfigFiles):
             if (not result):
                 filesFailedInstall[pathToDstFile] = pathToSrcFile
 
-        # Copy the directories"
-        print "\n\nCOPY THE DIRECTOIRES."
+        # Copy directories to their location on the host.
+        message = "The directories in the following directory will be installed: %s." %(pathToConfigFiles)
+        logging.getLogger(MAIN_LOGGER_NAME).info(message)
+        keys = DIRS_TO_INSTALL_MAP.keys()
+        keys.sort()
+        for key in keys:
+            pathToSrcDir = os.path.join(pathToConfigFiles, key)
+            pathToDstDir = DIRS_TO_INSTALL_MAP.get(key)
+            message = "Copying the directory %s to %s." %(pathToSrcDir, pathToDstDir)
+            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+            result = copyDirectory(pathToSrcDir, pathToDstDir)
+            if (not result):
+                filesFailedInstall[pathToDstFile] = pathToSrcFile
 
         # Create some empty files
-        print "CREATE THE EMPTY FILE FUNCTION.\n\n"
+        message = "Private empty files will be created if they do not exist that can be edited later."
+        logging.getLogger(MAIN_LOGGER_NAME).info(message)
         for pathToNewFile in FILES_TO_CREATE:
-            continue
+            if (not os.path.exists(pathToNewFile)):
+                message = "The following empty file will be created: %s." %(pathToNewFile)
+                logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+                writeToFile(pathToNewFile, "#!/bin/sh\n", appendToFile=False)
     else:
         filesFailedInstall.append(pathToConfigFiles)
-        message = "The path to the configuration files is invalid: %s" %(pathToConfigFiles)
+        message = "The path to the configuration files is invalid so installation will not continue: %s" %(pathToConfigFiles)
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
+    # Print all the files that failed to installed
+    if (len(filesFailedInstall)):
+        message = "The following files failed to installed:\n"
+        for failedFailed in filesFailedInstall:
+            message += "\t%s" %(filesFailedInstall)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message.rstrip())
     return (not len(filesFailedInstall) > 0)
 
 # ##############################################################################
@@ -236,8 +311,6 @@ def exitScript(errorCode=0):
     @param errorCode: The exit code that will be returned. The default value is 0.
     @type errorCode: Int
     """
-    if (removePidFile):
-        removePIDFile()
     message = "The script will exit."
     logging.getLogger(MAIN_LOGGER_NAME).info(message)
     sys.exit(errorCode)
@@ -444,11 +517,13 @@ if __name__ == "__main__":
         exitScript(errorCode)
     except KeyboardInterrupt:
         message =  "This script will exit since control-c was executed by end user."
-        sys.exit(2)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        exitScript(1)
     except Exception, e:
         message = "An error occurred and the script will exit."
-        sys.exit(1);
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        exitScript(1)
     # #######################################################################
         # Exit the application with zero exit code since we cleanly exited.
     # #######################################################################
-    sys.exit()
+    exitScript(0)

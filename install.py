@@ -26,11 +26,11 @@ FILES_TO_INSTALL_MAP = {"bash/.bash_profile": os.path.join(os.getenv("HOME"), ".
                         "bash/.aliases.all": os.path.join(os.getenv("HOME"), ".aliases.all"),
                         "bash/.aliases.devel": os.path.join(os.getenv("HOME"), ".aliases.devel"),
                         "bash/.functions.sh": os.path.join(os.getenv("HOME"), ".functions.sh"),
-                        "emacs.d/dot.emacs.el": os.path.join(os.getenv("HOME"), ".emacs"),
+                        "conf/.emacs.d/dot.emacs.el": os.path.join(os.getenv("HOME"), ".emacs"),
                         "conf/.gitconfig": os.path.join(os.getenv("HOME"), ".gitconfig"),
                         "conf/.gitignore": os.path.join(os.getenv("HOME"), ".gitignore")}
 
-DIRS_TO_INSTALL_MAP = {"emacs.d": os.path.join(os.getenv("HOME"), ".emacs.d"),
+DIRS_TO_INSTALL_MAP = {"conf/.emacs.d": os.path.join(os.getenv("HOME"), ".emacs.d"),
                        "bin/bin.utils": os.path.join(os.getenv("HOME"), "bin/bin.utils")}
 
 FILES_TO_CREATE = [os.path.join(os.getenv("HOME"), ".bash_profile.priv"),
@@ -250,7 +250,7 @@ def install(pathToConfigFiles):
     # Maybe need to change this to filesInstalledSuccessfully. Then I do a diff
     # to make sure all the files were installed, if there are files for in the
     # filesInstalledSuccessfully list then output their name and return false.
-    filesFailedInstall = {}
+    filesFailedInstallMap = {}
     if (os.path.isdir(pathToConfigFiles)):
         # Copy files to their location on the host.
         message = "The files in the following directory will be installed: %s." %(pathToConfigFiles)
@@ -264,7 +264,7 @@ def install(pathToConfigFiles):
             logging.getLogger(MAIN_LOGGER_NAME).debug(message)
             result = copyFile(pathToSrcFile, pathToDstFile)
             if (not result):
-                filesFailedInstall[pathToDstFile] = pathToSrcFile
+                filesFailedInstallMap[pathToDstFile] = pathToSrcFile
 
         # Copy directories to their location on the host.
         message = "The directories in the following directory will be installed: %s." %(pathToConfigFiles)
@@ -278,7 +278,7 @@ def install(pathToConfigFiles):
             logging.getLogger(MAIN_LOGGER_NAME).debug(message)
             result = copyDirectory(pathToSrcDir, pathToDstDir)
             if (not result):
-                filesFailedInstall[pathToDstFile] = pathToSrcFile
+                filesFailedInstallMap[pathToDstFile] = pathToSrcFile
 
         # Create some empty files
         message = "Private empty files will be created if they do not exist that can be edited later."
@@ -289,16 +289,16 @@ def install(pathToConfigFiles):
                 logging.getLogger(MAIN_LOGGER_NAME).debug(message)
                 writeToFile(pathToNewFile, "#!/bin/sh\n", appendToFile=False)
     else:
-        filesFailedInstall.append(pathToConfigFiles)
+        filesFailedInstallMap.append(pathToConfigFiles)
         message = "The path to the configuration files is invalid so installation will not continue: %s" %(pathToConfigFiles)
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
     # Print all the files that failed to installed
-    if (len(filesFailedInstall)):
+    if (len(filesFailedInstallMap)):
         message = "The following files failed to installed:\n"
-        for failedFailed in filesFailedInstall:
-            message += "\t%s" %(filesFailedInstall)
+        for key in filesFailedInstallMap.keys():
+            message += "\t%s --> %s" %(filesFailedInstallMap.get(key), key)
         logging.getLogger(MAIN_LOGGER_NAME).error(message.rstrip())
-    return (not len(filesFailedInstall) > 0)
+    return (not len(filesFailedInstallMap.keys()) > 0)
 
 # ##############################################################################
 # Misc Functions

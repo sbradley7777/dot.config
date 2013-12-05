@@ -8,6 +8,7 @@ This script will install all the required files on the host.
 @copyright :  GPLv2
 
 TODO:
+* Add in code for platform specific OS and corresponding files.
 """
 import sys
 import os
@@ -298,7 +299,7 @@ def install(pathToConfigFiles):
         for configuration_file in configuration_files_failed_install:
             message += "\t%s --> %s\n" %(configuration_file.getPathToSrc(), configuration_file.getPathToDst())
         logging.getLogger(MAIN_LOGGER_NAME).error(message.rstrip())
-    return (len(configuration_files_failed_install) > 0)
+    return (not len(configuration_files_failed_install) > 0)
 
 # ##############################################################################
 # Misc Functions
@@ -511,19 +512,16 @@ if __name__ == "__main__":
             errorCode = 1
             message = "The installation was unsuccessful. There was errors detected during the installation of the files."
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
-        # Exit the script.
-        message = "The script has completed."
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
-        exitScript(errorCode)
     except KeyboardInterrupt:
         message =  "This script will exit since control-c was executed by end user."
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         exitScript(1)
-    #except Exception, e:
-    #    message = "An error occurred and the script will exit."
-    #    logging.getLogger(MAIN_LOGGER_NAME).error(message)
-    #    exitScript(1)
+    except Exception, e:
+        message = "An unhandled error occurred and the script will exit."
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        exitScript(1)
+
     # #######################################################################
-        # Exit the application with zero exit code since we cleanly exited.
+    # Exit the application with zero exit code since we cleanly exited.
     # #######################################################################
     exitScript(0)

@@ -11,6 +11,22 @@ TODO:
 * Add in code for specific files for stuff like clusterha on Red Hat. Need to
   figure out way to do this.
 
+Example Configuration File:
+# cat ~/.dot.config
+[bin.clusterha]
+src_path = bin/bin.clusterha
+dst_path = ~/bin/bin.clusterha
+platform = Linux
+
+[bin.clusterha_probe]
+src_path = bin/bin.clusterha_probe
+dst_path = ~/bin/bin.clusterha_probe
+platform = Linux
+
+[test_script.sh]
+src_path = dot.config/etc/cluster/scripts/test_script.sh
+dst_path = /etc/cluster/scripts/test_script.sh
+platform = Linux
 """
 import sys
 import os
@@ -22,11 +38,48 @@ import time
 import platform
 import shutil
 from copy import deepcopy
+import ConfigParser
 # #####################################################################
 # Global vars:
 # #####################################################################
 VERSION_NUMBER = "0.05-3"
 MAIN_LOGGER_NAME = "Configs_Installer"
+PATH_TO_INSTALL_CONFIGURATION_FILE = os.path.join(os.environ['HOME'],".dot.config")
+
+class InstallerConfigurationFile:
+    SECTION_ITEMS = ["src_path", "dst_path", "platform"]
+
+    def __init__(self, pathToConfigFile) :
+        self.__pathToConfigFile = pathToConfigFile
+
+    def __getSections(self):
+        configParser = ConfigParser.ConfigParser()
+        configParser.read(self.__pathToConfigFile)
+        return configParser.sections()
+
+    def __getSectionMap(self, sectionName):
+        configParser = ConfigParser.ConfigParser()
+        configParser.read(self.__pathToConfigFile)
+        if (configParser.has_section(sectionName)):
+            sectionMap = {}
+            for item in InstallerConfigurationFile.SECTION_ITEMS:
+                try:
+                    sectionMap[item] = configParser.get(sectionName, item)
+                except ConfigParser.NoOptionError:
+                    sectionMap[item] = ""
+            return ConfigurationFile(sectionMap.get("src_path"),
+                                     sectionMap.get("dst_path"),
+                                     sectionMap.get("platform"))
+        return None
+
+    def list(self):
+        installer_configuration_file_list = []
+        sections = self.__getSections()
+        for section in sections:
+            configuration_file = self.__getSectionMap(section)
+            if (not configuration_file == None):
+                installer_configuration_file_list.append(configuration_file)
+        return installer_configuration_file_list
 
 class ConfigurationFile:
     def __init__(self, pathToSrc, pathToDst, platform=""):
@@ -35,6 +88,8 @@ class ConfigurationFile:
         # location f the git repo.
         self.__pathToSrc = pathToSrc
         self.__pathToDst = pathToDst
+        if (self.__pathToDst.startswith("~")):
+            self.__pathToDst = os.path.expanduser(self.__pathToDst)
         # If empty string then it does not require a specific OS platform. The
         # nost commond platform strings are: "", "Linux", "Darwin".
         self.__platform = platform
@@ -42,6 +97,12 @@ class ConfigurationFile:
         # install fails then set to False, if successfully installed then set to
         # True.
         self.__installed = False
+
+    def __str__(self):
+        r_string =  "path to src: %s\n" %(self.getPathToSrc())
+        r_string += "path to dst: %s\n" %(self.getPathToDst())
+        r_string += "platform:    %s\n" %(self.getPlatform())
+        return r_string
 
     def getPathToSrc(self):
         return self.__pathToSrc
@@ -266,15 +327,16 @@ def writeToFile(pathToFilename, data="", appendToFile=False):
 # ##############################################################################
 # Installation Functions
 # ##############################################################################
-def install(pathToConfigFiles):
-    files_to_install_map = deepcopy(CONFIGURATION_FILES_TO_INSTALL)
+def install(pathToConfigFiles, installer_configuration_file_list):
+    files_to_install = deepcopy(CONFIGURATION_FILES_TO_INSTALL)
+    files_to_install += deepcopy(installer_configuration_file_list)
     if (os.path.isdir(pathToConfigFiles)):
         # Copy files to their location on the host.
         message = "The files in the following directory will be installed: %s." %(pathToConfigFiles)
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
-        for configurationFile in CONFIGURATION_FILES_TO_INSTALL:
+        for configurationFile in files_to_install:
             pathToSrcFile = os.path.join(pathToConfigFiles, configurationFile.getPathToSrc())
-            if ((len(configurationFile.getPlatform()) == 0) or (configurationFile.getPlatform() == platform.system())):
+            if ((len(configurationFile.getPlatform()) == 0) or (configurationFile.getPlatform().lower() == platform.system().lower())):
                 if (not len(configurationFile.getPathToSrc()) > 0):
                     if (not os.path.exists(configurationFile.getPathToDst())):
                         message = "Creating an empty file %s." %(configurationFile.getPathToDst())
@@ -297,7 +359,7 @@ def install(pathToConfigFiles):
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
     # Loop over list and find any that did not install.
     configuration_files_failed_install = []
-    for configuration_file in CONFIGURATION_FILES_TO_INSTALL:
+    for configuration_file in files_to_install:
         if (not configuration_file.isInstalled()):
             configuration_files_failed_install.append(configuration_file)
     if (len(configuration_files_failed_install) > 0):
@@ -487,11 +549,20 @@ if __name__ == "__main__":
         if (cmdLineOpts.disableLoggingToConsole):
             streamHandler.setLevel(logging.CRITICAL)
 
-        message = "Installing the configuration files will begin."
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
+        # #######################################################################
+        # Read in configuration file for installer if it exists.
+        # #######################################################################
+        installer_configuration_file_list = []
+        if (os.path.exists(PATH_TO_INSTALL_CONFIGURATION_FILE)):
+            message = "Reading the configuration file: %s." %(PATH_TO_INSTALL_CONFIGURATION_FILE)
+            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+            installer_configuration_file_list = InstallerConfigurationFile(PATH_TO_INSTALL_CONFIGURATION_FILE).list()
+
         # #######################################################################
         # Verify they want to continue because this script will trigger sysrq events.
         # #######################################################################
+        message = "Installing of the configuration files will begin."
+        logging.getLogger(MAIN_LOGGER_NAME).info(message)
         if (not cmdLineOpts.disableQuestions):
             valid = {"yes":True, "y":True, "no":False, "n":False}
             question = "Are you sure you want to install the configuration files and scripts to this host?"
@@ -511,7 +582,7 @@ if __name__ == "__main__":
                     sys.stdout.write("Please respond with '(y)es' or '(n)o'.\n")
         # Install the configuration files
         errorCode = 0
-        if (install(cmdLineOpts.pathToConfigFiles)):
+        if (install(cmdLineOpts.pathToConfigFiles, installer_configuration_file_list)): 
             message = "The installation was successful."
             logging.getLogger(MAIN_LOGGER_NAME).info(message)
         else:
@@ -522,10 +593,10 @@ if __name__ == "__main__":
         message =  "This script will exit since control-c was executed by end user."
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         exitScript(1)
-    except Exception, e:
-        message = "An unhandled error occurred and the script will exit."
-        logging.getLogger(MAIN_LOGGER_NAME).error(message)
-        exitScript(1)
+    #except Exception, e:
+    #    message = "An unhandled error occurred and the script will exit."
+    #    logging.getLogger(MAIN_LOGGER_NAME).error(message)
+    #    exitScript(1)
 
     # #######################################################################
     # Exit the application with zero exit code since we cleanly exited.

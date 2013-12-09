@@ -8,8 +8,6 @@ This script will install all the required files on the host.
 @copyright :  GPLv2
 
 TODO:
-* Add in code for specific files for stuff like clusterha on Red Hat. Need to
-  figure out way to do this.
 
 Example Configuration File:
 # cat ~/.dot.config

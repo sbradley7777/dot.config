@@ -8,6 +8,10 @@ This script will install all the required files on the host.
 @copyright :  GPLv2
 
 TODO:
+* Fix the variable naming so python type.
+* Make it so that configuration file will override the default installation
+  files. This will require a function in ConfigurationFile to compare objects so
+  we dont add in twice.
 
 Example Configuration File:
 # cat ~/.dot.config
@@ -116,6 +120,10 @@ class ConfigurationFile:
 
     def isInstalled(self):
         return self.__installed
+
+    def validPlatform(self):
+        return ((len(self.getPlatform()) == 0) or
+                (self.getPlatform().lower() == platform.system().lower()))
 
 # ##############################################################################
 # The list of configuration files to install
@@ -325,40 +333,40 @@ def writeToFile(pathToFilename, data="", appendToFile=False):
 # ##############################################################################
 # Installation Functions
 # ##############################################################################
-def install(pathToConfigFiles, installer_configuration_file_list):
+def install(path_to_config_files, installer_configuration_file_list):
     files_to_install = deepcopy(CONFIGURATION_FILES_TO_INSTALL)
     files_to_install += deepcopy(installer_configuration_file_list)
-    if (os.path.isdir(pathToConfigFiles)):
+    if (os.path.isdir(path_to_config_files)):
         # Copy files to their location on the host.
-        message = "The files in the following directory will be installed: %s." %(pathToConfigFiles)
+        message = "The files in the following directory will be installed: %s." %(path_to_config_files)
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
-        for configurationFile in files_to_install:
-            pathToSrcFile = os.path.join(pathToConfigFiles, configurationFile.getPathToSrc())
-            if ((len(configurationFile.getPlatform()) == 0) or (configurationFile.getPlatform().lower() == platform.system().lower())):
-                if (not len(configurationFile.getPathToSrc()) > 0):
-                    if (not os.path.exists(configurationFile.getPathToDst())):
-                        message = "Creating an empty file %s." %(configurationFile.getPathToDst())
+        for configuration_file in files_to_install:
+            path_to_src_file = os.path.join(path_to_config_files, configuration_file.getPathToSrc())
+            if (configuration_file.validPlatform()):
+                if (not len(configuration_file.getPathToSrc()) > 0):
+                    if (not os.path.exists(configuration_file.getPathToDst())):
+                        message = "Creating an empty file %s." %(configuration_file.getPathToDst())
                         logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-                        configurationFile.setInstalled(writeToFile(configurationFile.getPathToDst(), "", appendToFile=False))
+                        configuration_file.setInstalled(writeToFile(configuration_file.getPathToDst(), "", appendToFile=False))
                     else:
                         # File already exists so do not override it.
-                        configurationFile.setInstalled(True)
-                elif (os.path.isfile(pathToSrcFile)):
-                    message = "Copying the file %s to %s." %(pathToSrcFile, configurationFile.getPathToDst())
+                        configuration_file.setInstalled(True)
+                elif (os.path.isfile(path_to_src_file)):
+                    message = "Copying the file %s to %s." %(path_to_src_file, configuration_file.getPathToDst())
                     logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-                    configurationFile.setInstalled(copyFile(pathToSrcFile, configurationFile.getPathToDst()))
-                elif (os.path.isdir(pathToSrcFile)):
-                    message = "Copying the directory %s to %s." %(pathToSrcFile, configurationFile.getPathToDst())
+                    configuration_file.setInstalled(copyFile(path_to_src_file, configuration_file.getPathToDst()))
+                elif (os.path.isdir(path_to_src_file)):
+                    message = "Copying the directory %s to %s." %(path_to_src_file, configuration_file.getPathToDst())
                     logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-                    configurationFile.setInstalled(copyDirectory(pathToSrcFile, configurationFile.getPathToDst()))
+                    configuration_file.setInstalled(copyDirectory(path_to_src_file, configuration_file.getPathToDst()))
     else:
-        filesFailedInstallMap.append(pathToConfigFiles)
-        message = "The path to the configuration files is invalid so installation will not continue: %s" %(pathToConfigFiles)
+        filesFailedInstallMap.append(path_to_config_files)
+        message = "The path to the configuration files is invalid so installation will not continue: %s" %(path_to_config_files)
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
     # Loop over list and find any that did not install.
     configuration_files_failed_install = []
     for configuration_file in files_to_install:
-        if (not configuration_file.isInstalled()):
+        if ((not configuration_file.isInstalled() and (configuration_file.validPlatform()))):
             configuration_files_failed_install.append(configuration_file)
     if (len(configuration_files_failed_install) > 0):
         message = "The following files failed to installed:\n"
@@ -416,7 +424,7 @@ def __getOptions(version) :
                          default=False)
     cmdParser.add_option("-p", "--path_to_configs",
                          action="store",
-                         dest="pathToConfigFiles",
+                         dest="path_to_config_files",
                          help="path to the root directory for the configuration files",
                          type="string",
                          default=os.path.join(os.getenv("HOME"), "github/dot.config"))
@@ -580,7 +588,7 @@ if __name__ == "__main__":
                     sys.stdout.write("Please respond with '(y)es' or '(n)o'.\n")
         # Install the configuration files
         errorCode = 0
-        if (install(cmdLineOpts.pathToConfigFiles, installer_configuration_file_list)): 
+        if (install(cmdLineOpts.path_to_config_files, installer_configuration_file_list)):
             message = "The installation was successful."
             logging.getLogger(MAIN_LOGGER_NAME).info(message)
         else:

@@ -45,16 +45,19 @@
 ;; If editing python files that are not using the same spacing as you
 ;; and you get errors when running then comment these 3 lines out.
 
+;; Long code is indented properly
+;; (c-set-offset 'arglist-intro '+)
+
 ;; Show tabs as 4 spaces
 (setq-default tab-width 4)
 ;; No tabs, just spaces are used
 (setq-default indent-tabs-mode nil)
 
 ;; Python specific setting to set python variable for tabs
-(setq-default py-indent-offset 4)
-
-;; Long code is indented properly
-;; (c-set-offset 'arglist-intro '+)
+(add-hook 'python-mode-hook
+          (lambda ()
+            (setq indent-tabs-mode t)
+            (setq tab-width 4)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load slang mode support for event scripts in clustering:

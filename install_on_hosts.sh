@@ -85,7 +85,8 @@ for i in ${!LIST_OF_HOSTS[@]}
                 if [ $VERBOSE ]; then
                     echo "The git repo $PATH_TO_GIT_REPO_DIR on $currentHostname does not exists and will be created.";
                 fi
-                result=$(ssh $currentHostname  "mkdir -p $PATH_TO_GIT_REPO_DIR; git clone --quiet git://github.com/sbradley7777/dot.config.git $PATH_TO_GIT_REPO_DIR; $PATH_TO_GIT_REPO_DIR/install.sh;")$
+                # result=$(ssh $currentHostname  "mkdir -p $PATH_TO_GIT_REPO_DIR; git clone --quiet git://github.com/sbradley7777/dot.config.git $PATH_TO_GIT_REPO_DIR; $PATH_TO_GIT_REPO_DIR/install.sh;")$
+                result=$(ssh $currentHostname  "mkdir -p $PATH_TO_GIT_REPO_DIR; git clone --quiet git://github.com/sbradley7777/dot.config.git $PATH_TO_GIT_REPO_DIR; python $PATH_TO_GIT_REPO_DIR/install.py;")$
                 if [ -n "$result" ] ; then
                     echo "$currentHostname: SUCCESS";
                 else
@@ -95,8 +96,8 @@ for i in ${!LIST_OF_HOSTS[@]}
                 if [ $VERBOSE ]; then
                     echo "The git repo $PATH_TO_GIT_REPO_DIR on $currentHostname does exists and will be updated.";
                 fi
-                # result=$(ssh $currentHostname  "cd $PATH_TO_GIT_REPO_DIR; git reset --quiet --hard origin/master; git pull --quiet; ~/github/dot.config/bin/install_configs.sh;");
-                result=$(ssh $currentHostname  "cd $PATH_TO_GIT_REPO_DIR; git reset --quiet --hard origin/master; git pull --quiet; $PATH_TO_GIT_REPO_DIR/install.sh;");
+                # result=$(ssh $currentHostname  "cd $PATH_TO_GIT_REPO_DIR; git reset --quiet --hard origin/master; git pull --quiet; $PATH_TO_GIT_REPO_DIR/install.sh;");
+                result=$(ssh $currentHostname  "cd $PATH_TO_GIT_REPO_DIR; git reset --quiet --hard origin/master; git pull --quiet; python $PATH_TO_GIT_REPO_DIR/install.py;");
                 if [ -n "$result" ] ; then
                     echo "$currentHostname: SUCCESS";
                 else

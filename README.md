@@ -34,9 +34,9 @@ dst_path = /etc/cluster/scripts/test_script.sh
 platform = Linux
 ~~~
 
-This configuration will install a couple of files for hosts running a Linux kernel.
+This configuration will install a couple of files or a directory of files for any host running a Linux kernel. This example is the one that is used for Linux cluster nodes. The word *config file* means a file or directory.
 
-- `[some unique name]: The section header should be a unique name.
+- `[some unique name]`: the section header should be a unique name to describe the config file.
 - `src_path`: is relative path to the git repo. If there is no value then an empty file will be created if the file does not exist.
 - `dst_path`: is the absolute path to the where the file will be installed.
 - `platform`: is the name of the host's platform returned by `platform.system()`. If there is not value set for `platform` then the file can be installed on *all* platforms.

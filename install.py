@@ -578,8 +578,6 @@ if __name__ == "__main__":
                         exit_script(remove_pid_file=True, error_code=1)
                 else:
                     sys.stdout.write("Please respond with '(y)es' or '(n)o'.\n")
-        # Install the configuration files
-        error_code = 0
         # Add in the configuration files from the config file and do not add default
         # ones in if the configuration file already adds them in. NOTE: The comparison
         # only checks the source so that the dst and platform can be modified.
@@ -591,10 +589,11 @@ if __name__ == "__main__":
         if (install(cmd_line_opts.path_to_config_files, files_to_install)):
             message = "The installation was successful."
             logging.getLogger(MAIN_LOGGER_NAME).info(message)
+            exit_script(0)
         else:
-            error_code = 1
             message = "The installation was unsuccessful. There was errors detected during the installation of the files."
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            exit_script(1)
     except KeyboardInterrupt:
         message =  "This script will exit since control-c was executed by end user."
         logging.getLogger(MAIN_LOGGER_NAME).error(message)

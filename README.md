@@ -14,6 +14,33 @@ This one-liner assumes the local git repo `~/github/dot.config` does exist and u
 $ cd ~/github/dot.config; git pull --quiet; ~/github/dot.config/install.py -y;
 ~~~
 
+##Configuration File for Installer
+A configuration file can be used to override default files that will be installed or add files that are in the repo but were not installed. The installer will check if this file exists when it is ran. For Example:
+~~~
+# cat ~/.dot.config
+[bin.clusterha]
+src_path = bin/bin.clusterha
+dst_path = ~/bin/bin.clusterha
+platform = Linux
+
+[bin.clusterha_probe]
+src_path = bin/bin.clusterha_probe
+dst_path = ~/bin/bin.clusterha_probe
+platform = Linux
+
+[test_script.sh]
+src_path = dot.config/etc/cluster/scripts/test_script.sh
+dst_path = /etc/cluster/scripts/test_script.sh
+platform = Linux
+~~~
+
+This configuration will install a couple of files for hosts running a Linux kernel.
+
+- `[some unique name]: The section header should be a unique name.
+- `src_path`: is relative path to the git repo. If there is no value then an empty file will be created if the file does not exist.
+- `dst_path`: is the absolute path to the where the file will be installed.
+- `platform`: is the name of the host's platform returned by `platform.system()`. If there is not value set for `platform` then the file can be installed on *all* platforms.
+
 ##How to Install on multiple hosts
 Clone the repo on some host if it does not exist then run the following command below. This script uses ssh to clone or update the git repo and then installs the configuration files. **The hosts will need to have an ssh keys enabled and configured:**
 ~~~

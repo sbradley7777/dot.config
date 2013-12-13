@@ -55,8 +55,13 @@ alias spoton="sudo mdutil -a -i on"
 # Restart remote desktop client
 alias rdrestart="sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -restart -agent"
 
-#################################################################################
-# Plex
-#################################################################################
-alias kill_plexconnect="sudo pkill -9 -f PlexConnect.py";
-alias ps_plexconnect="pgrep -l -f PlexConnect.py";
+##############################################################################
+# Plex aliases
+##############################################################################
+# http://wiki.plexapp.com/index.php/PlexNine_AdvancedInfo#Terminal_Commands
+alias pmscanner="/Applications/Plex\ Media\ Server.app/Contents/MacOS/Plex\ Media\ Scanner";
+alias pmscanner_list="pmscanner --list";
+# Turbo scan: requires a section numbe from pms.
+alias pmscanner_turbosection="pmscanner  --scan --refresh --section ";
+# Deep scan: requires a section numbe from pms.
+alias pmscanner_deepsection="pmscanner --scan --refresh --force --section ";

@@ -141,10 +141,11 @@ CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.pat
                                   ConfigurationFile("bash/.aliases.sx", os.path.join(os.getenv("HOME"), ".aliases.sx"), platform="Linux"),
                                   ConfigurationFile("bash/.functions.sh", os.path.join(os.getenv("HOME"), ".functions.sh")),
                                   ConfigurationFile("conf/.emacs.d/dot.emacs.el", os.path.join(os.getenv("HOME"), ".emacs")),
-                                  ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig")),
-                                  ConfigurationFile("conf/.gitignore", os.path.join(os.getenv("HOME"), ".gitignore")),
                                   ConfigurationFile("conf/.emacs.d", os.path.join(os.getenv("HOME"), ".emacs.d")),
                                   ConfigurationFile("bin/bin.utils", os.path.join(os.getenv("HOME"), "bin/bin.utils"))]
+
+#                                  ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig")),
+#                                  ConfigurationFile("conf/.gitignore", os.path.join(os.getenv("HOME"), ".gitignore")),
 
 # ##############################################################################
 # Functions for directories

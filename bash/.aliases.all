@@ -11,6 +11,8 @@ alias historyco="history | sed 's/^ *[0-9]* *//'";
 #################################################################################
 alias getMyIPv1="curl ifconfig.me";
 alias getMyIPv2="dig +short myip.opendns.com @resolver1.opendns.com";
+alias network_localdevices="arp -na";
+alias network_localdevices_snmp="snmptable -v 2c -c public 192.168.1.1 ipNetToMedia";
 
 #################################################################################
 # File navigation, stats, or modification

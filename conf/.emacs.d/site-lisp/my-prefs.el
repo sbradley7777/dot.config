@@ -42,22 +42,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tabs and Spaces Preferences:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; If editing python files that are not using the same spacing as you
-;; and you get errors when running then comment these 3 lines out.
-
-;; Long code is indented properly
-;; (c-set-offset 'arglist-intro '+)
+;; Python does not like spaces and tabs mixed together. There is some tools that
+;; can help with this if you encounter some werid tab issue.
+;;
+;; Python prefers spacing over tabs.
+;;
+;; Use built in tool to search for bad tabbing.
+;; $ python -m tabnanny ~/somefile.py
+;;
+;; There is a tool in most python packages for reindenting python files and
+;; there is also one on github as well that can be searched for. The tool is
+;; called: reindent.py. If not on system, then download from here:
+;; - http://svn.python.org/projects/python/trunk/Tools/scripts/reindent.py
+;;
+;; Be careful because it will default to recursize:
+;; $ reindent.py ~/somefile.py
 
 ;; Show tabs as 4 spaces
 (setq-default tab-width 4)
 ;; No tabs, just spaces are used
 (setq-default indent-tabs-mode nil)
-
-;; Python specific setting to set python variable for tabs
-(add-hook 'python-mode-hook
-          (lambda ()
-            (setq indent-tabs-mode t)
-            (setq tab-width 4)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load slang mode support for event scripts in clustering:

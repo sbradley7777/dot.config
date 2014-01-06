@@ -4,7 +4,7 @@
 #################################################################################
 alias emacs='emacs -nw';
 alias screenattach='screen -d -r';
-alias sortlogs='sort -k1M -k2,3 -s';
+alias sortlogs='sort -k1M -k2n -k3 -k4 -s';
 
 ##############################################################################
 # Adminstrator aliases

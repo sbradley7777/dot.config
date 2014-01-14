@@ -49,6 +49,7 @@ class InstallerConfigurationFile:
     SECTION_ITEMS = ["src_path", "dst_path", "platform"]
 
     def __init__(self, path_to_config_file) :
+		# Valid Platforms are: Darwin(OSX), Linux, or empty string for stands for any OS.
         self.__path_to_config_file = path_to_config_file
 
     def __get_sections(self):

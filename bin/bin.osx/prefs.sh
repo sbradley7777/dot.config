@@ -13,12 +13,12 @@ defaults write NSGlobalDomain NSQuitAlwaysKeepsWindows -bool false
 # Disable restore on apps.
 defaults write com.apple.Preview NSQuitAlwaysKeepsWindows -bool false
 defaults write com.apple.QuickTimePlayerX NSQuitAlwaysKeepsWindows -bool false
+defaults write com.apple.TextEdit NSQuitAlwaysKeepsWindows -bool false
+defaults write com.apple.Safari NSQuitAlwaysKeepsWindows -bool false
 # Disable crash reporter.
 defaults write com.apple.CrashReporter DialogType -string "none"
 # Enable AirDrop over Ethernet and on unsupported Macs running Lion.
 defaults write com.apple.NetworkBrowser BrowseAllInterfaces -bool true
-# Disable window restore.
-defaults write com.apple.Preview NSQuitAlwaysKeepsWindows -bool false
 # Turn Dashboard off.
 defaults write com.apple.dashboard mcx-disabled -boolean YES
 

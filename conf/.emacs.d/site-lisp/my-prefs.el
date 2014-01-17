@@ -65,7 +65,8 @@
 ;; No tabs, just spaces are used
 ;;(setq-default indent-tabs-mode nil)
 
-
+;; Article where the tab functions are found:
+;; http://www.emacswiki.org/emacs/NoTabs
 (defun how-many-region (begin end regexp &optional interactive)
   "Print number of non-trivial matches for REGEXP in region.
 Non-interactive arguments are Begin End Regexp"

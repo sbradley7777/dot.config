@@ -133,11 +133,9 @@ for line in $(cut -f1 -d' ' ~/.ssh/known_hosts |\
 done
 # Load text file lines into a bash array. Save the old delimetter for breaking
 # up files, then after creating the array restore the original.
-OLD_IFS=$IFS;
-IFS=$' \t\n’';
-ssh_hosts=( $(cat ${HOME}/.hosts) );
-IFS=$OLD_IFS;
-complete -o default -W "${ssh_hosts[*]}" ssh;
+complete -o bashdefault -o default -o nospace -F _ssh ssh 2>/dev/null \
+    || complete -o default -o nospace -F _ssh ssh
+
 
 ##############################################################################
 # Source in the .bash_profile.priv for private configuration

@@ -72,59 +72,35 @@ if [ $? -eq 0 ]; then
     }
 fi
 
-# Create a data URL from a file
-function dataurl() {
-    local mimeType=$(file -b --mime-type "$1")
-    if [[ $mimeType == text/* ]]; then
-        mimeType="${mimeType};charset=utf-8"
-    fi
-    echo "data:${mimeType};base64,$(openssl base64 -in "$1" | tr -d '\n')"
-}
-
-# Start an HTTP server from a directory, optionally specifying the port
-function server() {
-    local port="${1:-8000}"
-    sleep 1 && open "http://localhost:${port}/" &
-    # Set the default Content-Type to `text/plain` instead of `application/octet-stream`
-    # And serve everything as UTF-8 (although not technically correct, this doesn’t break anything for binary files)
-    python -c $'import SimpleHTTPServer;\nmap = SimpleHTTPServer.SimpleHTTPRequestHandler.extensions_map;\nmap[""] = "text/plain";\nfor key, value in map.items():\n\tmap[key] = value + ";charset=UTF-8";\nSimpleHTTPServer.test();' "$port"
-}
-
-# Start a PHP server from a directory, optionally specifying the port
-# (Requires PHP 5.4.0+.)
-function phpserver() {
-    local port="${1:-4000}"
-    local ip=$(ipconfig getifaddr en1)
-    sleep 1 && open "http://${ip}:${port}/" &
-    php -S "${ip}:${port}"
-}
-
-# Compare original and gzipped file size
-function gz() {
-    local origsize=$(wc -c < "$1")
-    local gzipsize=$(gzip -c "$1" | wc -c)
-    local ratio=$(echo "$gzipsize * 100/ $origsize" | bc -l)
-    printf "orig: %d bytes\n" "$origsize"
-    printf "gzip: %d bytes (%2.2f%%)\n" "$gzipsize" "$ratio"
-}
-
-# `v` with no arguments opens the current directory in Vim, otherwise opens the
-# given location
-function e() {
-    if [ $# -eq 0 ]; then
-        emacs .
-    else
-        emacs "$@"
+# Add bash completion for ssh: it tries to complete the host to which you
+# want to connect from the list of the ones contained in ~/.ssh/known_hosts
+# http://en.newinstance.it/2011/06/30/ssh-bash-completion/
+__ssh_known_hosts() {
+    if [[ -f ~/.ssh/known_hosts ]]; then
+        cut -d " " -f1 ~/.ssh/known_hosts | cut -d "," -f1
     fi
 }
 
-# `o` with no arguments opens current directory, otherwise opens the given
-# location
-function o() {
-    if [ $# -eq 0 ]; then
-        open .
-    else
-        open "$@"
+_ssh() {
+    local cur known_hosts
+    COMPREPLY=()
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    known_hosts="$(__ssh_known_hosts)"
+
+    if [[ ! ${cur} == -* ]] ; then
+        COMPREPLY=( $(compgen -W "${known_hosts}" -- ${cur}) )
+        return 0
     fi
+    # http://en.newinstance.it/2011/06/30/ssh-bash-completion/#comment-506408
+    #if [[ ! ${cur} == -* ]] ; then
+    #    if [[ ${cur} == *@* ]] ; then
+    #        COMPREPLY=( $(compgen -W “${known_hosts}” -P ${cur/@*/}@ — ${cur/*@/}) )l
+    #        return 0;
+    #    else
+    #        COMPREPLY=( $(compgen -W “${known_hosts}” — ${cur}) )
+    #        return 0;
+    #    fi
+    #fi
+    #return 1;
 }
 

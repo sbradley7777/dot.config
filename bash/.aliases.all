@@ -35,6 +35,7 @@ alias dd1GB="dd if=/dev/zero of=$HOME/test-1GB.txt bs=1024 count=0 seek=$[1024*1
 #################################################################################
 # Extract Files
 #################################################################################
+alias extractall-tar='for i in *.tar; do echo Extracting $i; tar xf $i ; done;';
 alias extractall-tarbz2='for i in *.tar.bz2; do echo Extracting $i; tar jxf $i ; done;';
 alias extractall-targz='for i in *.tar.gz; do echo Extracting $i; tar zxf $i ; done;';
 alias extractall-gz='for i in *.gz; do echo Extracting $i; gunzip -d $i ; done;';

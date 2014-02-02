@@ -11,7 +11,7 @@
 
 
 #################################################################################
-# Source in all aliases.
+# Source in all aliases unless the end in .org
 #################################################################################
 for i in $( ls $HOME/.aliases.*); do
     if [[ ! "${i##*.}" == org ]]
@@ -19,21 +19,6 @@ for i in $( ls $HOME/.aliases.*); do
         source $i
     fi
 done
-
-#################################################################################
-# Platform specific aliases
-#################################################################################
-unamestr=`uname`
-if [[ "$unamestr" == 'Linux' ]]; then
-    if [ -f $HOME/.aliases.redhat ]; then
-        source $HOME/.aliases.redhat
-        source $HOME/.aliases.sx
-    fi
-elif [[ "$unamestr" == 'Darwin' ]]; then
-    if [ -f $HOME/.aliases.osx ]; then
-        source $HOME/.aliases.osx
-    fi
-fi
 
 #################################################################################
 # Source in various other aliases

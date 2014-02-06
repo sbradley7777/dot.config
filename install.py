@@ -41,7 +41,7 @@ import ConfigParser
 # #####################################################################
 # Global vars:
 # #####################################################################
-VERSION_NUMBER = "0.05-5"
+VERSION_NUMBER = "0.05-6"
 MAIN_LOGGER_NAME = "Configs_Installer"
 PATH_TO_INSTALL_CONFIGURATION_FILE = os.path.join(os.environ['HOME'],".dot.config")
 
@@ -143,7 +143,8 @@ CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.pat
                                   ConfigurationFile("bash/.functions.sh", os.path.join(os.getenv("HOME"), ".functions.sh")),
                                   ConfigurationFile("conf/.emacs.d/dot.emacs.el", os.path.join(os.getenv("HOME"), ".emacs")),
                                   ConfigurationFile("conf/.emacs.d", os.path.join(os.getenv("HOME"), ".emacs.d")),
-                                  ConfigurationFile("bin/bin.utils", os.path.join(os.getenv("HOME"), "bin/bin.utils"))]
+                                  ConfigurationFile("bin/bin.utils", os.path.join(os.getenv("HOME"), "bin/bin.utils")),
+                                  ConfigurationFile("python", os.path.join(os.getenv("HOME"), "python"))]
 
 #                                  ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig")),
 #                                  ConfigurationFile("conf/.gitignore", os.path.join(os.getenv("HOME"), ".gitignore")),

@@ -5,9 +5,26 @@
 #################################################################################
 # General
 #################################################################################
+# Disable crash reporter.
+defaults write com.apple.CrashReporter DialogType -string "none"
+# Enable AirDrop over Ethernet and on unsupported Macs running Lion.
+defaults write com.apple.NetworkBrowser BrowseAllInterfaces -bool true
+# Turn Dashboard off.
+defaults write com.apple.dashboard mcx-disabled -boolean YES
+
+#################################################################################
+# Power Saving Setting
+#################################################################################
 # Disable restore on logout, poweroff, reboot by unchecking the checkbox
 defaults write com.apple.loginwindow TALLogoutSavesState -bool false
 defaults write com.apple.loginwindow LoginwindowLaunchesRelaunchApps -bool false
+# Disable sleep from hitting powerbutton cause I do all the time cause it ablve
+# delete: http://hints.macworld.com/article.php?story=20140305140635280
+defaults write com.apple.loginwindow PowerButtonSleepsSystem -bool no
+
+#################################################################################
+# Disables resume all apps
+#################################################################################
 #Disable resume system-wide.
 defaults write NSGlobalDomain NSQuitAlwaysKeepsWindows -bool false
 # Disable restore on apps.
@@ -15,12 +32,6 @@ defaults write com.apple.Preview NSQuitAlwaysKeepsWindows -bool false
 defaults write com.apple.QuickTimePlayerX NSQuitAlwaysKeepsWindows -bool false
 defaults write com.apple.TextEdit NSQuitAlwaysKeepsWindows -bool false
 defaults write com.apple.Safari NSQuitAlwaysKeepsWindows -bool false
-# Disable crash reporter.
-defaults write com.apple.CrashReporter DialogType -string "none"
-# Enable AirDrop over Ethernet and on unsupported Macs running Lion.
-defaults write com.apple.NetworkBrowser BrowseAllInterfaces -bool true
-# Turn Dashboard off.
-defaults write com.apple.dashboard mcx-disabled -boolean YES
 
 #################################################################################
 # Finder
@@ -38,5 +49,3 @@ defaults write com.apple.frameworks.diskimages auto-open-ro-root -bool false
 defaults write com.apple.frameworks.diskimages auto-open-rw-root -bool false
 #Show the ~/Library directory.
 chflags nohidden ~/Library
-#Show ~/bin directory
-#chflags hidden ~/bin

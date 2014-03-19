@@ -553,11 +553,17 @@ if __name__ == "__main__":
         # #######################################################################
         # Read in configuration file for installer if it exists.
         # #######################################################################
-        installer_configuration_file_list = []
+        files_to_install = []
         if (os.path.exists(PATH_TO_INSTALL_CONFIGURATION_FILE)):
             message = "Reading the configuration file: %s." %(PATH_TO_INSTALL_CONFIGURATION_FILE)
             logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-            installer_configuration_file_list = InstallerConfigurationFile(PATH_TO_INSTALL_CONFIGURATION_FILE).list()
+            files_to_install = InstallerConfigurationFile(PATH_TO_INSTALL_CONFIGURATION_FILE).list()
+        # Add in the configuration files from the config file and do not add default
+        # ones in if the configuration file already adds them in. NOTE: The comparison
+        # only checks the source so that the dst and platform can be modified.
+        for configuration_file in deepcopy(CONFIGURATION_FILES_TO_INSTALL):
+            if (not configuration_file in files_to_install):
+                files_to_install.append(configuration_file)
 
         # #######################################################################
         # Verify they want to continue because this script will trigger sysrq events.
@@ -581,14 +587,7 @@ if __name__ == "__main__":
                         exit_script(remove_pid_file=True, error_code=1)
                 else:
                     sys.stdout.write("Please respond with '(y)es' or '(n)o'.\n")
-        # Add in the configuration files from the config file and do not add default
-        # ones in if the configuration file already adds them in. NOTE: The comparison
-        # only checks the source so that the dst and platform can be modified.
-        files_to_install = deepcopy(installer_configuration_file_list)
-        for configuration_file in deepcopy(CONFIGURATION_FILES_TO_INSTALL):
-            if (not configuration_file in files_to_install):
-                files_to_install.append(configuration_file)
-
+        # Do the install.
         if (install(cmd_line_opts.path_to_config_files, files_to_install)):
             message = "The installation was successful."
             logging.getLogger(MAIN_LOGGER_NAME).info(message)

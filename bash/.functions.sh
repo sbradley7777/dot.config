@@ -75,32 +75,19 @@ fi
 # Add bash completion for ssh: it tries to complete the host to which you
 # want to connect from the list of the ones contained in ~/.ssh/known_hosts
 # http://en.newinstance.it/2011/06/30/ssh-bash-completion/
-__ssh_known_hosts() {
-    if [[ -f ~/.ssh/known_hosts ]]; then
-        cut -d " " -f1 ~/.ssh/known_hosts | cut -d "," -f1
-    fi
-}
-
-_ssh() {
-    local cur known_hosts
+# http://en.newinstance.it/2011/06/30/ssh-bash-completion/#comment-506408
+_complete_hosts () {
+    # http://surniaulula.com/2012/09/20/autocomplete-ssh-hostnames/
     COMPREPLY=()
     cur="${COMP_WORDS[COMP_CWORD]}"
-    known_hosts="$(__ssh_known_hosts)"
-
-    if [[ ! ${cur} == -* ]] ; then
-        COMPREPLY=( $(compgen -W "${known_hosts}" -- ${cur}) )
-        return 0
-    fi
-    # http://en.newinstance.it/2011/06/30/ssh-bash-completion/#comment-506408
-    #if [[ ! ${cur} == -* ]] ; then
-    #    if [[ ${cur} == *@* ]] ; then
-    #        COMPREPLY=( $(compgen -W “${known_hosts}” -P ${cur/@*/}@ — ${cur/*@/}) )l
-    #        return 0;
-    #    else
-    #        COMPREPLY=( $(compgen -W “${known_hosts}” — ${cur}) )
-    #        return 0;
-    #    fi
-    #fi
-    #return 1;
+    host_list=`{
+	for c in /etc/ssh_config /etc/ssh/ssh_config ~/.ssh/config
+	do [ -r $c ] && sed -n -e 's/^Host[[:space:]]//p' -e 's/^[[:space:]]*HostName[[:space:]]//p' $c
+	done
+	for k in /etc/ssh_known_hosts /etc/ssh/ssh_known_hosts ~/.ssh/known_hosts
+	do [ -r $k ] && egrep -v '^[#\[]' $k|cut -f 1 -d ' '|sed -e 's/[,:].*//g'
+	done
+	sed -n -e 's/^[0-9][0-9\.]*//p' /etc/hosts; }|tr ' ' '\n'|grep -v '*'`
+    COMPREPLY=( $(compgen -W "${host_list}" -- $cur))
+    return 0
 }
-

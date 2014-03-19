@@ -117,26 +117,9 @@ fi
 if [ ! -f $HOME/.ssh/known_hosts ]; then
     touch $HOME/.ssh/known_hosts;
 fi
-# Collect host names from SSH known hosts file for tab autocomplete. Use our own
-# file instead of /etc/hosts
-if [ -f ${HOME}/.hosts ]; then
-    mv ${HOME}/.hosts ${HOME}/.hosts.bk;
-fi
-touch ${HOME}/.hosts
-for line in $(cut -f1 -d' ' ~/.ssh/known_hosts |\
-                 tr ',' '\n' |\
-                 sort -u |\
-                 grep -e '[:alpha:]'); do
-    currentHost=$([[ $line =~ [[:space:]]*([^[:space:]]|[^[:space:]].*[^[:space:]])[[:space:]]* ]]; echo -n "${BASH_REMATCH[1]}")
-    if [ ! -z $currentHost ]; then
-        echo -e "$currentHost\n" >>  ${HOME}/.hosts;
-    fi
-done
-# Load text file lines into a bash array. Save the old delimetter for breaking
-# up files, then after creating the array restore the original.
-complete -o bashdefault -o default -o nospace -F _ssh ssh 2>/dev/null \
-    || complete -o default -o nospace -F _ssh ssh
 
+complete -o bashdefault -o default -o nospace -F _complete_hosts ssh 2>/dev/null \
+    || complete -o default -o nospace -F _complete_hosts ssh
 
 ##############################################################################
 # Source in the .bash_profile.priv for private configuration

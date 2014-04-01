@@ -10,8 +10,8 @@
 # ###############################################################################
 . /etc/init.d/functions
 
-SCRIPTNAME=${0##*/}
-LOCKFILE=/var/lock/subsys/$SCRIPTNAME
+# Path to the lockfile
+LOCKFILE=/var/lock/subsys/${0##*/}
 # 0 is enabled(true) and 1 is disabled(false)
 DELAY_STARTUP_SECONDS=0;
 
@@ -44,10 +44,11 @@ usage() {
 
 stopService() {
     clulog -s $LOG_INFO "Executing stop on the script: $0"
-	if [ ! -f $LOCKFILE ]; then
-        clulog -s $WARNING "The script is not running: $0."
+    if [ ! -f $LOCKFILE ]; then
+        clulog -s $LOG_WARNING "The script is not running: $0."
         exit 0;
     fi
+    clulog -s $LOG_INFO "debug 1"
     # If the orginal start process is still running then kill that process.
     pid=`cat $LOCKFILE`
     kill -9 $pid &> /dev/null
@@ -68,12 +69,13 @@ startService() {
 }
 
 statusService() {
+    basename=${0##*/}
     clulog -s $LOG_INFO "Executing status on the script: $0"
 	if [ -f $LOCKFILE ]; then
-	    clulog -s $LOG_INFO "The script $SCRIPTNAME is running."
+	    clulog -s $LOG_INFO "The script $basename is running."
 	    exit 0;
 	else
-	    clulog -s $LOG_INFO "The script $SCRIPTNAME is not running."
+	    clulog -s $LOG_INFO "The script $basename is not running."
 	    exit 1;
 	fi
 }

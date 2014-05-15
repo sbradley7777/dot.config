@@ -21,5 +21,5 @@ end log_event
 
 log_event("Turning on the WeMo for Bonus Room Desk Lamp.")
 
-do shell script "/usr/local/bin/wemo switch \"Bonus Desk Lamp\" on"
+do shell script "/usr/local/bin/wemo switch lamp on"
 

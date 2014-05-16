@@ -1,4 +1,6 @@
 #!/bin/sh
+# This command will rename the files in the current working directory.
+# URL: https://bbs.archlinux.org/viewtopic.php?id=36305
 
 ls | while read -r FILE
 do

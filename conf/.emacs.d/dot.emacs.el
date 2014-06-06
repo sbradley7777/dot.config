@@ -12,13 +12,8 @@
 	       '("marmalade" . "http://marmalade-repo.org/packages/"))
   ;; The init will load all the packages into the load path.
   (package-initialize)
-
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; Load requires libraries:
-  ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-  ;; The htmlize lib is used for producing html pages out of buffer.
-  (require 'htmlize)
 )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; UI tweaks via emacs menu:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -48,6 +43,12 @@
 (load-library "my-prefs.el")
 ;; Load all misc preferences
 (load-library "my-theme.el")
+
+(when (> emacs-major-version 22)
+  ;; The htmlize lib is used for producing html pages out of buffer and only
+  ;; works on emacs 23 or above.
+  (require 'htmlize)
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Last Message before Initialization is Complete:

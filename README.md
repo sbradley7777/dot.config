@@ -29,7 +29,7 @@ dst_path = ~/bin/bin.clusterha_probe
 platform = Linux
 
 [test_script.sh]
-src_path = dot.config/etc/cluster/scripts/test_script.sh
+src_path = etc/cluster/scripts/test_script.sh
 dst_path = /etc/cluster/scripts/test_script.sh
 platform = Linux
 ~~~

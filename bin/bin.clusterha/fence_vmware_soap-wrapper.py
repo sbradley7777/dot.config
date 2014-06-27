@@ -1,6 +1,11 @@
 #!/usr/bin/python
 """
-This script is a wrapper for fence_vmware_soap to enable debugging of suds.
+This script is a wrapper for fence_vmware_soap to enable debugging of suds. This
+script will create a file that contains all the regular debugging and include
+the debugging of "suds". The suds debugging will look like XML.
+
+The file "/tmp/fence_vmware_soap-debug.txt" will be created that will contain
+all the debugging.
 
 Usage:
 # python ./fence_vmware_soap-wrapper.py -z -a 1.1.1.42 -l username -p password --action list

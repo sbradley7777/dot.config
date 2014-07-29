@@ -190,8 +190,6 @@ if __name__ == "__main__":
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             __usage()
             sys.exit(1)
-        print path_to_filename
-
         message = "The parsing of the csv will start."
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
 

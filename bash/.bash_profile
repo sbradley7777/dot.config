@@ -46,6 +46,7 @@ shopt -s cdspell;
 if [[ "$unamestr" == 'Darwin' ]]; then
     # Case-insensitive globbing (used in pathname expansion).
     shopt -s nocaseglob;
+    source $HOME/.functions-osx.sh;
 fi
 
 ##############################################################################

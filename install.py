@@ -144,6 +144,7 @@ CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.pat
                                   ConfigurationFile("conf/.emacs.d/dot.emacs.el", os.path.join(os.getenv("HOME"), ".emacs")),
                                   ConfigurationFile("conf/.emacs.d", os.path.join(os.getenv("HOME"), ".emacs.d")),
                                   ConfigurationFile("bin/bin.utils", os.path.join(os.getenv("HOME"), "bin/bin.utils")),
+                                  ConfigurationFile("bash/.functions-osx.sh", os.path.join(os.getenv("HOME"), ".functions-osx.sh"), platform="Darwin"),
                                   ConfigurationFile("python", os.path.join(os.getenv("HOME"), "python"))]
 
 #                                  ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig")),

@@ -87,6 +87,7 @@ function tab-color() {
 # Functions for changing iterm2 tab colors.
 # http://kendsnyder.com/tab-colors-in-iterm2-v10/
 function tab-red() { tab-color 203 111 111; }
+function tab-red-dark() { tab-color "#FF0000"; }
 function tab-green() { tab-color 6cc276; }
 function tab-yellow() { tab-color "#e8e9ac"; }
 function tab-blue() { tab-color 6f8ccc; }

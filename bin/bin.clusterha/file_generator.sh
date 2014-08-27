@@ -52,7 +52,7 @@ if [ -z $PATH_TO_DST_DIR ]; then
     echo "There was no path to a directory given."
     usage;
     exit 1;
-elif [ ! -d $PATH_TO_DST_DIR]; then
+elif [ ! -d $PATH_TO_DST_DIR ]; then
     echo "The path given does not exist or is not a directory: $PATH_TO_DST_DIR";
     usage;
     exit 1;

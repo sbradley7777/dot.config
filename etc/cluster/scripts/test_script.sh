@@ -48,7 +48,6 @@ stopService() {
         clulog -s $LOG_WARNING "The script is not running: $0."
         exit 0;
     fi
-    clulog -s $LOG_INFO "debug 1"
     # If the orginal start process is still running then kill that process.
     pid=`cat $LOCKFILE`
     kill -9 $pid &> /dev/null

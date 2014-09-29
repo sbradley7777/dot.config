@@ -19,13 +19,19 @@ alias rpmwhois='/bin/rpm -qa --queryformat="%{N} %{buildhost}\n" | grep -i ';
 ##############################################################################
 # Network and Firewall
 ##############################################################################
-# Display all rules
-alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers';
-alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers';
-alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers';
-alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers';
-alias firewall=iptlist;
-
+# Some commands have changed after RHEL 6 was released.
+if [[ "$(whichdistro)" == 'RedHatEnterpriseServer' ]]; then
+    release=$(whichrelease);
+    major_release=${release::1}
+    if [[ "$major_release" -lt "7" ]]; then
+        # Display all rules
+        alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers';
+        alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers';
+        alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers';
+        alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers';
+        alias firewall=iptlist;
+    fi
+fi
 # Display port information
 alias ports='netstat -tulanp';
 

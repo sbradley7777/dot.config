@@ -9,6 +9,13 @@ alias timef="/usr/bin/time --format='\tUser Time: %U sec | System Time: %S sec |
 alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-tilde';
 
 ##############################################################################
+# Distrobution Information
+##############################################################################
+alias whichdistro='lsb_release --id --release --codename | grep "Distributor ID" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
+alias whichrelease='lsb_release --id --release --codename | grep "Release" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
+alias whichcodename='lsb_release --id --release --codename | grep "Codename" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
+
+##############################################################################
 # Adminstrator aliases
 ##############################################################################
 alias logrotate_now='/usr/sbin/logrotate -f /etc/logrotate.conf';
@@ -47,9 +54,3 @@ alias psmem10='ps auxf | sort -nr -k 4 | head -10';
 alias pscpu='ps auxf | sort -nr -k 3';
 alias pscpu10='ps auxf | sort -nr -k 3 | head -10';
 
-##############################################################################
-# Distrobution Information
-##############################################################################
-alias whichdistro='lsb_release --id --release --codename | grep "Distributor ID" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
-alias whichrelease='lsb_release --id --release --codename | grep "Release" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
-alias whichcodename='lsb_release --id --release --codename | grep "Codename" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';

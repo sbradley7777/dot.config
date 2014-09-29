@@ -1,8 +1,11 @@
 #!/bin/sh
 
+# Which command in osx does not have many options.
+alias which="which -a ";
+
 # Eject commands
-alias eject='drutil eject'
-alias opentray='drutil tray open'
+alias eject="drutil eject"
+alias opentray="drutil tray open"
 
 # Emacs commands
 if [ -f /usr/local/bin/emacs ]; then

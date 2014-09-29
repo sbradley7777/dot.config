@@ -24,6 +24,15 @@ function mkd() {
     mkdir -p "$@" && cd "$@"
 }
 
+function trim_whitespaces() {
+    local var=$@
+    # remove leading whitespace characters
+    var="${var#"${var%%[![:space:]]*}"}"
+    # remove trailing whitespace characters
+    var="${var%"${var##*[![:space:]]}"}"
+    echo -n "$var"
+}
+
 # Create a .tar.gz archive, using `zopfli`, `pigz` or `gzip` for compression
 #function targz() {
 #    local tmpFile="${@%/}.tar"

@@ -29,7 +29,6 @@ alias ....="cd ../../..";
 alias .....="cd ../../../..";
 alias df="df -h";
 alias du="du -h";
-alias which="which -a";
 alias dd1GB="dd if=/dev/zero of=$HOME/test-1GB.txt bs=1024 count=0 seek=$[1024*1000]";
 
 #################################################################################

@@ -1,11 +1,14 @@
 #!/usr/bin/python
 """
-# Need to find out all resolution variables that it can be then have option to
-# only output for specific resolution or all and need to import optsparse and
-# remove previous checks on argument and let oopts parse handle that.
+# This script will output a list of TV Show Episodes that are in a specific resolution.
 
-# Add option to take path to csv file and add opts parse from skeleton default python file.
-# REVIEW THIS. https://stackoverflow.com/questions/12296585/python-parse-csv-correctly
+# * Need to find out all resolution variables that it can be then have option to
+# * Give examples on how to use multiple resolutions.
+# * Add container code
+# * Add check that cannot do container and resolution at same time or add code to allow this.
+
+# https://forums.plex.tv/index.php/topic/103115-rel-plex2csv/
+# https://forums.plex.tv/index.php/topic/115637-how-to-print-listing-of-all-tv-shows-episodes-resolution/
 
 @author    : Shane Bradley
 @contact   : sbradley@redhat.com
@@ -18,6 +21,7 @@ import logging
 import logging.handlers
 import os
 import os.path
+from optparse import OptionParser, Option, SUPPRESS_HELP
 
 
 import csv
@@ -33,6 +37,9 @@ METADATA_FIELDS = ["Series Title", "Season", "Episode", "Height", "Width",
                    "Video Resolution", "Video FrameRate", "Aspect Ratio",
                    "Bit Rate", "Video Codec", "Container"]
 
+# ##############################################################################
+# Containers for Metadata
+# ##############################################################################
 class TVShow:
     def __init__(self, name):
         self.__name = name
@@ -95,8 +102,138 @@ class TVEpisode:
         if (not len(container) > 0):
             container = "   "
         # Return the formatted string
-        rstring = "Season %s Episode %s | Container: %s | Resolution: %s" %(season, episode, container, self.__resolution)
+        rstring = "Season %s Episode %s | Container: %s | Resolution: %s(%sx%s)" %(season, episode, container, self.__resolution, self.__height, self.__width)
         return rstring
+
+    def getSeason(self):
+        return self.__season
+
+    def getEpisode(self):
+        return self.__episode
+
+    def getHeight(self):
+        return self.__height
+
+    def getWidth(self):
+        return self.__width
+
+    def getResolution(self):
+        return self.__resolution
+
+    def getFrameRate(self):
+        return self.__framerate
+
+    def getAspectRatio(self):
+        return self.__aspectRatio
+
+    def getBitRate(self):
+        return self.__bitRate
+
+    def getCodec(self):
+        return self.__codec
+
+    def getContainer(self):
+        return self.__container
+
+# ##############################################################################
+# Get user selected options
+# ##############################################################################
+def __getOptions(version) :
+    """
+    This function creates the OptionParser and returns commandline
+    a tuple of the selected commandline options and commandline args.
+
+    The cmdlineOpts which is the options user selected and cmdLineArgs
+    is value passed and  not associated with an option.
+
+    @return: A tuple of the selected commandline options and commandline args.
+    @rtype: Tuple
+
+    @param version: The version of the this script.
+    @type version: String
+    """
+    cmdParser = OptionParserExtended(version)
+    cmdParser.add_option("-d", "--debug",
+                         action="store_true",
+                         dest="enableDebugLogging",
+                         help="enables debug logging",
+                         default=False)
+    cmdParser.add_option("-q", "--quiet",
+                         action="store_true",
+                         dest="disableLoggingToConsole",
+                         help="disables logging to console",
+                         default=False)
+    cmdParser.add_option("-y", "--no_ask",
+                        action="store_true",
+                         dest="disableQuestions",
+                         help="disables all questions and assumes yes",
+                         default=False)
+    cmdParser.add_option("-f", "--path_to_filename",
+                         action="store",
+                         dest="pathToCSVFile",
+                         help="the path to the .csv file that will be parsed",
+                         type="string",
+                         metavar="<input filename>",
+                         default="")
+    cmdParser.add_option("-r", "--resolution",
+                         action="extend",
+                         dest="listOfResolutions",
+                         help="query for metadata that has the following resolution for the video files(The valid values are: sd, 480, 720, 1080, if empty all resolutions are printed)",
+                         type="string",
+                         metavar="<resolution>",
+                         default=[])
+
+    #cmdParser.add_option("-c", "--container",
+    #                     action="extend",
+    #                     dest="listOfContainers",
+    #                     help="query for metadata that has the following container for the video files",
+    #                     type="string",
+    #                     metavar="<container>",
+    #                     default=[])
+
+ # Get the options and return the result.
+    (cmdLineOpts, cmdLineArgs) = cmdParser.parse_args()
+    return (cmdLineOpts, cmdLineArgs)
+
+# ##############################################################################
+# OptParse classes for commandline options
+# ##############################################################################
+class OptionParserExtended(OptionParser):
+    def __init__(self, version) :
+        self.__commandName = os.path.basename(sys.argv[0])
+        versionMessage = "%s %s\n" %(self.__commandName, version)
+
+        commandDescription  ="%s will list metadata information related to video file properties for a .csv file created by Plex2cvs with extreme setting for TV Shows.\n"%(self.__commandName)
+
+        OptionParser.__init__(self, option_class=ExtendOption,
+                              version=versionMessage,
+                              description=commandDescription)
+
+    def print_help(self):
+        self.print_version()
+        examplesMessage = "\n"
+        OptionParser.print_help(self)
+        #print examplesMessage
+
+class ExtendOption (Option):
+    ACTIONS = Option.ACTIONS + ("extend",)
+    STORE_ACTIONS = Option.STORE_ACTIONS + ("extend",)
+    TYPED_ACTIONS = Option.TYPED_ACTIONS + ("extend",)
+
+    def take_action(self, action, dest, opt, value, values, parser):
+        if (action == "extend") :
+            valueList = []
+            try:
+                for v in value.split(","):
+                    newValue = v.strip().rstrip()
+                    if (len(newValue) > 0):
+                        valueList.append(newValue)
+            except:
+                pass
+            else:
+                values.ensure_value(dest, []).extend(valueList)
+        else:
+            Option.take_action(self, action, dest, opt, value, values, parser)
 
 # ###############################################################################
 # Main Function
@@ -107,6 +244,11 @@ if __name__ == "__main__":
     directories) created then 0 will be returned, else a 1 is returned.
     """
     try:
+        # #######################################################################
+        # Get the options from the commandline.
+        # #######################################################################
+        (cmdLineOpts, cmdLineArgs) = __getOptions(VERSION_NUMBER)
+
         # #######################################################################
         # Setup the logger and create config directory
         # #######################################################################
@@ -127,14 +269,22 @@ if __name__ == "__main__":
         streamHandler.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
         logger.addHandler(streamHandler)
 
+        # #######################################################################
+        # Set the logging levels based on user options.
+        # #######################################################################
+        if ((cmdLineOpts.enableDebugLogging) and (not cmdLineOpts.disableLoggingToConsole)):
+            logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
+            streamHandler.setLevel(logging.DEBUG)
+            message = "Debugging has been enabled."
+            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+        if (cmdLineOpts.disableLoggingToConsole):
+            streamHandler.setLevel(logging.CRITICAL)
 
         # #######################################################################
         # Verfiy that a valid file was passed to it.
         # #######################################################################
-        pathToCSVFile = ""
-        try:
-            pathToCSVFile = sys.argv[1]
-        except IndexError:
+        pathToCSVFile = cmdLineOpts.pathToCSVFile
+        if (not len(pathToCSVFile) > 0):
             message = "There was no path given as an argument."
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             message = "A path to a exported .csv file of Plex metadata is required."
@@ -187,10 +337,10 @@ if __name__ == "__main__":
                     # Add add tv shows that have a series title, and skip if they do not.
                     if (len(seriesTitle) > 0):
                         try:
-                            tvEpisode = TVEpisode(int(row.get("Season")), int(row.get("Episode")),  row.get("Height"),
-                                                  row.get("Width"),  row.get("Video Resolution"),  row.get("Video FrameRate"),
-                                                  row.get("Aspect Ratio"),  row.get("Bit Rate"),  row.get("Video Codec"),
-                                                  row.get("Container"))
+                            tvEpisode = TVEpisode(int(row.get("Season")), int(row.get("Episode")), row.get("Height").strip(),
+                                                  row.get("Width").strip(), row.get("Video Resolution").strip(), row.get("Video FrameRate").strip(),
+                                                  row.get("Aspect Ratio").strip(), row.get("Bit Rate").strip(), row.get("Video Codec").strip(),
+                                                  row.get("Container").strip())
                             if (not mapOfTVShows.has_key(seriesTitle)):
                                 mapOfTVShows[seriesTitle] = TVShow(seriesTitle)
                             mapOfTVShows[seriesTitle].add(tvEpisode)
@@ -206,8 +356,17 @@ if __name__ == "__main__":
         # Print TV Shows
         tvShows = mapOfTVShows.keys()
         tvShows.sort()
-        for tvShow in tvShows:
-            print mapOfTVShows.get(tvShow)
+        for key in tvShows:
+            tvShow = mapOfTVShows.get(key)
+            if (not len(cmdLineOpts.listOfResolutions) > 0):
+                print tvShow
+            else:
+                sEpisodes = ""
+                for episode in tvShow.list():
+                    if (episode.getResolution() in cmdLineOpts.listOfResolutions):
+                        sEpisodes += "\n  %s" %(episode)
+                if (len(sEpisodes) > 0):
+                    print "%s: %d episodes%s\n" %(tvShow.getName(), tvShow.count(), sEpisodes)
 
     except KeyboardInterrupt:
         print ""

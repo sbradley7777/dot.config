@@ -2,6 +2,10 @@
 """
 # This script will output a list of TV Show Episodes that are in a specific resolution or container.
 
+# TODO:
+# * Add everything to do movie parsing except the actual parsing and output.
+# * Update help to say does movie support once updated.
+
 # https://forums.plex.tv/index.php/topic/103115-rel-plex2csv/
 # https://forums.plex.tv/index.php/topic/115637-how-to-print-listing-of-all-tv-shows-episodes-resolution/
 
@@ -26,13 +30,97 @@ from collections import defaultdict
 VERSION_NUMBER = "0.2-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
-METADATA_FIELDS = ["Series Title", "Season", "Episode", "Height", "Width",
-                   "Video Resolution", "Video FrameRate", "Aspect Ratio",
-                   "Bit Rate", "Video Codec", "Container"]
+METADATA_FIELDS = ["Height", "Width", "Video Resolution", "Video FrameRate",
+                   "Aspect Ratio", "Bit Rate", "Video Codec", "Container", "Year"]
+
+METADATA_FIELDS_TV_SHOW = ["Series Title", "Season", "Episode"]
+METADATA_FIELDS_MOVIE = ["Title"]
 
 # ##############################################################################
 # Containers for Metadata
 # ##############################################################################
+class Metadata:
+    def __init__(self, height, width, resolution, framerate, aspectRatio, bitRate, codec, container):
+        self.__height = height
+        self.__width = width
+        self.__resolution = resolution
+        self.__framerate = framerate
+        self.__aspectRatio = aspectRatio
+        self.__bitRate = bitRate
+        self.__codec = codec
+        self.__container = container
+
+    def getHeight(self):
+        return self.__height
+
+    def getWidth(self):
+        return self.__width
+
+    def getResolution(self):
+        return self.__resolution
+
+    def getFrameRate(self):
+        return self.__framerate
+
+    def getAspectRatio(self):
+        return self.__aspectRatio
+
+    def getBitRate(self):
+        return self.__bitRate
+
+    def getCodec(self):
+        return self.__codec
+
+    def getContainer(self):
+        return self.__container
+
+class Movie(Metadata):
+    def __init__(self, title, height, width, resolution, framerate, aspectRatio, bitRate, codec, container):
+        self.__title = title
+        Metadata.__init__(self,  height, width, resolution, framerate, aspectRatio, bitRate, codec, container)
+
+    def __str__(self):
+        return self.getTitle()
+
+    def getTitle(self):
+        return self.__title
+
+class TVEpisode(Metadata):
+    def __init__(self, season, episode, height, width, resolution, framerate, aspectRatio, bitRate, codec, container):
+        # int
+        self.__season = season
+        # int
+        self.__episode = episode
+        Metadata.__init__(self,  height, width, resolution, framerate, aspectRatio, bitRate, codec, container)
+
+    def __str__(self):
+        season = ""
+        # The season will be  4 characters.
+        if (self.getSeason() < 100):
+            season = "  %02d " %(self.getSeason())
+        else:
+            season = "%04d " %(self.getSeason())
+        episode = ""
+        # The episode will be 3 characters.
+        if (self.getEpisode() < 100):
+            episode ="%02d " %(self.getEpisode())
+        else:
+            episode = "%03d " %(self.getEpisode())
+
+        # The container will be 3 characters.
+        container = self.getContainer()
+        if (not len(container) > 0):
+            container = "   "
+        # Return the formatted string
+        rstring = "Season %s Episode %s | Container: %s | Resolution: %s (%shx%sw)" %(season, episode, container, self.getWidth(), self.getHeight(), self.getWidth())
+        return rstring
+
+    def getSeason(self):
+        return self.__season
+
+    def getEpisode(self):
+        return self.__episode
+
 class TVShow:
     def __init__(self, name):
         self.__name = name
@@ -61,72 +149,73 @@ class TVShow:
         # Need to check if it already exists.
         self.__listOfEpisodes.append(tvEpisode)
 
-class TVEpisode:
-    def __init__(self, season, episode, height, width, resolution, framerate, aspectRatio, bitRate, codec, container):
-        # int
-        self.__season = season
-        # int
-        self.__episode = episode
-        self.__height = height
-        self.__width = width
-        self.__resolution = resolution
-        self.__framerate = framerate
-        self.__aspectRatio = aspectRatio
-        self.__bitRate = bitRate
-        self.__codec = codec
-        self.__container = container
+# ##############################################################################
+# Private Functions
+# ##############################################################################
+def parseTVShows(pathToCSVFile):
+    mapOfTVShows = {}
+    try:
+        with open(pathToCSVFile) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                seriesTitle = row.get("Series Title").replace("\n", " ")
+                # Add add tv shows that have a series title, and skip if they do not.
+                if (len(seriesTitle) > 0):
+                    try:
+                        tvEpisode = TVEpisode(int(row.get("Season")), int(row.get("Episode")), row.get("Height").strip(),
+                                              row.get("Width").strip(), row.get("Video Resolution").strip(), row.get("Video FrameRate").strip(),
+                                              row.get("Aspect Ratio").strip(), row.get("Bit Rate").strip(), row.get("Video Codec").strip(),
+                                              row.get("Container").strip())
+                        if (not mapOfTVShows.has_key(seriesTitle)):
+                            mapOfTVShows[seriesTitle] = TVShow(seriesTitle)
+                        mapOfTVShows[seriesTitle].add(tvEpisode)
+                    except ValueError:
+                        # If casting a string value to integer fails then skip the episode.
+                        pass
+    except IOError:
+        message = "There was an error reading the file: %s" %(pathToCSVFile)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+    finally:
+        f.close()
+    return mapOfTVShows
 
-    def __str__(self):
-        season = ""
-        # The season will be  4 characters.
-        if (self.__season < 100):
-            season = "  %02d " %(self.__season)
+def parseMovies(pathToCSVFile):
+    listOfMovies = []
+    try:
+        with open(pathToCSVFile) as f:
+            reader = csv.DictReader(f)
+            for row in reader:
+                # Do parsing here into movie object.
+                pass
+    except IOError:
+        message = "There was an error reading the file: %s" %(pathToCSVFile)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+    finally:
+        f.close()
+    return listOfMovies
+
+def printTVShows(mapOfTVShows, listOfResolutions, listOfContainers):
+    # Print TV Shows
+    tvShows = mapOfTVShows.keys()
+    tvShows.sort()
+    for key in tvShows:
+        tvShow = mapOfTVShows.get(key)
+        if ((not len(listOfResolutions) > 0) and (not len(listOfContainers) > 0)):
+            print tvShow
         else:
-            season = "%04d " %(self.__season)
-        episode = ""
-        # The episode will be 3 characters.
-        if (self.__episode < 100):
-            episode ="%02d " %(self.__episode)
-        else:
-            episode = "%03d " %(self.__episode)
+            sEpisodes = ""
+            for episode in tvShow.list():
+                if (len(listOfResolutions) > 0):
+                    if (episode.getResolution() in listOfResolutions):
+                        sEpisodes += "\n  %s" %(episode)
+                elif (len(listOfContainers) > 0):
+                    if (episode.getContainer() in listOfContainers):
+                        sEpisodes += "\n  %s" %(episode)
+            if (len(sEpisodes) > 0):
+                print "%s: %d episodes%s\n" %(tvShow.getName(), tvShow.count(), sEpisodes)
 
-        # The container will be 3 characters.
-        container = self.__container
-        if (not len(container) > 0):
-            container = "   "
-        # Return the formatted string
-        rstring = "Season %s Episode %s | Container: %s | Resolution: %s (%shx%sw)" %(season, episode, container, self.__resolution, self.__height, self.__width)
-        return rstring
-
-    def getSeason(self):
-        return self.__season
-
-    def getEpisode(self):
-        return self.__episode
-
-    def getHeight(self):
-        return self.__height
-
-    def getWidth(self):
-        return self.__width
-
-    def getResolution(self):
-        return self.__resolution
-
-    def getFrameRate(self):
-        return self.__framerate
-
-    def getAspectRatio(self):
-        return self.__aspectRatio
-
-    def getBitRate(self):
-        return self.__bitRate
-
-    def getCodec(self):
-        return self.__codec
-
-    def getContainer(self):
-        return self.__container
+def printMovies(listOfMovies, listOfResolutions, listOfContainers):
+    print "Parsing movie metadata is not supported yet."
 
 # ##############################################################################
 # Get user selected options
@@ -298,15 +387,24 @@ if __name__ == "__main__":
             logging.getLogger(MAIN_LOGGER_NAME).info(message)
             sys.exit(1)
 
-        # Verify the .cvs has a header with the required fields.
+        # Verify the .cvs has a header with the required fields and set the type of metadata.
+        metadataType = ""
         try:
             with open(pathToCSVFile, "r") as f:
                 metadataFieldsInFile = f.readline().strip().replace("\"", "").split(",")
-                # Verify the metadata fields are in the file.
+                # Verify the metadata fields are in the files and find out if movie or tvshow.
                 missing_metadata_fields = ""
-                for mf in METADATA_FIELDS:
-                    if (not mf in metadataFieldsInFile):
-                        missing_metadata_fields += "\"%s\"" %(mf)
+                if (not set(METADATA_FIELDS_TV_SHOW).isdisjoint(metadataFieldsInFile)):
+                    metadataType = "tvshow"
+                    for mf in (METADATA_FIELDS + METADATA_FIELDS_TV_SHOW):
+                        if (not mf in metadataFieldsInFile):
+                            missing_metadata_fields += "\"%s\"" %(mf)
+                elif (not set(METADATA_FIELDS_MOVIE).isdisjoint(metadataFieldsInFile)):
+                    metadataType = "movie"
+                    for mf in (METADATA_FIELDS + METADATA_FIELDS_MOVIE):
+                        if (not mf in metadataFieldsInFile):
+                            missing_metadata_fields += "\"%s\"" %(mf)
+
                 if (len(missing_metadata_fields) > 0):
                     message = "The following metadata fields were not in the file %s: %s." %(pathToCSVFile, missing_metadata_fields)
                     logging.getLogger(MAIN_LOGGER_NAME).error(message)
@@ -326,50 +424,24 @@ if __name__ == "__main__":
         message = "Analyzing the .csv file: %s" %(pathToCSVFile)
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
 
-        mapOfTVShows = {}
-        try:
-            with open(pathToCSVFile) as f:
-                reader = csv.DictReader(f) # read rows into a dictionary format
-                for row in reader: # read a row as {column1: value1, column2: value2,...}
-                    seriesTitle = row.get("Series Title").replace("\n", " ")
-                    # Add add tv shows that have a series title, and skip if they do not.
-                    if (len(seriesTitle) > 0):
-                        try:
-                            tvEpisode = TVEpisode(int(row.get("Season")), int(row.get("Episode")), row.get("Height").strip(),
-                                                  row.get("Width").strip(), row.get("Video Resolution").strip(), row.get("Video FrameRate").strip(),
-                                                  row.get("Aspect Ratio").strip(), row.get("Bit Rate").strip(), row.get("Video Codec").strip(),
-                                                  row.get("Container").strip())
-                            if (not mapOfTVShows.has_key(seriesTitle)):
-                                mapOfTVShows[seriesTitle] = TVShow(seriesTitle)
-                            mapOfTVShows[seriesTitle].add(tvEpisode)
-                        except ValueError:
-                            # If casting a string value to integer fails then skip the episode.
-                            pass
-        except IOError:
-            message = "There was an error reading the file: %s" %(pathToCSVFile)
+        if (metadataType == "tvshow"):
+            mapOfTVShows = parseTVShows(pathToCSVFile)
+            if (not len(mapOfTVShows) > 0):
+                message = "There was no results to print."
+                logging.getLogger(MAIN_LOGGER_NAME).info(message)
+            else:
+                printTVShows(mapOfTVShows, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers)
+        elif (metadataType == "movie"):
+            listOfMovies = parseMovies(pathToCSVFile)
+            if (not len(listOfMovies) > 0):
+                message = "There was no results to print."
+                logging.getLogger(MAIN_LOGGER_NAME).info(message)
+            else:
+                printMovies(listOfMovies, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers)
+        else:
+            message = "Unknown metadata type. Currently only supporting TV Shows metadata in a csv file."
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             sys.exit(1)
-        finally:
-            f.close()
-        # Print TV Shows
-        tvShows = mapOfTVShows.keys()
-        tvShows.sort()
-        for key in tvShows:
-            tvShow = mapOfTVShows.get(key)
-            if ((not len(cmdLineOpts.listOfResolutions) > 0) and (not len(cmdLineOpts.listOfContainers) > 0)):
-                print tvShow
-            else:
-                sEpisodes = ""
-                for episode in tvShow.list():
-                    if (len(cmdLineOpts.listOfResolutions) > 0):
-                        if (episode.getResolution() in cmdLineOpts.listOfResolutions):
-                            sEpisodes += "\n  %s" %(episode)
-                    elif (len(cmdLineOpts.listOfContainers) > 0):
-                        if (episode.getContainer() in cmdLineOpts.listOfContainers):
-                            sEpisodes += "\n  %s" %(episode)
-                if (len(sEpisodes) > 0):
-                    print "%s: %d episodes%s\n" %(tvShow.getName(), tvShow.count(), sEpisodes)
-
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

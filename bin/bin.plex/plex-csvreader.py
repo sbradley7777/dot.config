@@ -1,6 +1,6 @@
 #!/usr/bin/python
 """
-# This script will output a list of TV Show Episodes that are in a specific resolution.
+# This script will output a list of TV Show Episodes that are in a specific resolution or container.
 
 # https://forums.plex.tv/index.php/topic/103115-rel-plex2csv/
 # https://forums.plex.tv/index.php/topic/115637-how-to-print-listing-of-all-tv-shows-episodes-resolution/

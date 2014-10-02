@@ -2,11 +2,6 @@
 """
 # This script will output a list of TV Show Episodes that are in a specific resolution.
 
-# * Need to find out all resolution variables that it can be then have option to
-# * Give examples on how to use multiple resolutions.
-# * Add container code
-# * Add check that cannot do container and resolution at same time or add code to allow this.
-
 # https://forums.plex.tv/index.php/topic/103115-rel-plex2csv/
 # https://forums.plex.tv/index.php/topic/115637-how-to-print-listing-of-all-tv-shows-episodes-resolution/
 
@@ -14,23 +9,21 @@
 @contact   : sbradley@redhat.com
 @version   : 0.1
 @copyright : GPLv2
-
 """
+
 import sys
 import logging
 import logging.handlers
 import os
 import os.path
 from optparse import OptionParser, Option, SUPPRESS_HELP
-
-
 import csv
 from collections import defaultdict
 
 # #####################################################################
 # Global vars:
 # #####################################################################
-VERSION_NUMBER = "0.1-1"
+VERSION_NUMBER = "0.2-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
 METADATA_FIELDS = ["Series Title", "Season", "Episode", "Height", "Width",
@@ -102,7 +95,7 @@ class TVEpisode:
         if (not len(container) > 0):
             container = "   "
         # Return the formatted string
-        rstring = "Season %s Episode %s | Container: %s | Resolution: %s(%sx%s)" %(season, episode, container, self.__resolution, self.__height, self.__width)
+        rstring = "Season %s Episode %s | Container: %s | Resolution: %s (%shx%sw)" %(season, episode, container, self.__resolution, self.__height, self.__width)
         return rstring
 
     def getSeason(self):
@@ -182,14 +175,13 @@ def __getOptions(version) :
                          type="string",
                          metavar="<resolution>",
                          default=[])
-
-    #cmdParser.add_option("-c", "--container",
-    #                     action="extend",
-    #                     dest="listOfContainers",
-    #                     help="query for metadata that has the following container for the video files",
-    #                     type="string",
-    #                     metavar="<container>",
-    #                     default=[])
+    cmdParser.add_option("-c", "--container",
+                         action="extend",
+                         dest="listOfContainers",
+                         help="query for metadata that has the following container for the video files",
+                         type="string",
+                         metavar="<container>",
+                         default=[])
 
  # Get the options and return the result.
     (cmdLineOpts, cmdLineArgs) = cmdParser.parse_args()
@@ -203,7 +195,7 @@ class OptionParserExtended(OptionParser):
         self.__commandName = os.path.basename(sys.argv[0])
         versionMessage = "%s %s\n" %(self.__commandName, version)
 
-        commandDescription  ="%s will list metadata information related to video file properties for a .csv file created by Plex2cvs with extreme setting for TV Shows.\n"%(self.__commandName)
+        commandDescription  ="%s will list metadata information related to video file properties for a .csv file created by Plex2cvs with extreme(or higher) setting for TV Shows.\n"%(self.__commandName)
 
         OptionParser.__init__(self, option_class=ExtendOption,
                               version=versionMessage,
@@ -211,9 +203,13 @@ class OptionParserExtended(OptionParser):
 
     def print_help(self):
         self.print_version()
-        examplesMessage = "\n"
         OptionParser.print_help(self)
-        #print examplesMessage
+        examplesMessage = "\n"
+        examplesMessage += "This example will list the metadata that has attribute for the resolution set to \"sd\" or \"480\".\n"
+        examplesMessage += "$ %s -f ~/Documentaries.csv  -r sd,480\n" %(self.__commandName)
+        examplesMessage += "This example will list the metadata that has attribute for the container set to \"avi\" or \"mkv\".\n"
+        examplesMessage += "$ %s -f ~/Documentaries.csv  -r avi,mkv\n" %(self.__commandName)
+        print examplesMessage
 
 class ExtendOption (Option):
     ACTIONS = Option.ACTIONS + ("extend",)
@@ -279,7 +275,11 @@ if __name__ == "__main__":
             logging.getLogger(MAIN_LOGGER_NAME).debug(message)
         if (cmdLineOpts.disableLoggingToConsole):
             streamHandler.setLevel(logging.CRITICAL)
-
+        # The option -c and -r cannot be used at the same time.
+        if ((len(cmdLineOpts.listOfContainers) > 0) and (len(cmdLineOpts.listOfResolutions) > 0)):
+            message = "The option \"-c\" and \"-r\" cannot be used at the same time."
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            sys.exit(1)
         # #######################################################################
         # Verfiy that a valid file was passed to it.
         # #######################################################################
@@ -320,11 +320,9 @@ if __name__ == "__main__":
             sys.exit(1)
         finally:
             f.close()
-
         # #######################################################################
         #  Read the file and create a map of objects.
         # #######################################################################
-
         message = "Analyzing the .csv file: %s" %(pathToCSVFile)
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
 
@@ -358,13 +356,17 @@ if __name__ == "__main__":
         tvShows.sort()
         for key in tvShows:
             tvShow = mapOfTVShows.get(key)
-            if (not len(cmdLineOpts.listOfResolutions) > 0):
+            if ((not len(cmdLineOpts.listOfResolutions) > 0) and (not len(cmdLineOpts.listOfContainers) > 0)):
                 print tvShow
             else:
                 sEpisodes = ""
                 for episode in tvShow.list():
-                    if (episode.getResolution() in cmdLineOpts.listOfResolutions):
-                        sEpisodes += "\n  %s" %(episode)
+                    if (len(cmdLineOpts.listOfResolutions) > 0):
+                        if (episode.getResolution() in cmdLineOpts.listOfResolutions):
+                            sEpisodes += "\n  %s" %(episode)
+                    elif (len(cmdLineOpts.listOfContainers) > 0):
+                        if (episode.getContainer() in cmdLineOpts.listOfContainers):
+                            sEpisodes += "\n  %s" %(episode)
                 if (len(sEpisodes) > 0):
                     print "%s: %d episodes%s\n" %(tvShow.getName(), tvShow.count(), sEpisodes)
 

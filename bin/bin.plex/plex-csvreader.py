@@ -1,10 +1,9 @@
 #!/usr/bin/python
 """
-# This script will output a list of TV Show Episodes that are in a specific resolution or container.
+# This script will output a list of Movies or TV Show Episodes that are in a specific resolution or container.
 
 # TODO:
-# * Add everything to do movie parsing except the actual parsing and output.
-# * Update help to say does movie support once updated.
+# Color code on TV Shows by season instead of alt even/odd.
 
 # https://forums.plex.tv/index.php/topic/103115-rel-plex2csv/
 # https://forums.plex.tv/index.php/topic/115637-how-to-print-listing-of-all-tv-shows-episodes-resolution/
@@ -20,6 +19,7 @@ import logging
 import logging.handlers
 import os
 import os.path
+import string
 from optparse import OptionParser, Option, SUPPRESS_HELP
 import csv
 from collections import defaultdict
@@ -31,22 +31,21 @@ VERSION_NUMBER = "0.2-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
 METADATA_FIELDS = ["Height", "Width", "Video Resolution", "Video FrameRate",
-                   "Aspect Ratio", "Bit Rate", "Video Codec", "Container", "Year"]
+                   "Aspect Ratio", "Video Codec", "Container", "Year"]
 
 METADATA_FIELDS_TV_SHOW = ["Series Title", "Season", "Episode"]
-METADATA_FIELDS_MOVIE = ["Title"]
+METADATA_FIELDS_MOVIE = ["Title", "Year"]
 
 # ##############################################################################
 # Containers for Metadata
 # ##############################################################################
 class Metadata:
-    def __init__(self, height, width, resolution, framerate, aspectRatio, bitRate, codec, container):
+    def __init__(self, height, width, resolution, framerate, aspectRatio, codec, container):
         self.__height = height
         self.__width = width
         self.__resolution = resolution
         self.__framerate = framerate
         self.__aspectRatio = aspectRatio
-        self.__bitRate = bitRate
         self.__codec = codec
         self.__container = container
 
@@ -65,9 +64,6 @@ class Metadata:
     def getAspectRatio(self):
         return self.__aspectRatio
 
-    def getBitRate(self):
-        return self.__bitRate
-
     def getCodec(self):
         return self.__codec
 
@@ -75,23 +71,33 @@ class Metadata:
         return self.__container
 
 class Movie(Metadata):
-    def __init__(self, title, height, width, resolution, framerate, aspectRatio, bitRate, codec, container):
+    def __init__(self, title, year, height, width, resolution, framerate, aspectRatio, codec, container):
         self.__title = title
-        Metadata.__init__(self,  height, width, resolution, framerate, aspectRatio, bitRate, codec, container)
+        self.__year = year
+        Metadata.__init__(self,  height, width, resolution, framerate, aspectRatio, codec, container)
 
     def __str__(self):
-        return self.getTitle()
+        # The container will be 3 characters.
+        container = self.getContainer()
+        if (not len(container) > 0):
+            container = "   "
+        # Return the formatted string
+        rstring = "Title: %s(%s)  | Container: %s | Resolution: %s (%shx%sw)" %(self.getTitle(), self.getYear(), container, self.getResolution(), self.getHeight(), self.getWidth())
+        return rstring
 
     def getTitle(self):
         return self.__title
 
+    def getYear(self):
+        return self.__year
+
 class TVEpisode(Metadata):
-    def __init__(self, season, episode, height, width, resolution, framerate, aspectRatio, bitRate, codec, container):
+    def __init__(self, season, episode, height, width, resolution, framerate, aspectRatio, codec, container):
         # int
         self.__season = season
         # int
         self.__episode = episode
-        Metadata.__init__(self,  height, width, resolution, framerate, aspectRatio, bitRate, codec, container)
+        Metadata.__init__(self,  height, width, resolution, framerate, aspectRatio, codec, container)
 
     def __str__(self):
         season = ""
@@ -112,7 +118,7 @@ class TVEpisode(Metadata):
         if (not len(container) > 0):
             container = "   "
         # Return the formatted string
-        rstring = "Season %s Episode %s | Container: %s | Resolution: %s (%shx%sw)" %(season, episode, container, self.getWidth(), self.getHeight(), self.getWidth())
+        rstring = "Season %s Episode %s | Container: %s | Resolution: %s (%shx%sw)" %(season, episode, container, self.getResolution(), self.getHeight(), self.getWidth())
         return rstring
 
     def getSeason(self):
@@ -152,7 +158,7 @@ class TVShow:
 # ##############################################################################
 # Private Functions
 # ##############################################################################
-def parseTVShows(pathToCSVFile):
+def __parseTVShows(pathToCSVFile):
     mapOfTVShows = {}
     try:
         with open(pathToCSVFile) as f:
@@ -162,10 +168,9 @@ def parseTVShows(pathToCSVFile):
                 # Add add tv shows that have a series title, and skip if they do not.
                 if (len(seriesTitle) > 0):
                     try:
-                        tvEpisode = TVEpisode(int(row.get("Season")), int(row.get("Episode")), row.get("Height").strip(),
+                        tvEpisode = TVEpisode(int(row.get("Season").strip()), int(row.get("Episode").strip()), row.get("Height").strip(),
                                               row.get("Width").strip(), row.get("Video Resolution").strip(), row.get("Video FrameRate").strip(),
-                                              row.get("Aspect Ratio").strip(), row.get("Bit Rate").strip(), row.get("Video Codec").strip(),
-                                              row.get("Container").strip())
+                                              row.get("Aspect Ratio").strip(), row.get("Video Codec").strip(), row.get("Container").strip())
                         if (not mapOfTVShows.has_key(seriesTitle)):
                             mapOfTVShows[seriesTitle] = TVShow(seriesTitle)
                         mapOfTVShows[seriesTitle].add(tvEpisode)
@@ -179,13 +184,17 @@ def parseTVShows(pathToCSVFile):
         f.close()
     return mapOfTVShows
 
-def parseMovies(pathToCSVFile):
+def __parseMovies(pathToCSVFile):
     listOfMovies = []
     try:
         with open(pathToCSVFile) as f:
             reader = csv.DictReader(f)
             for row in reader:
-                # Do parsing here into movie object.
+                title = row.get("Title").replace("\n", " ")
+                movie = Movie(title.strip(), row.get("Year").strip(), row.get("Height").strip(),
+                              row.get("Width").strip(), row.get("Video Resolution").strip(), row.get("Video FrameRate").strip(),
+                              row.get("Aspect Ratio").strip(), row.get("Video Codec").strip(), row.get("Container").strip())
+                listOfMovies.append(movie)
                 pass
     except IOError:
         message = "There was an error reading the file: %s" %(pathToCSVFile)
@@ -194,28 +203,192 @@ def parseMovies(pathToCSVFile):
         f.close()
     return listOfMovies
 
-def printTVShows(mapOfTVShows, listOfResolutions, listOfContainers):
+def __printTVShows(mapOfTVShows, listOfResolutions, listOfContainers):
     # Print TV Shows
     tvShows = mapOfTVShows.keys()
     tvShows.sort()
     for key in tvShows:
         tvShow = mapOfTVShows.get(key)
         if ((not len(listOfResolutions) > 0) and (not len(listOfContainers) > 0)):
-            print tvShow
+            addVideoFile = True
         else:
-            sEpisodes = ""
+            tvShowTable = []
             for episode in tvShow.list():
+                addVideoFile = False
                 if (len(listOfResolutions) > 0):
                     if (episode.getResolution() in listOfResolutions):
-                        sEpisodes += "\n  %s" %(episode)
+                        addVideoFile = True
                 elif (len(listOfContainers) > 0):
                     if (episode.getContainer() in listOfContainers):
-                        sEpisodes += "\n  %s" %(episode)
-            if (len(sEpisodes) > 0):
-                print "%s: %d episodes%s\n" %(tvShow.getName(), tvShow.count(), sEpisodes)
+                        addVideoFile = True
+                if (addVideoFile):
+                    tvShowTable.append([str(episode.getSeason()), str(episode.getEpisode()), episode.getContainer(), episode.getResolution(), episode.getHeight(), episode.getWidth()])
+            stringUtil = StringUtil()
+            index = 1
+            if (len(tvShowTable) > 0):
+                print "\n%s: %d episodes" %(tvShow.getName(), tvShow.count())
+                for s in stringUtil.toTableStringsList(tvShowTable, ["season", "episode", "container", "resolution", "height", "width"]):
+                    if ( (index % 2) == 0):
+                        s = __colorizeBackground(s)
+                    print s
+                    index += 1
 
-def printMovies(listOfMovies, listOfResolutions, listOfContainers):
-    print "Parsing movie metadata is not supported yet."
+def __printMovies(listOfMovies, listOfResolutions, listOfContainers):
+    moviesTable = []
+    for movie in listOfMovies:
+        addVideoFile = False
+        if ((not len(listOfResolutions) > 0) and (not len(listOfContainers) > 0)):
+            addVideoFile = True
+        else:
+            if (len(listOfResolutions) > 0):
+                if (movie.getResolution() in listOfResolutions):
+                    addVideoFile = True
+            elif (len(listOfContainers) > 0):
+                if (movie.getContainer() in listOfContainers):
+                    addVideoFile = True
+        if (addVideoFile):
+            moviesTable.append([movie.getTitle(), movie.getYear(), movie.getContainer(), movie.getResolution(), movie.getHeight(), movie.getWidth()])
+    stringUtil = StringUtil()
+    index = 1
+    if (len(moviesTable) > 0):
+        for s in stringUtil.toTableStringsList(moviesTable, ["title", "year", "container", "resolution", "height", "width"]):
+                if ( (index % 2) == 0):
+                    s = __colorizeBackground(s)
+                print s
+                index += 1
+# ##############################################################################
+# Private functions of printing results
+# ##############################################################################
+class StringUtil:
+    # #######################################################################
+    # Functions for creating a formatted table from lists of lists:
+    # #######################################################################
+    def __getMaxColumnWidth(self, table, index):
+        try:
+            return max([len(str(row[index])) for row in table])
+        except IndexError:
+            return -1
+
+    def formatStringListsToTable(self, table, headerList=None):
+        # Copy the table so that we do not ref the orginal list and change it.
+        copyOfTable = []
+        for currentList in table:
+            newList = []
+            for item in currentList:
+                newList.append(item)
+            if (len(newList) > 0):
+                copyOfTable.append(newList)
+
+        # Return empty list and print error if all the rows in table
+        # dont have same column count.
+        if (len(copyOfTable) > 0):
+            # Add header to the list if one was passed to it and table is not empty.
+            if (not headerList == None):
+                copyOfTable.insert(0, headerList)
+            # Make sure that table and header contain the same number
+            # of columns.
+            colCount = len(copyOfTable[0])
+            for currentRow in copyOfTable:
+                currentColCount = len(currentRow)
+                if (not (currentColCount == colCount)):
+                    message = "The table continues columns with a different columns counts and will not be processed."
+                    logging.getLogger(sx.MAIN_LOGGER_NAME).debug(message)
+                    return []
+        else:
+            message = "The table continues no rows in the table and will not be processed."
+            logging.getLogger(sx.MAIN_LOGGER_NAME).debug(message)
+            return []
+        # This function will append new rows if the item in the column
+        # for a row is an array/list. If there is a None value or
+        # empty string then replace with "-" for no value rep.
+        currentRowIndex = 0
+        for currentRow in copyOfTable:
+            newRows = []
+            currentColIndex = 0
+            for currentCol in currentRow:
+                if (currentCol == None):
+                   currentRow[currentColIndex] = "-"
+                elif (not (len(currentCol) > 0)):
+                    currentRow[currentColIndex] = "-"
+                elif (type(currentCol) == list):
+                    currentColList = currentCol
+                    if (len(currentCol) > 0):
+                        currentRow[currentColIndex] = currentColList.pop(0)
+                    for ccListIndex in range(0, len(currentColList)):
+                        try:
+                            newRows[ccListIndex][currentColIndex] = currentColList[ccListIndex]
+                        except IndexError:
+                            newRow = []
+                            for i in range(len(currentRow)):
+                                newRow[i] = ""
+                            newRow[currentColIndex] = currentColList[ccListIndex]
+                            newRows.append(newRow)
+                currentColIndex = currentColIndex + 1
+            for row in newRows:
+                copyOfTable.insert(currentRowIndex + 1,row)
+            currentRowIndex = currentRowIndex  + 1
+        # Fix the max spacing for each column after iterating over
+        # each row.
+        tableStringsList = []
+        col_paddings = []
+        for i in range(len(copyOfTable[0])):
+            maxColumnWidth = self.__getMaxColumnWidth(copyOfTable, i)
+            if (maxColumnWidth >= 0):
+                col_paddings.append(maxColumnWidth)
+        # If header was given then use the max column size to build
+        # the seperator.
+        if (not headerList == None):
+            headerSeperatorList = []
+            for colMaxSize in col_paddings:
+                currentHeaderSeperator = ""
+                currentHeaderSeperator += "-" * colMaxSize
+                headerSeperatorList.append(currentHeaderSeperator)
+            copyOfTable.insert(1, headerSeperatorList)
+        for row in copyOfTable:
+            # Left col string has no spacing.
+            tableStrings = []
+            tableStrings.append( str(row[0].ljust(col_paddings[0] + 1)))
+            # Add spacing to the rest of the columns.
+            for i in range(1, len(row)):
+                # Add spacing to to the right side with ljust.
+                try:
+                    tableStrings.append(str(str(row[i]).ljust(col_paddings[i] + 2)))
+                except IndexError:
+                    continue
+            tableStringsList.append(tableStrings)
+        return tableStringsList
+
+    def toTableStringsList(self, table, headerList=None):
+        tableOfStrings = []
+        tableStringsList = self.formatStringListsToTable(table, headerList)
+        for tableStrings in tableStringsList:
+            currentLine = ""
+            for ts in tableStrings:
+                currentLine += ts
+            tableOfStrings.append(currentLine)
+        return tableOfStrings
+
+# #######################################################################
+# Helper Functions
+# #######################################################################
+def __dequote(s):
+    """
+    If a string has single or double quotes around it, remove them.
+    If a matching pair of quotes is not found, return the string unchanged.
+    """
+    if (s.startswith(("'", '"')) and s.endswith(("'", '"')) and (s[0] == s[-1])):
+        s = s[1:-1]
+    return s
+
+def __colorizeBackground(text):
+    # Dark Gray
+    # http://misc.flogisoft.com/bash/tip_colors_and_formatting
+    bgColor = "100"
+    opencol = "\033["
+    closecol = "m"
+    clear = opencol + "0" + closecol
+    bg = opencol + bgColor + closecol
+    return "%s%s%s" % (bg, text, clear)
 
 # ##############################################################################
 # Get user selected options
@@ -284,7 +457,7 @@ class OptionParserExtended(OptionParser):
         self.__commandName = os.path.basename(sys.argv[0])
         versionMessage = "%s %s\n" %(self.__commandName, version)
 
-        commandDescription  ="%s will list metadata information related to video file properties for a .csv file created by Plex2cvs with extreme(or higher) setting for TV Shows.\n"%(self.__commandName)
+        commandDescription  ="%s will list metadata information related to video file properties for a .csv file created by Plex2cvs with extreme(or higher) setting for Movies or TV Shows.\n"%(self.__commandName)
 
         OptionParser.__init__(self, option_class=ExtendOption,
                               version=versionMessage,
@@ -398,15 +571,15 @@ if __name__ == "__main__":
                     metadataType = "tvshow"
                     for mf in (METADATA_FIELDS + METADATA_FIELDS_TV_SHOW):
                         if (not mf in metadataFieldsInFile):
-                            missing_metadata_fields += "\"%s\"" %(mf)
+                            missing_metadata_fields += "\"%s\", " %(mf)
                 elif (not set(METADATA_FIELDS_MOVIE).isdisjoint(metadataFieldsInFile)):
                     metadataType = "movie"
                     for mf in (METADATA_FIELDS + METADATA_FIELDS_MOVIE):
                         if (not mf in metadataFieldsInFile):
-                            missing_metadata_fields += "\"%s\"" %(mf)
+                            missing_metadata_fields += "\"%s\", " %(mf)
 
                 if (len(missing_metadata_fields) > 0):
-                    message = "The following metadata fields were not in the file %s: %s." %(pathToCSVFile, missing_metadata_fields)
+                    message = "The following metadata fields were not in the file %s: %s." %(pathToCSVFile, missing_metadata_fields.rstrip(", "))
                     logging.getLogger(MAIN_LOGGER_NAME).error(message)
                     message = "A path to a exported .csv file of Plex metadata is required."
                     logging.getLogger(MAIN_LOGGER_NAME).info(message)
@@ -425,19 +598,19 @@ if __name__ == "__main__":
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
 
         if (metadataType == "tvshow"):
-            mapOfTVShows = parseTVShows(pathToCSVFile)
+            mapOfTVShows = __parseTVShows(pathToCSVFile)
             if (not len(mapOfTVShows) > 0):
                 message = "There was no results to print."
                 logging.getLogger(MAIN_LOGGER_NAME).info(message)
             else:
-                printTVShows(mapOfTVShows, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers)
+                __printTVShows(mapOfTVShows, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers)
         elif (metadataType == "movie"):
-            listOfMovies = parseMovies(pathToCSVFile)
+            listOfMovies = __parseMovies(pathToCSVFile)
             if (not len(listOfMovies) > 0):
                 message = "There was no results to print."
                 logging.getLogger(MAIN_LOGGER_NAME).info(message)
             else:
-                printMovies(listOfMovies, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers)
+                __printMovies(listOfMovies, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers)
         else:
             message = "Unknown metadata type. Currently only supporting TV Shows metadata in a csv file."
             logging.getLogger(MAIN_LOGGER_NAME).error(message)

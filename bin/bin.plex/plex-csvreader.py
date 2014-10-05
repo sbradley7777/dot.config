@@ -5,6 +5,8 @@
 # TODO:
 # Color code on TV Shows by season instead of alt even/odd.
 
+# Note: The color coding works best on black bg of terminal.
+
 # https://forums.plex.tv/index.php/topic/103115-rel-plex2csv/
 # https://forums.plex.tv/index.php/topic/115637-how-to-print-listing-of-all-tv-shows-episodes-resolution/
 
@@ -27,20 +29,21 @@ from collections import defaultdict
 # #####################################################################
 # Global vars:
 # #####################################################################
-VERSION_NUMBER = "0.2-1"
+VERSION_NUMBER = "0.3-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
-METADATA_FIELDS = ["Height", "Width", "Video Resolution", "Video FrameRate",
+METADATA_FIELDS = ["Year", "Height", "Width", "Video Resolution", "Video FrameRate",
                    "Aspect Ratio", "Video Codec", "Container", "Year"]
 
-METADATA_FIELDS_TV_SHOW = ["Series Title", "Season", "Episode"]
-METADATA_FIELDS_MOVIE = ["Title", "Year"]
+METADATA_FIELDS_TV_SHOW = ["Series Title", "Season", "Episode", "Episode Title"]
+METADATA_FIELDS_MOVIE = ["Title"]
 
 # ##############################################################################
 # Containers for Metadata
 # ##############################################################################
 class Metadata:
-    def __init__(self, height, width, resolution, framerate, aspectRatio, codec, container):
+    def __init__(self, year, height, width, resolution, framerate, aspectRatio, codec, container):
+        self.__year = year
         self.__height = height
         self.__width = width
         self.__resolution = resolution
@@ -48,6 +51,9 @@ class Metadata:
         self.__aspectRatio = aspectRatio
         self.__codec = codec
         self.__container = container
+
+    def getYear(self):
+        return self.__year
 
     def getHeight(self):
         return self.__height
@@ -73,53 +79,27 @@ class Metadata:
 class Movie(Metadata):
     def __init__(self, title, year, height, width, resolution, framerate, aspectRatio, codec, container):
         self.__title = title
-        self.__year = year
-        Metadata.__init__(self,  height, width, resolution, framerate, aspectRatio, codec, container)
+        Metadata.__init__(self,  year, height, width, resolution, framerate, aspectRatio, codec, container)
 
     def __str__(self):
-        # The container will be 3 characters.
-        container = self.getContainer()
-        if (not len(container) > 0):
-            container = "   "
-        # Return the formatted string
-        rstring = "Title: %s(%s)  | Container: %s | Resolution: %s (%shx%sw)" %(self.getTitle(), self.getYear(), container, self.getResolution(), self.getHeight(), self.getWidth())
-        return rstring
+        return "%s(%s)" %(self.getTitle(), self.getYear())
 
     def getTitle(self):
         return self.__title
 
-    def getYear(self):
-        return self.__year
-
 class TVEpisode(Metadata):
-    def __init__(self, season, episode, height, width, resolution, framerate, aspectRatio, codec, container):
+    def __init__(self, season, episode, episodeTitle, year, height, width, resolution, framerate, aspectRatio, codec, container):
         # int
         self.__season = season
         # int
         self.__episode = episode
-        Metadata.__init__(self,  height, width, resolution, framerate, aspectRatio, codec, container)
+        self.__episodeTitle = episodeTitle
+
+        Metadata.__init__(self,  year, height, width, resolution, framerate, aspectRatio, codec, container)
 
     def __str__(self):
-        season = ""
-        # The season will be  4 characters.
-        if (self.getSeason() < 100):
-            season = "  %02d " %(self.getSeason())
-        else:
-            season = "%04d " %(self.getSeason())
-        episode = ""
-        # The episode will be 3 characters.
-        if (self.getEpisode() < 100):
-            episode ="%02d " %(self.getEpisode())
-        else:
-            episode = "%03d " %(self.getEpisode())
-
-        # The container will be 3 characters.
-        container = self.getContainer()
-        if (not len(container) > 0):
-            container = "   "
-        # Return the formatted string
-        rstring = "Season %s Episode %s | Container: %s | Resolution: %s (%shx%sw)" %(season, episode, container, self.getResolution(), self.getHeight(), self.getWidth())
-        return rstring
+        print self.getEpisodeTitle()
+        return "Season %d Episode %d: %s" %(self.getSeason(), self.getEpisode(), self.getEpisodeTitle())
 
     def getSeason(self):
         return self.__season
@@ -127,19 +107,23 @@ class TVEpisode(Metadata):
     def getEpisode(self):
         return self.__episode
 
+    def getEpisodeTitle(self):
+        return self.__episodeTitle
+
 class TVShow:
-    def __init__(self, name):
+    def __init__(self, name, year):
         self.__name = name
+        self.__year = year
         self.__listOfEpisodes = []
 
     def __str__(self):
-        rstring = "%s: %d episodes" %(self.getName(), self.count())
-        for tvEpisode in self.list():
-            rstring += "\n  %s" %(tvEpisode)
-        return rstring
+        return"%s: %d episodes" %(self.getName(), self.count())
 
     def getName(self):
         return self.__name
+
+    def getYear(self):
+        return self.__year
 
     def list(self):
         return self.__listOfEpisodes
@@ -165,14 +149,16 @@ def __parseTVShows(pathToCSVFile):
             reader = csv.DictReader(f)
             for row in reader:
                 seriesTitle = row.get("Series Title").replace("\n", " ")
+                year = row.get("Year").strip()
                 # Add add tv shows that have a series title, and skip if they do not.
                 if (len(seriesTitle) > 0):
                     try:
-                        tvEpisode = TVEpisode(int(row.get("Season").strip()), int(row.get("Episode").strip()), row.get("Height").strip(),
-                                              row.get("Width").strip(), row.get("Video Resolution").strip(), row.get("Video FrameRate").strip(),
-                                              row.get("Aspect Ratio").strip(), row.get("Video Codec").strip(), row.get("Container").strip())
+                        tvEpisode = TVEpisode(int(row.get("Season").strip()), int(row.get("Episode").strip()), row.get("Episode Title").replace("\n", " ").strip(), year,
+                                              row.get("Height").strip(),row.get("Width").strip(), row.get("Video Resolution").strip(),
+                                              row.get("Video FrameRate").strip(), row.get("Aspect Ratio").strip(), row.get("Video Codec").strip(),
+                                              row.get("Container").strip())
                         if (not mapOfTVShows.has_key(seriesTitle)):
-                            mapOfTVShows[seriesTitle] = TVShow(seriesTitle)
+                            mapOfTVShows[seriesTitle] = TVShow(seriesTitle, year)
                         mapOfTVShows[seriesTitle].add(tvEpisode)
                     except ValueError:
                         # If casting a string value to integer fails then skip the episode.
@@ -203,37 +189,40 @@ def __parseMovies(pathToCSVFile):
         f.close()
     return listOfMovies
 
-def __printTVShows(mapOfTVShows, listOfResolutions, listOfContainers):
+def __printTVShows(mapOfTVShows, listOfResolutions, listOfContainers, disableHighlightingRows):
     # Print TV Shows
     tvShows = mapOfTVShows.keys()
     tvShows.sort()
     for key in tvShows:
         tvShow = mapOfTVShows.get(key)
-        if ((not len(listOfResolutions) > 0) and (not len(listOfContainers) > 0)):
-            addVideoFile = True
-        else:
-            tvShowTable = []
-            for episode in tvShow.list():
-                addVideoFile = False
-                if (len(listOfResolutions) > 0):
-                    if (episode.getResolution() in listOfResolutions):
-                        addVideoFile = True
-                elif (len(listOfContainers) > 0):
-                    if (episode.getContainer() in listOfContainers):
-                        addVideoFile = True
-                if (addVideoFile):
-                    tvShowTable.append([str(episode.getSeason()), str(episode.getEpisode()), episode.getContainer(), episode.getResolution(), episode.getHeight(), episode.getWidth()])
+        tvShowTable = []
+        for episode in tvShow.list():
+            addVideoFile = False
+            if ((not len(listOfResolutions) > 0) and (not len(listOfContainers) > 0)):
+                addVideoFile = True
+            elif (episode.getResolution() in listOfResolutions):
+                addVideoFile = True
+            elif (episode.getContainer() in listOfContainers):
+                addVideoFile = True
+            if (addVideoFile):
+                tvShowTable.append([str(episode.getSeason()), str(episode.getEpisode()), episode.getContainer(),
+                                    episode.getResolution(), episode.getHeight(), episode.getWidth(),
+                                    episode.getEpisodeTitle()])
+        if (len(tvShowTable) > 0):
+            print "\n%s: %d episodes" %(tvShow.getName(), tvShow.count())
+            previousSeason = ""
+            index = 0
             stringUtil = StringUtil()
-            index = 1
-            if (len(tvShowTable) > 0):
-                print "\n%s: %d episodes" %(tvShow.getName(), tvShow.count())
-                for s in stringUtil.toTableStringsList(tvShowTable, ["season", "episode", "container", "resolution", "height", "width"]):
-                    if ( (index % 2) == 0):
-                        s = __colorizeBackground(s)
-                    print s
+            for s in stringUtil.toTableStringsList(tvShowTable, ["season", "episode", "container", "resolution", "height", "width", "episode_title"]):
+                currentSeason = s.split()[0]
+                if (not currentSeason == previousSeason):
+                    previousSeason = currentSeason
                     index += 1
+                if (((index % 2) == 0) and (index > 3) and (not disableHighlightingRows)):
+                    s = __colorizeBackground(s)
+                print s
 
-def __printMovies(listOfMovies, listOfResolutions, listOfContainers):
+def __printMovies(listOfMovies, listOfResolutions, listOfContainers, disableHighlightingRows):
     moviesTable = []
     for movie in listOfMovies:
         addVideoFile = False
@@ -248,14 +237,14 @@ def __printMovies(listOfMovies, listOfResolutions, listOfContainers):
                     addVideoFile = True
         if (addVideoFile):
             moviesTable.append([movie.getTitle(), movie.getYear(), movie.getContainer(), movie.getResolution(), movie.getHeight(), movie.getWidth()])
-    stringUtil = StringUtil()
-    index = 1
     if (len(moviesTable) > 0):
+        index = 0
+        stringUtil = StringUtil()
         for s in stringUtil.toTableStringsList(moviesTable, ["title", "year", "container", "resolution", "height", "width"]):
-                if ( (index % 2) == 0):
+            if (((index % 2) == 0) and (index > 0) and (not disableHighlightingRows)):
                     s = __colorizeBackground(s)
-                print s
-                index += 1
+            print s
+            index += 1
 # ##############################################################################
 # Private functions of printing results
 # ##############################################################################
@@ -423,6 +412,11 @@ def __getOptions(version) :
                          dest="disableQuestions",
                          help="disables all questions and assumes yes",
                          default=False)
+    cmdParser.add_option("-H", "--disable_highlight",
+                        action="store_true",
+                         dest="disableHighlightingRows",
+                         help="disables table row highlighting of tv show seasons and movies",
+                         default=False)
     cmdParser.add_option("-f", "--path_to_filename",
                          action="store",
                          dest="pathToCSVFile",
@@ -468,9 +462,11 @@ class OptionParserExtended(OptionParser):
         OptionParser.print_help(self)
         examplesMessage = "\n"
         examplesMessage += "This example will list the metadata that has attribute for the resolution set to \"sd\" or \"480\".\n"
-        examplesMessage += "$ %s -f ~/Documentaries.csv  -r sd,480\n" %(self.__commandName)
+        examplesMessage += "$ %s -f ~/Documentaries-Extended-20141005-095915.csv  -r sd,480\n" %(self.__commandName)
         examplesMessage += "This example will list the metadata that has attribute for the container set to \"avi\" or \"mkv\".\n"
-        examplesMessage += "$ %s -f ~/Documentaries.csv  -r avi,mkv\n" %(self.__commandName)
+        examplesMessage += "$ %s -f ~/Documentaries-Extended-20141005-095915.csv  -r avi,mkv\n" %(self.__commandName)
+        examplesMessage += "This example will list the metadata with no filtering and does no highlighting.\n"
+        examplesMessage += "$ %s -f ~/Movies-Extreme-20141004-091106.csv -H\n" %(self.__commandName)
         print examplesMessage
 
 class ExtendOption (Option):
@@ -603,14 +599,14 @@ if __name__ == "__main__":
                 message = "There was no results to print."
                 logging.getLogger(MAIN_LOGGER_NAME).info(message)
             else:
-                __printTVShows(mapOfTVShows, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers)
+                __printTVShows(mapOfTVShows, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers, cmdLineOpts.disableHighlightingRows)
         elif (metadataType == "movie"):
             listOfMovies = __parseMovies(pathToCSVFile)
             if (not len(listOfMovies) > 0):
                 message = "There was no results to print."
                 logging.getLogger(MAIN_LOGGER_NAME).info(message)
             else:
-                __printMovies(listOfMovies, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers)
+                __printMovies(listOfMovies, cmdLineOpts.listOfResolutions, cmdLineOpts.listOfContainers, cmdLineOpts.disableHighlightingRows)
         else:
             message = "Unknown metadata type. Currently only supporting TV Shows metadata in a csv file."
             logging.getLogger(MAIN_LOGGER_NAME).error(message)

@@ -10,11 +10,13 @@
 # ###############################################################################
 . /etc/init.d/functions
 
+# Name of the logger
+LOGGER_NAME=`basename $0`;
+
 # Path to the lockfile
 LOCKFILE=/var/lock/subsys/${0##*/}
 # 0 is enabled(true) and 1 is disabled(false)
 DELAY_STARTUP_SECONDS=0;
-
 # ###############################################################################
 # The clug utility uses the normal logging levels as defined in
 # sys/syslog.h. Calls to clulog will use the logging level defined
@@ -29,10 +31,20 @@ LOG_NOTICE=5 # normal but significant condition
 LOG_INFO=6 # informational
 LOG_DEBUG=7 # debug-level messages
 
+clulog(){
+    logger_level="local7.info";
+    case "$1" in
+	$LOG_INFO)  logger_level="local7.info"; ;;
+	$LOG_WARNING)  logger_level="local7.warning"; ;;
+	*)  logger_level="local7.info"; ;;
+    esac
+    logger -i -t "$LOGGER_NAME" -p "$logger_level" "$2"
+}
+
 control_c() {
   # Run if user hits control-c so clean exit.
   echo -en "\n*** Control-c and will exit.***\n"
-  clulog -s $LOG_INFO "Control-c caught and will stop the script $0".
+  clulog $LOG_INFO "Control-c caught and will stop the script $0".
   stopService;
   exit $?
 }
@@ -43,9 +55,9 @@ usage() {
 }
 
 stopService() {
-    clulog -s $LOG_INFO "Executing stop on the script: $0"
+    clulog $LOG_INFO "Executing stop on the script: $0"
     if [ ! -f $LOCKFILE ]; then
-        clulog -s $LOG_WARNING "The script is not running: $0."
+        clulog $LOG_WARNING "The script is not running: $0."
         exit 0;
     fi
     # If the orginal start process is still running then kill that process.
@@ -56,12 +68,12 @@ stopService() {
 }
 
 startService() {
-    clulog -s $LOG_INFO "Executing start on the script: $0"
+    clulog $LOG_INFO "Executing start on the script: $0"
     echo $$ > $LOCKFILE
     result=$?
     # A loop that will keep service in "starting" state.
 	if [ "$DELAY_STARTUP_SECONDS" -gt 0 ]; then
-        clulog -s $LOG_INFO "Delaying startup by $DELAY_STARTUP_SECONDS seconds for the script: $0."
+        clulog $LOG_INFO "Delaying startup by $DELAY_STARTUP_SECONDS seconds for the script: $0."
         sleep $DELAY_STARTUP_SECONDS;
     fi
     exit $result;
@@ -69,17 +81,17 @@ startService() {
 
 statusService() {
     basename=${0##*/}
-    clulog -s $LOG_INFO "Executing status on the script: $0"
+    clulog $LOG_INFO "Executing status on the script: $0"
 	if [ -f $LOCKFILE ]; then
-	    clulog -s $LOG_INFO "The script $basename is running."
+	    clulog $LOG_INFO "The script $basename is running."
 	    exit 0;
 	else
-	    clulog -s $LOG_INFO "The script $basename is not running."
+	    clulog $LOG_INFO "The script $basename is not running."
 	    exit 1;
 	fi
 }
 reloadService() {
-    clulog -s $LOG_INFO "Executing reload on the script: $SCRIPTNAME.";
+    clulog $LOG_INFO "Executing reload on the script: $SCRIPTNAME.";
 }
 
 # ###############################################################################

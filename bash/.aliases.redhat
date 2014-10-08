@@ -11,8 +11,7 @@ alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-ti
 ##############################################################################
 # Distrobution Information
 ##############################################################################
-which lsb_release >> /dev/null;
-if [ $? -eq 0 ] ; then
+if [[ `command_exists lsb_release` -eq "0" ]] ; then
     alias whichdistro='lsb_release --id --release --codename | grep "Distributor ID" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
     alias whichrelease='lsb_release --id --release --codename | grep "Release" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
     alias whichcodename='lsb_release --id --release --codename | grep "Codename" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';

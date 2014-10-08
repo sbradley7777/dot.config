@@ -1,6 +1,11 @@
 #!/bin/sh
 # .bashrc
 
+# Aliases are not expanded when the shell is not interactive, unless the
+# expand_aliases shell option is set using shopt. This is useful if having ssh
+# execute a command.
+shopt -s expand_aliases
+
 #################################################################################
 # Source global definitions
 #################################################################################

@@ -2,6 +2,25 @@
 # Functions that are for bash.
 # Some of thesee function are from here: https://github.com/mathiasbynens/dotfiles/blob/master/.functions
 
+# Check to see if command exists
+command_exists () {
+    type "$1" &> /dev/null ;
+}
+
+# Create a new directory and enter it
+function mkd() {
+    mkdir -p "$@" && cd "$@"
+}
+
+function trim_whitespaces() {
+    local var=$@
+    # remove leading whitespace characters
+    var="${var#"${var%%[![:space:]]*}"}"
+    # remove trailing whitespace characters
+    var="${var%"${var##*[![:space:]]}"}"
+    echo -n "$var"
+}
+
 # Simple calculator
 function calc() {
     local result=""
@@ -17,20 +36,6 @@ function calc() {
         printf "$result"
     fi
     printf "\n"
-}
-
-# Create a new directory and enter it
-function mkd() {
-    mkdir -p "$@" && cd "$@"
-}
-
-function trim_whitespaces() {
-    local var=$@
-    # remove leading whitespace characters
-    var="${var#"${var%%[![:space:]]*}"}"
-    # remove trailing whitespace characters
-    var="${var%"${var##*[![:space:]]}"}"
-    echo -n "$var"
 }
 
 # Create a .tar.gz archive, using `zopfli`, `pigz` or `gzip` for compression

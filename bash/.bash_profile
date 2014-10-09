@@ -96,7 +96,7 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
     # The package bash-completion will need to be installed with brew and the
     # configuration files will be located here /usr/local/etc/bash_completion.d
     # on OSX.
-    if which brew >/dev/null; then
+    if [[ `type brew &> /dev/null` -eq "0" ]] ; then
         if [ -f $(brew --prefix)/etc/bash_completion ]; then
             source $(brew --prefix)/etc/bash_completion;
             # Add tab completion for `defaults read|write NSGlobalDomain`.

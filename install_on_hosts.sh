@@ -64,8 +64,9 @@ fi
 # All options were specified and the hosts will either have a repo cloned or
 # updated. Then installed.
 ######################################################################
-echo "Pulling Configs for the following hosts:";
-echo "-----------------------------------------";
+echo "-----------------------------------------------------------------";
+echo "Downloading and Installing configuration for the following hosts:";
+echo "-----------------------------------------------------------------";
 for i in ${!LIST_OF_HOSTS[@]}
   do
     currentHostname=${LIST_OF_HOSTS[i]};

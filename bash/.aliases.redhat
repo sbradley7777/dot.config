@@ -55,3 +55,8 @@ alias psmem10='ps auxf | sort -nr -k 4 | head -10';
 # Get top process eating cpu.
 alias pscpu='ps auxf | sort -nr -k 3';
 alias pscpu10='ps auxf | sort -nr -k 3 | head -10';
+
+##############################################################################
+# bugzilla 
+##############################################################################
+alias sosbzq='bugzilla query --product "Red Hat Enterprise Linux 5","Red Hat Enterprise Linux 6","Red Hat Enterprise Linux 7" --component sos -t NEW --outputformat "%{id}::%{component}::%{product}::%{assigned_to}"';

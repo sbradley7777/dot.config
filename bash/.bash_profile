@@ -84,6 +84,10 @@ if [ -d $HOME/bin ]; then
         fi
     done;
 fi
+# Ensure user-installed binaries take precedence, for stuff like brew on osx.
+if [[ "$unamestr" == 'Darwin' ]]; then
+    export PATH=/usr/local/bin:$PATH
+fi
 
 ##############################################################################
 # Use bash-completion, if available

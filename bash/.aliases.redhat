@@ -9,12 +9,24 @@ alias timef="/usr/bin/time --format='\tUser Time: %U sec | System Time: %S sec |
 alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-tilde';
 
 ##############################################################################
-# Distrobution Information
+# Distrobution Specific
 ##############################################################################
-if [[ `type lsb_release &> /dev/null` -eq "0" ]] ; then
+if [[ `command -v lsb_release >/dev/null 2>&1` -eq "0" ]] ; then
     alias whichdistro='lsb_release --id --release --codename | grep "Distributor ID" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
     alias whichrelease='lsb_release --id --release --codename | grep "Release" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
     alias whichcodename='lsb_release --id --release --codename | grep "Codename" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
+    #release=$(whichrelease);
+    #major_release=${release::1}
+    #if [[ "$major_release" -lt "7" ]]; then
+        ##############################################################################
+        # Network and Firewall
+        ##############################################################################
+	#alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers';
+        #alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers';
+        #alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers';
+        #alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers';
+        #alias firewall=iptlist;
+    #fi
 fi
 ##############################################################################
 # Adminstrator aliases
@@ -27,20 +39,6 @@ alias rpmwhois='/bin/rpm -qa --queryformat="%{N} %{buildhost}\n" | grep -i ';
 ##############################################################################
 # Network and Firewall
 ##############################################################################
-# Some commands have changed after RHEL 6 was released.
-if [[ "$(whichdistro)" == 'RedHatEnterpriseServer' ]]; then
-    release=$(whichrelease);
-    major_release=${release::1}
-    if [[ "$major_release" -lt "7" ]]; then
-        # Display all rules
-	alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers';
-        alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers';
-        alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers';
-        alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers';
-        alias firewall=iptlist;
-    fi
-fi
-
 # Display port information
 alias ports='netstat -tulanp';
 
@@ -57,6 +55,6 @@ alias pscpu='ps auxf | sort -nr -k 3';
 alias pscpu10='ps auxf | sort -nr -k 3 | head -10';
 
 ##############################################################################
-# bugzilla 
+# bugzilla
 ##############################################################################
 alias sosbzq='bugzilla query --product "Red Hat Enterprise Linux 5","Red Hat Enterprise Linux 6","Red Hat Enterprise Linux 7" --component sos -t NEW --outputformat "%{id}::%{component}::%{product}::%{assigned_to}"';

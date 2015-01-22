@@ -127,6 +127,13 @@ complete -o bashdefault -o default -o nospace -F _complete_hosts ssh 2>/dev/null
     || complete -o default -o nospace -F _complete_hosts ssh
 
 ##############################################################################
+# Create the global hook tempate directory
+##############################################################################
+if [ ! -d $HOME/.git-templates/hooks ]; then
+    mkdir -p $HOME/.git-templates/hooks  &> /dev/null
+fi
+
+##############################################################################
 # Source in the .bash_profile.priv for private configuration
 ##############################################################################
 if [ -f $HOME/.bash_profile.priv ];then
@@ -139,4 +146,3 @@ fi
 if [ -f $HOME/.bashrc ]; then
     source $HOME/.bashrc;
 fi
-

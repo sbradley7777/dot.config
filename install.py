@@ -145,10 +145,11 @@ CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.pat
                                   ConfigurationFile("conf/.emacs.d", os.path.join(os.getenv("HOME"), ".emacs.d")),
                                   ConfigurationFile("bin/bin.utils", os.path.join(os.getenv("HOME"), "bin/bin.utils")),
                                   ConfigurationFile("bash/.functions-osx.sh", os.path.join(os.getenv("HOME"), ".functions-osx.sh"), platform="Darwin"),
-                                  ConfigurationFile("python", os.path.join(os.getenv("HOME"), "python"))]
+                                  ConfigurationFile("python", os.path.join(os.getenv("HOME"), "python")),
+                                  ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig")),
+                                  ConfigurationFile("conf/.gitignore", os.path.join(os.getenv("HOME"), ".gitignore")),
+                                  ConfigurationFile("conf/.git-templates/hooks", os.path.join(os.getenv("HOME"), ".git-templates/hooks/pre-commit"))]
 
-#                                  ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig")),
-#                                  ConfigurationFile("conf/.gitignore", os.path.join(os.getenv("HOME"), ".gitignore")),
 
 # ##############################################################################
 # Functions for directories

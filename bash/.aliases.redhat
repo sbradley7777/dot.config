@@ -63,4 +63,8 @@ if [[ `type bugzilla &> /dev/null` -eq "0" ]] ; then
     alias sosbzq_new_seven='bugzilla query --product "Red Hat Enterprise Linux 7" --component sos -t NEW --outputformat "%{id} | %{bug_status} | %{assigned_to} | %{short_desc}"';
     alias sosbzq_six='bugzilla query --product "Red Hat Enterprise Linux 6" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV,ON_QA,VERIFIED,RELEASE_PENDING --outputformat "%{id} | %{bug_status} | %{assigned_to} | %{short_desc}"';
     alias sosbzq_seven='bugzilla query --product "Red Hat Enterprise Linux 7" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV,ON_QA,VERIFIED,RELEASE_PENDING --outputformat "%{id} | %{bug_status} | %{assigned_to} | %{short_desc}"';
+
+    # Markdown formatted
+    alias sosbzq_six_md='bugzilla query --product "Red Hat Enterprise Linux 6" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV,ON_QA,VERIFIED,RELEASE_PENDING --outputformat "* [%{id} - %{short_desc}](https://bugzilla.redhat.com/show_bug.cgi?id=%{id})"';
+    alias sosbzq_seven_md='bugzilla query --product "Red Hat Enterprise Linux 7" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV,ON_QA,VERIFIED,RELEASE_PENDING --outputformat "* [%{id} - %{short_desc}](https://bugzilla.redhat.com/show_bug.cgi?id=%{id})"';
 fi

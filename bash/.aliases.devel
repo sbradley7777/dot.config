@@ -19,6 +19,8 @@ alias gitreset='git reset --hard origin/master'
 alias gitdiffhead='git diff HEAD'
 
 
-# formp cf5g0d2 > ~/src/.../test.patch
+# Example for URL:
+#   URL: https://github.com/sosreport/sos/commit/79984402303b01c81eb5a6825350d030e4022edd
+#   $ formp 79984402303b01c81eb5a6825350d030e4022edd > ~/src/dist-git/redhat/sos/sos-bz1172880-puppet-adding-new-plugin-for-puppet.patch
 formpatches () { git format-patch --stdout $@; }
 formp () { git format-patch --stdout $1~1..$1; }

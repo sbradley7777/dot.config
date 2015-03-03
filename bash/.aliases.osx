@@ -1,5 +1,19 @@
 #!/bin/sh
+##############################################################################
+# Aliases to kill/restart desktop processes
+##############################################################################
+#The Finder crashed:
+alias killFinder="killall -KILL Finder";
+#The Dock crashed:
+alias killDock="killall -KILL Dock";
+#Spaces crashed:
+alias killSpaces="killall -KILL Dock";
+#The Menubar crashed/refuses to be clickable:
+alias killMenuBar="killall -KILL SystemUIServer";
 
+##############################################################################
+# Aliases for utilities
+##############################################################################
 # Which command in osx does not have many options.
 alias which="which -a ";
 
@@ -20,41 +34,29 @@ fi
 
 # Recursively delete .DS_Store files
 alias findDS_Store="find . -type f -name '*.DS_Store'"
-
 # Recursively delete .DS_Store files
 alias cleanupDS_Store="find . -type f -name '*.DS_Store' -ls -delete"
-
 # Disable of creating of .DS_Store files
 alias disableDS_Store="defaults write com.apple.desktopservices DSDontWriteNetworkStores true"
-
 # Clean up LaunchServices to remove duplicates in the “Open With” menu
 # http://osxdaily.com/2013/01/22/fix-open-with-menu-mac-os-x/
 alias cleanupOpenWith="/System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister -kill -r -domain local -domain system -domain user && killall Finder"
-
-# Empty the Trash on all mounted volumes and the main HDD
-# Also, clear Apple’s System Logs to improve shell startup speed
+# Empty the Trash on all mounted volumes and the main HDD.  Also, clear Apple’s System Logs to improve shell startup speed.
 alias emptytrash="sudo rm -rfv /Volumes/*/.Trashes; sudo rm -rfv ~/.Trash; sudo rm -rfv /private/var/log/asl/*.asl"
-
-# Found these here:
-# https://github.com/mattbanks/dotfiles/blob/master/osx/aliases.zsh
-# Show/hide hidden files in Finder
+# Show/hide hidden files in Finder. Found these here: https://github.com/mattbanks/dotfiles/blob/master/osx/aliases.zsh
 alias showHiddenFiles="defaults write com.apple.Finder AppleShowAllFiles -bool true && killall Finder"
 alias hideHiddenFiles="defaults write com.apple.Finder AppleShowAllFiles -bool false && killall Finder"
-
 # Hide/show all desktop icons (useful when presenting)
 alias hidedesktop="defaults write com.apple.finder CreateDesktop -bool false && killall Finder"
 alias showdesktop="defaults write com.apple.finder CreateDesktop -bool true && killall Finder"
-
 # Disable Dashboard
 alias dashboardoff="defaults write com.apple.dashboard mcx-disabled -boolean YES && killall Dock"
 # Enable Dashboard
 alias dashboardon="defaults write com.apple.dashboard mcx-disabled -boolean NO && killall Dock"
-
 # Disable Spotlight
 alias spotoff="sudo mdutil -a -i off"
 # Enable Spotlight
 alias spoton="sudo mdutil -a -i on"
-
 # Restart remote desktop client
 alias rdrestart="sudo /System/Library/CoreServices/RemoteManagement/ARDAgent.app/Contents/Resources/kickstart -restart -agent"
 

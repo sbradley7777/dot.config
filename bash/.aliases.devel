@@ -17,10 +17,12 @@ alias gitpushorigin="git push origin";
 alias gitrebasemaster="git rebase master";
 alias gitreset="git reset --hard origin/master";
 alias gitdiffhead="git diff HEAD";
+# git show 6a985e3fda9458c84393c18f9cf700a510ff26b0 # For commit in sos repo.
+alias gitshowcommit="git show ";
 # Found these here: https://stackoverflow.com/questions/2421011/output-of-git-branch-in-tree-like-fashion
 alias gitbranchtree_1="git log --graph --simplify-by-decoration --pretty=format:'%d' --all";
 alias gitbranchtree_2="git log --graph --all --format='%C(cyan dim) %p %Cred %h %C(white dim) %s %Cgreen(%cr)%C(cyan dim) <%an>%C(bold yellow)%d%Creset'"
-alias gitshowcommits="git log --graph --oneline --decorate --branches --tags";
+alias gitcommitstree="git log --graph --oneline --decorate --branches --tags";
 
 # Example for URL:
 #   URL: https://github.com/sosreport/sos/commit/79984402303b01c81eb5a6825350d030e4022edd

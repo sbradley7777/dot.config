@@ -8,8 +8,7 @@
 ls | while read -r file
 do
     #mv -v "$FILE" `echo $FILE | tr ' ' '_' | tr -d '[{}(),\!]' | tr -d "\'" | tr '[A-Z]' '[a-z]' | sed 's/_-_/_/g'`;
-    #newname=$(echo $file | tr '.' '_' | sed 's/\(.*\)_\([^_]*\)$/\1.\2/g')
-    newname=$(echo $file | tr [:upper:] [:lower:] | tr '.' '_' | sed 's/\(.*\)_\([^_]*\)$/\1.\2/g')
+    newname=$(echo $file | tr [:upper:] [:lower:] | tr '.' '_' | tr ' ' '_' | sed 's/\(.*\)_\([^_]*\)$/\1.\2/g')
     [ "$newname" != "$file" ] && mv "$file" "$newname"
 done
 

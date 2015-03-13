@@ -3,15 +3,26 @@
 *.pyc
 *.pyo
 
-# Folder view configuration files
-.DS_Store
+# Folder view configuration files.
+.DS*
 Desktop.ini
 
-# Thumbnail cache files and backup files
+# Thumbnail cache files and backup files.
 ._*
 .*~
 Thumbs.db
 
-# Files that might appear on external disks
+# Files that might appear on external disks.
 .Spotlight-V100
 .Trashes
+
+# Patch/diff artifacts.
+*.patch
+*.diff
+*.orig
+*.rej
+
+# Emacs artifacts.
+*~
+\#*\#
+

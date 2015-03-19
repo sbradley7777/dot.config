@@ -7,7 +7,8 @@
 #
 # TODO:
 # * Add variable to hold name of GFS2 filesystem when analyzing glocktop
-#   output. Append to end of print line of glock.
+#   output. Append to end of print line of glock. Not capturing GFS2 filesystem
+#   name in all cases. Need like an asterick at start of it.
 
 bname=$(basename $0);
 usage()
@@ -73,25 +74,35 @@ fi
 hw_count=0;
 current_glock="";
 current_holder="";
+current_gfs2_filesystem_name="";
 while read line;do
     if [[ $line == G:* ]]; then
 	if (( $hw_count >= $minimum_hw )); then
 	    printf -v hc "%03d" $hw_count;
 	    if [ -n "$current_holder" ]; then
-		echo "$hc ---> $current_glock (Has Holder: $current_holder)";
+		echo "$hc ---> $current_glock [$current_gfs2_filesystem_name] (Has Holder: $current_holder)";
 	    else
-		echo "$hc ---> $current_glock";
+		echo "$hc ---> $current_glock [$current_gfs2_filesystem_name]";
 	    fi
 	fi
-	current_glock=$line;
 	hw_count=0;
+	current_glock=$line;
 	current_holder="";
+	current_gfs2_filesystem_name="";
     elif [[ $line == *H:* ]]; then
 	((hw_count++));
 	# f:AH|f:H|f:EH
 	if [[ $line == *f:H* ]]; then
 	    current_holder=$line;
 	fi
+    elif [[ $line == *I:* ]]; then
+	continue;
+    elif [[ $line == *R:* ]]; then
+	continue;
+    elif [[ $line == *D:* ]]; then
+	continue;
+    elif [[ "$line" =~ [^a-zA-Z0-9] ]]; then
+	current_gfs2_filesystem_name=`echo $line | cut -d " " -f1`;
     fi
 done < $path_to_file;
 exit;

@@ -5,8 +5,11 @@
 # Usage: ./gfs2_lockdump_count_hw.sh <path to GFS2 lockdump or glocktop file>
 #
 #
-# TODO: Add getopts to give option to see count minimum for holder/waiter on
-#       glock.
+# TODO:
+# * Add getopts to give option to see count minimum for holder/waiter on
+#   glock.
+# * Add variable to hold name of GFS2 filesystem when analyzing glocktop
+#   output. Append to end of print line of glock.
 
 if [ -z $1 ]; then
    echo "ERROR: A path to the file that will be analyzed is required.";

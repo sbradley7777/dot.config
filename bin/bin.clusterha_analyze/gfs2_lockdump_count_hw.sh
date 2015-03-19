@@ -88,7 +88,6 @@ while read line;do
 	hw_count=0;
 	current_glock=$line;
 	current_holder="";
-	current_gfs2_filesystem_name="";
     elif [[ $line == *H:* ]]; then
 	((hw_count++));
 	# f:AH|f:H|f:EH

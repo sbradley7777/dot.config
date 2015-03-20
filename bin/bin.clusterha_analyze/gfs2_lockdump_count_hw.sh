@@ -2,7 +2,7 @@
 # Author: sbradley@redhat.com
 # Description: This script counts the number of holders and waiters for a GFS2
 #              lockdump or glocktop output.
-# Version: 1.1
+# Version: 1.2
 #
 # Usage: ./gfs2_lockdump_count_hw.sh -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
 
@@ -79,27 +79,32 @@ echo -e  "----------------------------------------------------------------------
 
 # hw_count is the holder/waiter count.
 hw_count=0;
-current_glock="";
-current_holder="";
-# Filesystem name will contain [ ] around name if found.
-current_gfs2_filesystem_name="";
+cglock="";
+cholder="";
+cgfs2_filesystem_name="";
+ctimestamp="";
 while read line;do
     if [[ $line == G:* ]]; then
 	if (( $hw_count >= $minimum_hw )); then
 	    printf -v hc "%03d" $hw_count;
-		echo "$hc ---> $current_glock $current_gfs2_filesystem_name";
-	    if [ -n "$current_holder" ]; then
-		echo "             $current_holder (HOLDER)";
+	    if [ -n $cgfs2_filesystem_name ]; then
+		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp]";
+	    else
+		echo "$hc ---> $cglock";
+	    fi
+
+	    if [ -n "$cholder" ]; then
+		echo "             $cholder (HOLDER)";
 	    fi
 	fi
 	hw_count=0;
-	current_glock=$line;
-	current_holder="";
+	cglock=$line;
+	cholder="";
     elif [[ $line == *H:* ]]; then
 	((hw_count++));
 	# f:AH|f:H|f:EH
 	if [[ $line == *f:H* ]]; then
-	    current_holder=$line;
+	    cholder=$line;
 	fi
     elif [[ $line == *I:* ]]; then
 	continue;
@@ -108,7 +113,9 @@ while read line;do
     elif [[ $line == *D:* ]]; then
 	continue;
     elif [[ "$line" =~ [^a-zA-Z0-9] ]]; then
-	current_gfs2_filesystem_name="[`echo $line | cut -d \" \" -f1`]";
+	cgfs2_filesystem_name="`echo $line | cut -d \" \" -f1`";
+	ctimestamp="`echo $line | awk '{print $3,$4,$6,$5;}'`";
+	ctimestamp=`date -d "$ctimestamp" +%Y-%m-%d_%H:%M:%S 2>/dev/null`;
     fi
 done < $path_to_file;
 exit;

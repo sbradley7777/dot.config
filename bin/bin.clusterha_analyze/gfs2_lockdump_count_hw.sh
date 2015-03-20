@@ -1,14 +1,11 @@
 #!/usr/bin/env bash
-# This script counts the number of holders and waiters for a GFS2 lockdump or
-# glocktop output.
+# Author: sbradley@redhat.com
+# Description: This script counts the number of holders and waiters for a GFS2
+#              lockdump or glocktop output.
+# Version: 1.1
 #
 # Usage: ./gfs2_lockdump_count_hw.sh -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
-#
-#
-# TODO:
-# * Add variable to hold name of GFS2 filesystem when analyzing glocktop
-#   output. Append to end of print line of glock. Not capturing GFS2 filesystem
-#   name in all cases. Need like an asterick at start of it.
+
 
 bname=$(basename $0);
 usage()
@@ -80,7 +77,8 @@ while read line;do
 	if (( $hw_count >= $minimum_hw )); then
 	    printf -v hc "%03d" $hw_count;
 	    if [ -n "$current_holder" ]; then
-		echo "$hc ---> $current_glock [$current_gfs2_filesystem_name] (Has Holder: $current_holder)";
+		echo "$hc ---> $current_glock [$current_gfs2_filesystem_name]";
+		echo "             $current_holder (HOLDER)";
 	    else
 		echo "$hc ---> $current_glock [$current_gfs2_filesystem_name]";
 	    fi

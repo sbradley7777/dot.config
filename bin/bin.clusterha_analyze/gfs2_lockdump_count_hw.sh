@@ -67,20 +67,29 @@ if [ ! -f $path_to_file ]; then
     usage;
     exit 1
 fi
+
+# Print some useful stat information before doing the count on holder/waiters on
+# each glock.
+echo -e "Filename: $path_to_file";
+printf "  inodes:    "; egrep -ri 'n:2' $path_to_file | wc -l;
+printf "  rgrp:      "; egrep -ri 'n:3' $path_to_file | wc -l;
+printf "  Waiters:   "; egrep -ri 'f:w|f:aw|f:cw|f:ew|f:tw' $path_to_file | wc -l;
+printf "  Holders:   "; egrep -ri 'f:ah|f:h' $path_to_file | wc -l;
+echo -e  "----------------------------------------------------------------------------------------";
+
 # hw_count is the holder/waiter count.
 hw_count=0;
 current_glock="";
 current_holder="";
+# Filesystem name will contain [ ] around name if found.
 current_gfs2_filesystem_name="";
 while read line;do
     if [[ $line == G:* ]]; then
 	if (( $hw_count >= $minimum_hw )); then
 	    printf -v hc "%03d" $hw_count;
+		echo "$hc ---> $current_glock $current_gfs2_filesystem_name";
 	    if [ -n "$current_holder" ]; then
-		echo "$hc ---> $current_glock [$current_gfs2_filesystem_name]";
 		echo "             $current_holder (HOLDER)";
-	    else
-		echo "$hc ---> $current_glock [$current_gfs2_filesystem_name]";
 	    fi
 	fi
 	hw_count=0;
@@ -99,7 +108,8 @@ while read line;do
     elif [[ $line == *D:* ]]; then
 	continue;
     elif [[ "$line" =~ [^a-zA-Z0-9] ]]; then
-	current_gfs2_filesystem_name=`echo $line | cut -d " " -f1`;
+	current_gfs2_filesystem_name="[`echo $line | cut -d \" \" -f1`]";
     fi
 done < $path_to_file;
 exit;
+

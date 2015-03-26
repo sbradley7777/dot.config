@@ -12,6 +12,9 @@
 # * Add the osx-prefs.sh items to here.
 # * Test this code first
 # * Get rid of questions or set an auto yes in there option.
+# * Add these chrome setting to disable swipe back/forward:
+#   defaults write com.google.Chrome.plist AppleEnableSwipeNavigateWithScrolls -bool FALSE
+#   defaults write com.google.Chrome AppleEnableMouseSwipeNavigateWithScrolls -bool FALSE
 
 # Source in the color functions and colors
 source ~/.functions.sh;

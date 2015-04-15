@@ -2,10 +2,14 @@
 # Author: sbradley@redhat.com
 # Description: This script counts the number of holders and waiters for a GFS2
 #              lockdump or glocktop output.
-# Version: 1.2
+# Version: 1.3
 #
 # Usage: ./gfs2_lockdump_count_hw.sh -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
-
+#
+# TODO:
+# * Move the summary to the main loop instead of doing a grep 4 times, better to
+#   do once in loop.
+# * See if finding the filesystem name/year could be done better.
 
 bname=$(basename $0);
 usage()
@@ -70,7 +74,7 @@ fi
 
 # Print some useful stat information before doing the count on holder/waiters on
 # each glock.
-echo -e "Filename: $path_to_file";
+echo -e "Processing the file: $path_to_file";
 printf "  inodes:    "; egrep -ri 'n:2' $path_to_file | wc -l;
 printf "  rgrp:      "; egrep -ri 'n:3' $path_to_file | wc -l;
 printf "  Waiters:   "; egrep -ri 'f:w|f:aw|f:cw|f:ew|f:tw' $path_to_file | wc -l;
@@ -83,8 +87,13 @@ cglock="";
 cholder="";
 cgfs2_filesystem_name="";
 ctimestamp="";
+
+shopt -s extglob
+
 while read line;do
-    if [[ $line == G:* ]]; then
+    if [ ! -n "${line##+([[:space:]])}" ]; then
+	continue;
+    elif [[ $line == G:* ]]; then
 	if (( $hw_count >= $minimum_hw )); then
 	    printf -v hc "%03d" $hw_count;
 	    if [ -n $cgfs2_filesystem_name ]; then
@@ -112,10 +121,15 @@ while read line;do
 	continue;
     elif [[ $line == *D:* ]]; then
 	continue;
-    elif [[ "$line" =~ [^a-zA-Z0-9] ]]; then
+    # There has to be better way to check for the fsname/date separators.
+    elif [[ ${line:0:1} =~ ^[a-zA-Z0-9] ]]; then
 	cgfs2_filesystem_name="`echo $line | cut -d \" \" -f1`";
-	ctimestamp="`echo $line | awk '{print $3,$4,$6,$5;}'`";
-	ctimestamp=`date -d "$ctimestamp" +%Y-%m-%d_%H:%M:%S 2>/dev/null`;
+	ctimestamp_tmp="`echo $line | awk '{print $3,$4,$6,$5;}'`";
+	ctimestamp_tmp=`date -d "$ctimestamp_tmp" +%Y-%m-%d_%H:%M:%S 2>/dev/null`;
+        # If string starts with year then change current timestamp.
+	if [[ $ctimestamp_tmp =~ ^20[0-9][0-9]-* ]];then
+	    ctimestamp=$ctimestamp_tmp;
+	fi
     fi
 done < $path_to_file;
 exit;

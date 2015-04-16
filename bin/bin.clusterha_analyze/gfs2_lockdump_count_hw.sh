@@ -2,14 +2,16 @@
 # Author: sbradley@redhat.com
 # Description: This script counts the number of holders and waiters for a GFS2
 #              lockdump or glocktop output.
-# Version: 1.3
+# Version: 1.4
 #
 # Usage: ./gfs2_lockdump_count_hw.sh -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
 #
 # TODO:
-# * Move the summary to the main loop instead of doing a grep 4 times, better to
-#   do once in loop.
 # * See if finding the filesystem name/year could be done better.
+# * Options that will show all waiters or entire glock trace.
+# * Option to search for specific glocks to see how there holder/waiter
+#   count changes over time. Could map all of them but that really
+#   require leverging rewrite in python.
 
 bname=$(basename $0);
 usage()
@@ -72,30 +74,32 @@ if [ ! -f $path_to_file ]; then
     exit 1
 fi
 
-# Print some useful stat information before doing the count on holder/waiters on
-# each glock.
-echo -e "Processing the file: $path_to_file";
-printf "  inodes:    "; egrep -ri 'n:2' $path_to_file | wc -l;
-printf "  rgrp:      "; egrep -ri 'n:3' $path_to_file | wc -l;
-printf "  Waiters:   "; egrep -ri 'f:w|f:aw|f:cw|f:ew|f:tw' $path_to_file | wc -l;
-printf "  Holders:   "; egrep -ri 'f:ah|f:h' $path_to_file | wc -l;
-echo -e  "----------------------------------------------------------------------------------------";
-
-# hw_count is the holder/waiter count.
-hw_count=0;
+# chw_count is the holder/waiter count for current glock.
+chw_count=0;
 cglock="";
 cholder="";
 cgfs2_filesystem_name="";
 ctimestamp="";
 
-shopt -s extglob
+# Summary stats
+inode_count=0;
+rgrp_count=0;
+waiter_count=0;
+holder_count=0;
 
+echo "Processing the file: `basename $path_to_file`";
+shopt -s extglob
 while read line;do
     if [ ! -n "${line##+([[:space:]])}" ]; then
 	continue;
     elif [[ $line == G:* ]]; then
-	if (( $hw_count >= $minimum_hw )); then
-	    printf -v hc "%03d" $hw_count;
+	if [[ $line == *n:2* ]]; then
+	    ((inode_count++));
+	elif [[ $line == *n:3* ]]; then
+	    ((rgrp_count++))
+	fi
+	if (( $chw_count >= $minimum_hw )); then
+	    printf -v hc "%03d" $chw_count;
 	    if [ -n $cgfs2_filesystem_name ]; then
 		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp]";
 	    else
@@ -106,14 +110,17 @@ while read line;do
 		echo "             $cholder (HOLDER)";
 	    fi
 	fi
-	hw_count=0;
+	chw_count=0;
 	cglock=$line;
 	cholder="";
     elif [[ $line == *H:* ]]; then
-	((hw_count++));
+	((chw_count++));
 	# f:AH|f:H|f:EH
 	if [[ $line == *f:H* ]]; then
 	    cholder=$line;
+	    ((holder_count++));
+	elif [[ $line == *f:*W* ]]; then
+	    ((waiter_count++));
 	fi
     elif [[ $line == *I:* ]]; then
 	continue;
@@ -132,5 +139,14 @@ while read line;do
 	fi
     fi
 done < $path_to_file;
+# Print some useful stat information before doing the count on holder/waiters on
+# each glock.
+echo -e  "\n----------------------------------------------------------------------------------------";
+echo -e "Summary Stats";
+echo -e  "----------------------------------------------------------------------------------------";
+echo "  inodes:    $inode_count";
+echo "  rgrp:      $rgrp_count";
+echo "  Waiters:   $waiter_count";
+echo "  Holders:   $holder_count";
 exit;
 

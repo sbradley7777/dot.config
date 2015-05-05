@@ -95,6 +95,10 @@ fi
 if [[ "$unamestr" == 'Linux' ]]; then
     if [ -f /etc/bash_completion ]; then
         source /etc/bash_completion;
+	if [ -f /usr/bin/src-hilite-lesspipe.sh ]; then
+	    export LESSOPEN="| /usr/bin/src-hilite-lesspipe.sh %s";
+	    export LESS=' -R ';
+	fi
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
     # The package bash-completion will need to be installed with brew and the

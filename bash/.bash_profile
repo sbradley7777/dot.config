@@ -96,6 +96,7 @@ if [[ "$unamestr" == 'Linux' ]]; then
     if [ -f /etc/bash_completion ]; then
         source /etc/bash_completion;
 	if [ -f /usr/bin/src-hilite-lesspipe.sh ]; then
+	    # yum -y install source-highlight
 	    export LESSOPEN="| /usr/bin/src-hilite-lesspipe.sh %s";
 	    export LESS=' -R ';
 	fi

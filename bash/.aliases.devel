@@ -10,6 +10,7 @@ alias diff="/usr/bin/diff -pruN";
 ##############################################################################
 # Git commands
 ##############################################################################
+alias gitbranchall="git branch -vv -a";
 alias gitconfigls="git config --list";
 alias gitaddall="git add .";
 alias gitcommit="git commit -m";

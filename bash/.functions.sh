@@ -12,10 +12,6 @@ blue='\033[0;34m'
 magenta='\033[0;35m'
 cyan='\033[0;36m'
 
-
-#  Reset text attributes to normal + without clearing screen.
-alias Reset="tput sgr0"
-
 # Color-echo.
 # arg $1 = message
 # arg $2 = Color
@@ -24,6 +20,18 @@ cecho() {
   Reset # Reset to normal.
   return
 }
+
+#  Reset text attributes to normal + without clearing screen.
+alias Reset="tput sgr0"
+
+emacsro() {
+  if [ ! -z $1 ]; then
+      emacs -nw "$1" --eval '(setq buffer-read-only t)';
+  else
+      echo "Error: A filename is required.";
+  fi
+}
+
 
 # Check to see if command exists
 command_exists () {
@@ -88,7 +96,7 @@ function calc() {
 #}
 
 # Determine size of a file or total size of a directory
-function fs() {
+function filesize() {
     if du -b /dev/null > /dev/null 2>&1; then
         local arg=-sbh
     else

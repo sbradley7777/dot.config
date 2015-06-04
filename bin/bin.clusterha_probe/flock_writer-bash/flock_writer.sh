@@ -6,7 +6,7 @@
 # write to a file at a time which prevents corruption from occurring.
 #
 # usage:
-# $ ./flock_writer <path_to_file> <number of iterations>
+# $ ./flock_writer -p <path_to_file> -i <number of iterations>
 # ###############################################################################
 bname=$(basename $0);
 
@@ -24,7 +24,7 @@ OPTIONS:
    -p      Path to the file that will be written to
 
 EXAMPLE:
-$ $bname -p /mnt/gfs2/flocked-file.txt
+$ $bname -p /mnt/gfs2/flocked-file.txt -i 300
 
 EOF
 }

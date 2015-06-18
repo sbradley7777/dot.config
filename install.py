@@ -150,7 +150,7 @@ CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.pat
                                   ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig"), platform="Darwin"),
                                   ConfigurationFile("conf/.gitconfig.rhel", os.path.join(os.getenv("HOME"), ".gitconfig"), platform="Linux"),
                                   ConfigurationFile("conf/.gitignore", os.path.join(os.getenv("HOME"), ".gitignore")),
-                                  ConfigurationFile("conf/.git-templates/hooks", os.path.join(os.getenv("HOME"), ".git-templates/hooks/pre-commit"))]
+                                  ConfigurationFile("conf/.git-templates/hooks/pre-commit", os.path.join(os.getenv("HOME"), ".git-templates/hooks/pre-commit"))]
 
 
 # ##############################################################################

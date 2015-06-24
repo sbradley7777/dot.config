@@ -15,6 +15,8 @@
 # * Add these chrome setting to disable swipe back/forward:
 #   defaults write com.google.Chrome.plist AppleEnableSwipeNavigateWithScrolls -bool FALSE
 #   defaults write com.google.Chrome AppleEnableMouseSwipeNavigateWithScrolls -bool FALSE
+# Add recent applications in dock
+# * defaults write com.apple.dock persistent-others -array-add '{"tile-data" = {"list-type" = 1;}; "tile-type" = "recents-tile";}'; killall Dock
 
 # Source in the color functions and colors
 source ~/.functions.sh;

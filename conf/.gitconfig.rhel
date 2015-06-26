@@ -29,7 +29,7 @@
 
    # Git: Viewing diffs
    # Get diff on current branch and master
-   diffmaster = git diff --name-status master..$(git name-rev --name-only HEAD)
+   diffmaster = diff --name-status master..$(git name-rev --name-only HEAD)
    # Show the diff between the latest commit and the current state
    d = !"git diff-index --quiet HEAD -- || clear; git --no-pager diff --patch-with-stat"
    # `git di $number` shows the diff between the state `$number` revisions ago and the current state

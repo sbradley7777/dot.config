@@ -2,7 +2,7 @@
 # Author: sbradley@redhat.com
 # Description: This script counts the number of holders and waiters for a GFS2
 #              lockdump or glocktop output.
-# Version: 1.4
+# Version: 1.5
 #
 # Usage: ./gfs2_lockdump_count_hw.sh -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
 #
@@ -25,20 +25,26 @@ OPTIONS:
    -h      Show this message
    -m      Minimum number of waiters/holder that a glock has.
    -p      Path to the file that will be analyzed.
+   -s      Enable summary of glock types
 
 EXAMPLE:
-$ $bname -m 5 -p ~/myGFS2.glocks
+$ $bname -s -m 5 -p ~/myGFS2.glocks
 
 EOF
 }
 
 path_to_file="";
 minimum_hw=2;
-while getopts ":hm:p:" opt; do
+enable_glock_summary=1;
+
+while getopts ":hsm:p:" opt; do
     case $opt in
 	h)
 	    usage;
 	    exit;
+	    ;;
+	s)
+	    enable_glock_summary=0;
 	    ;;
 	m)
 	    minimum_hw=$OPTARG;
@@ -90,6 +96,7 @@ holder_count=0;
 echo "Processing the file: `basename $path_to_file`";
 shopt -s extglob
 while read line;do
+    #echo $line;
     if [ ! -n "${line##+([[:space:]])}" ]; then
 	continue;
     elif [[ $line == G:* ]]; then
@@ -98,6 +105,8 @@ while read line;do
 	elif [[ $line == *n:3* ]]; then
 	    ((rgrp_count++))
 	fi
+	# If another G: line starts then print information about the previous
+	# one if it meets minimum requirements.
 	if (( $chw_count >= $minimum_hw )); then
 	    printf -v hc "%03d" $chw_count;
 	    if [ -n $cgfs2_filesystem_name ]; then
@@ -130,6 +139,25 @@ while read line;do
 	continue;
     # There has to be better way to check for the fsname/date separators.
     elif [[ ${line:0:1} =~ ^[a-zA-Z0-9] ]]; then
+	# If another GFS2 filesystem is encountered then then print information
+	# about the previous one if it meets minimum requirements.
+	if (( $chw_count >= $minimum_hw )); then
+	    printf -v hc "%03d" $chw_count;
+	    if [ -n $cgfs2_filesystem_name ]; then
+		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp]";
+	    else
+		echo "$hc ---> $cglock";
+	    fi
+
+	    if [ -n "$cholder" ]; then
+		echo "             $cholder (HOLDER)";
+	    fi
+	fi
+	chw_count=0;
+	# Set to empty string, cause this is not a glock.
+	cglock="";
+	cholder="";
+
 	cgfs2_filesystem_name="`echo $line | cut -d \" \" -f1`";
 	ctimestamp_tmp="`echo $line | awk '{print $3,$4,$6,$5;}'`";
 	ctimestamp_tmp=`date -d "$ctimestamp_tmp" +%Y-%m-%d_%H:%M:%S 2>/dev/null`;
@@ -139,14 +167,17 @@ while read line;do
 	fi
     fi
 done < $path_to_file;
-# Print some useful stat information before doing the count on holder/waiters on
-# each glock.
-echo -e  "\n----------------------------------------------------------------------------------------";
-echo -e "Summary Stats";
-echo -e  "----------------------------------------------------------------------------------------";
-echo "  inodes:    $inode_count";
-echo "  rgrp:      $rgrp_count";
-echo "  Waiters:   $waiter_count";
-echo "  Holders:   $holder_count";
+
+if (( $enable_glock_summary == 0 )); then
+    # Print some useful stat information before doing the count on
+    # holder/waiters on each glock.
+    echo -e  "\n----------------------------------------------------------------------------------------";
+    echo -e "Summary Stats";
+    echo -e  "----------------------------------------------------------------------------------------";
+    echo "  inodes:    $inode_count";
+    echo "  rgrp:      $rgrp_count";
+    echo "  Waiters:   $waiter_count";
+    echo "  Holders:   $holder_count";
+fi 
 exit;
 

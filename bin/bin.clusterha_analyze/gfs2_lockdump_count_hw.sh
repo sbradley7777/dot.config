@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 # Author: sbradley@redhat.com
 # Description: This script counts the number of holders and waiters for a GFS2
-#              lockdump or glocktop output.
-# Version: 1.5
+#              lockdump or glocktop output. In addition, any glocks with a high
+#              time to demote a lock will be printed.
+# Version: 1.6
 #
-# Usage: ./gfs2_lockdump_count_hw.sh -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
+# Usage: ./gfs2_lockdump_count_hw.sh -s -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
 #
 # TODO:
 # * See if finding the filesystem name/year could be done better.
@@ -93,10 +94,9 @@ rgrp_count=0;
 waiter_count=0;
 holder_count=0;
 
-echo "Processing the file: `basename $path_to_file`";
+echo "Searching the file for glocks with holder+waiter count >= $minimum_hw or high demote of glock time: `basename $path_to_file`.";
 shopt -s extglob
 while read line;do
-    #echo $line;
     if [ ! -n "${line##+([[:space:]])}" ]; then
 	continue;
     elif [[ $line == G:* ]]; then
@@ -105,27 +105,32 @@ while read line;do
 	elif [[ $line == *n:3* ]]; then
 	    ((rgrp_count++))
 	fi
+	demote_time=$(echo $cglock | awk '{print $6}' | cut -d "/" -f2);
+	demote_time_warning="";
+	if [[ "$demote_time" -gt "0" ]]; then
+	    demote_time_warning="**The demote time is greater than 0.**";
+	fi
 	# If another G: line starts then print information about the previous
 	# one if it meets minimum requirements.
-	if (( $chw_count >= $minimum_hw )); then
+	if (( $chw_count >= $minimum_hw )) || [[ "$demote_time" -gt "0" ]]; then
 	    printf -v hc "%03d" $chw_count;
-	    if [ -n $cgfs2_filesystem_name ]; then
-		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp]";
+	    if [ -z $cgfs2_filesystem_name ]; then
+		echo "$hc ---> $cglock $demote_time_warning";
 	    else
-		echo "$hc ---> $cglock";
+		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp] $demote_time_warning";
 	    fi
-
 	    if [ -n "$cholder" ]; then
 		echo "             $cholder (HOLDER)";
 	    fi
 	fi
+	# Set the vars for the current glock.
 	chw_count=0;
 	cglock=$line;
 	cholder="";
     elif [[ $line == *H:* ]]; then
 	((chw_count++));
 	# f:AH|f:H|f:EH
-	if [[ $line == *f:H* ]]; then
+	if [[ $line == *f:*H* ]]; then
 	    cholder=$line;
 	    ((holder_count++));
 	elif [[ $line == *f:*W* ]]; then
@@ -153,8 +158,9 @@ while read line;do
 		echo "             $cholder (HOLDER)";
 	    fi
 	fi
+	# Reset the current glocks vars.
 	chw_count=0;
-	# Set to empty string, cause this is not a glock.
+	# Set to empty string, cause this is not a glock line.
 	cglock="";
 	cholder="";
 

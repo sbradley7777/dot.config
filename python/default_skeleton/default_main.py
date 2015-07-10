@@ -267,7 +267,7 @@ if __name__ == "__main__":
         # handler before the other handlers are created.
         sysLogHandler = logging.handlers.SysLogHandler(address = '/dev/log')
         logger.addHandler(sysLogHandler)
-        logger.info("Capturing of the data to analyze GFS2 lockdumps.")
+        logger.info("The script has started running.")
         logger.removeHandler(sysLogHandler)
 
         # Create a function for the STATUS_LEVEL since not defined by python. This

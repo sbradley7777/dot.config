@@ -3,7 +3,7 @@
 # Description: This script counts the number of holders and waiters for a GFS2
 #              lockdump or glocktop output. In addition, any glocks with a high
 #              time to demote a lock will be printed.
-# Version: 1.6
+# Version: 1.7
 #
 # Usage: ./gfs2_lockdump_count_hw.sh -s -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
 #
@@ -23,10 +23,11 @@ usage: $bname -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or
 This script counts the number of holders and waiters for a GFS2 lockdump or glocktop output.
 
 OPTIONS:
-   -h      Show this message
-   -m      Minimum number of waiters/holder that a glock has.
-   -p      Path to the file that will be analyzed.
-   -s      Enable summary of glock types
+   -h      show this message
+   -m      minimum number of waiters/holder that a glock has
+   -p      path to the file that will be analyzed
+   -s      enable summary of glock types
+   -w      print the waiters
 
 EXAMPLE:
 $ $bname -s -m 5 -p ~/myGFS2.glocks
@@ -37,21 +38,25 @@ EOF
 path_to_file="";
 minimum_hw=2;
 enable_glock_summary=1;
+show_waiters=1;
 
-while getopts ":hsm:p:" opt; do
+while getopts ":hm:p:sw" opt; do
     case $opt in
 	h)
 	    usage;
 	    exit;
-	    ;;
-	s)
-	    enable_glock_summary=0;
 	    ;;
 	m)
 	    minimum_hw=$OPTARG;
 	    ;;
 	p)
 	    path_to_file=$OPTARG;
+	    ;;
+	s)
+	    enable_glock_summary=0;
+	    ;;
+	w)
+	    show_waiters=0;
 	    ;;
 	\?)
 	    echo "Invalid option: -$OPTARG" >&2
@@ -85,6 +90,7 @@ fi
 chw_count=0;
 cglock="";
 cholder="";
+cwaiters="";
 cgfs2_filesystem_name="";
 ctimestamp="";
 
@@ -120,13 +126,23 @@ while read line;do
 		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp] $demote_time_warning";
 	    fi
 	    if [ -n "$cholder" ]; then
-		echo "             $cholder (HOLDER)";
+		echo "          $cholder (HOLDER)";
+	    fi
+	    if (( $show_waiters == 0 )); then
+		(
+                    # Only change in subshell the IFS var and not globally.
+		    IFS=$'\n'
+		    for waiter_line in $(echo -e $cwaiters); do
+			printf '         %s\n' "$waiter_line"
+		    done
+		)
 	    fi
 	fi
 	# Set the vars for the current glock.
 	chw_count=0;
 	cglock=$line;
 	cholder="";
+	cwaiters="";
     elif [[ $line == *H:* ]]; then
 	((chw_count++));
 	# f:AH|f:H|f:EH
@@ -135,6 +151,8 @@ while read line;do
 	    ((holder_count++));
 	elif [[ $line == *f:*W* ]]; then
 	    ((waiter_count++));
+	    #cwaiters+=$'\n'$line;
+	    cwaiters+="\n$line";
 	fi
     elif [[ $line == *I:* ]]; then
 	continue;
@@ -163,7 +181,7 @@ while read line;do
 	# Set to empty string, cause this is not a glock line.
 	cglock="";
 	cholder="";
-
+	cwaiters="";
 	cgfs2_filesystem_name="`echo $line | cut -d \" \" -f1`";
 	ctimestamp_tmp="`echo $line | awk '{print $3,$4,$6,$5;}'`";
 	ctimestamp_tmp=`date -d "$ctimestamp_tmp" +%Y-%m-%d_%H:%M:%S 2>/dev/null`;

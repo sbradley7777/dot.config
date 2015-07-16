@@ -5,9 +5,11 @@
 #              time to demote a lock will be printed.
 # Version: 1.8
 #
-# Usage: ./gfs2_lockdump_count_hw.sh -s -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
+# Usage: ./gfs2_lockdump_count_hw.sh -s -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file> -g <glock number> -t <glock type>
 #
 # TODO:
+# * Currently prints holders > # and glock_number if given. Need to have it just
+#   print the number and not both.
 # * See if finding the filesystem name/year could be done better.
 # * Option to search for specific glocks to see how there holder/waiter
 #   count changes over time. Could map all of them but that really
@@ -17,7 +19,7 @@ bname=$(basename $0);
 usage()
 {
 cat <<EOF
-usage: $bname -s -w -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
+usage: $bname -s -w -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file> -g <glock number> -t <glock type>
 
 This script counts the number of holders and waiters for a GFS2 lockdump or glocktop output.
 

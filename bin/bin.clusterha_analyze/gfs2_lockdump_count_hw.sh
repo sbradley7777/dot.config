@@ -3,13 +3,12 @@
 # Description: This script counts the number of holders and waiters for a GFS2
 #              lockdump or glocktop output. In addition, any glocks with a high
 #              time to demote a lock will be printed.
-# Version: 1.7
+# Version: 1.8
 #
 # Usage: ./gfs2_lockdump_count_hw.sh -s -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
 #
 # TODO:
 # * See if finding the filesystem name/year could be done better.
-# * Options that will show all waiters or entire glock trace.
 # * Option to search for specific glocks to see how there holder/waiter
 #   count changes over time. Could map all of them but that really
 #   require leverging rewrite in python.
@@ -18,7 +17,7 @@ bname=$(basename $0);
 usage()
 {
 cat <<EOF
-usage: $bname -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
+usage: $bname -s -w -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file>
 
 This script counts the number of holders and waiters for a GFS2 lockdump or glocktop output.
 
@@ -28,9 +27,12 @@ OPTIONS:
    -p      path to the file that will be analyzed
    -s      enable summary of glock types
    -w      print the waiters
+   -g      glock number
+   -t      glock type (defaults: all types)
 
 EXAMPLE:
-$ $bname -s -m 5 -p ~/myGFS2.glocks
+$ $bname -s -w -m 5 -p ~/mygfs2.glocks
+$ $bname -s -w -m 5 -p ~/mygfs2.glocks -g 1755a76 -t 5
 
 EOF
 }
@@ -39,8 +41,10 @@ path_to_file="";
 minimum_hw=2;
 enable_glock_summary=1;
 show_waiters=1;
+glock_number="";
+glock_type="";
 
-while getopts ":hm:p:sw" opt; do
+while getopts ":hm:p:swg:t:" opt; do
     case $opt in
 	h)
 	    usage;
@@ -57,6 +61,12 @@ while getopts ":hm:p:sw" opt; do
 	    ;;
 	w)
 	    show_waiters=0;
+	    ;;
+	g)
+	    glock_number=$OPTARG;
+	    ;;
+	t)
+	    glock_type=$OPTARG;
 	    ;;
 	\?)
 	    echo "Invalid option: -$OPTARG" >&2
@@ -118,7 +128,19 @@ while read line;do
 	fi
 	# If another G: line starts then print information about the previous
 	# one if it meets minimum requirements.
-	if (( $chw_count >= $minimum_hw )) || [[ "$demote_time" -gt "0" ]]; then
+	glock_match=1;
+	cglock_type=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f1);
+	cglock_number=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f2);
+ 	if [ -n "$glock_number" ]; then
+	    if [ "$glock_number" == "$cglock_number" ]; then
+		if [ -z $glock_type ]; then
+		    glock_match=0;
+		elif [ "$glock_type" == "$cglock_type" ]; then
+		    glock_match=0;
+		fi
+	    fi
+	fi
+	if (( $chw_count >= $minimum_hw )) || [[ "$demote_time" -gt "0" ]] || (($glock_match == 0 )); then
 	    printf -v hc "%03d" $chw_count;
 	    if [ -z $cgfs2_filesystem_name ]; then
 		echo "$hc ---> $cglock $demote_time_warning";
@@ -210,6 +232,6 @@ if (( $enable_glock_summary == 0 )); then
     echo "  rgrp:      $rgrp_count";
     echo "  Waiters:   $waiter_count";
     echo "  Holders:   $holder_count";
-fi 
+fi
 exit;
 

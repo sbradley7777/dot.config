@@ -126,14 +126,14 @@ while read line;do
 		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp] $demote_time_warning";
 	    fi
 	    if [ -n "$cholder" ]; then
-		echo "          $cholder (HOLDER)";
+		echo "           $cholder (HOLDER)";
 	    fi
 	    if (( $show_waiters == 0 )); then
 		(
                     # Only change in subshell the IFS var and not globally.
 		    IFS=$'\n'
 		    for waiter_line in $(echo -e $cwaiters); do
-			printf '         %s\n' "$waiter_line"
+			printf '          %s\n' "$waiter_line"
 		    done
 		)
 	    fi
@@ -171,9 +171,17 @@ while read line;do
 	    else
 		echo "$hc ---> $cglock";
 	    fi
-
 	    if [ -n "$cholder" ]; then
-		echo "             $cholder (HOLDER)";
+		echo "           $cholder (HOLDER)";
+	    fi
+	    if (( $show_waiters == 0 )); then
+		(
+                    # Only change in subshell the IFS var and not globally.
+		    IFS=$'\n'
+		    for waiter_line in $(echo -e $cwaiters); do
+			printf '          %s\n' "$waiter_line"
+		    done
+		)
 	    fi
 	fi
 	# Reset the current glocks vars.

@@ -42,6 +42,23 @@ $ $bname -s -w -m 5 -p ~/mygfs2.glocks -g 1755a76 -t 5
 EOF
 }
 
+function is_glock_match() {
+    glock_match=1;
+    cglock_type=$(echo $1 | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f1);
+    cglock_number=$(echo $1 | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f2);
+    if [ -n "$glock_number" ]; then
+        if [ "$glock_number" == "$cglock_number" ]; then
+            if [ -z $glock_type ]; then
+                glock_match=0;
+            elif [ "$glock_type" == "$cglock_type" ]; then
+                glock_match=0;
+            fi
+        fi
+    fi
+    echo $glock_match
+}
+
+
 path_to_file="";
 minimum_hw=2;
 enable_glock_summary=1;
@@ -49,9 +66,6 @@ show_waiters=1;
 glock_number="";
 glock_type="";
 
-function print_glock() {
-    echo "Print glock or should i do checks somewhere else."
-}
 
 while getopts ":hm:p:swg:t:" opt; do
     case $opt in
@@ -130,28 +144,16 @@ while read line;do
 	elif [[ $line == *n:3* ]]; then
 	    ((rgrp_count++))
 	fi
-	demote_time=$(echo $cglock | awk '{print $6}' | cut -d "/" -f2);
-	demote_time_warning="";
-	if [[ "$demote_time" -gt "0" ]]; then
-	    demote_time_warning="**The demote time is greater than 0.**";
-	fi
 	# If another G: line starts then print information about the previous
 	# one if it meets minimum requirements.
-
-	glock_match=1;
-	cglock_type=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f1);
-	cglock_number=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f2);
- 	if [ -n "$glock_number" ]; then
-	    if [ "$glock_number" == "$cglock_number" ]; then
-		if [ -z $glock_type ]; then
-		    glock_match=0;
-		elif [ "$glock_type" == "$cglock_type" ]; then
-		    glock_match=0;
-		fi
-	    fi
-	fi
+	demote_time=$(echo $cglock | awk '{print $6}' | cut -d "/" -f2);
+	glock_match=$(is_glock_match "$cglock");
 	if (( $chw_count >= $minimum_hw )) || [[ "$demote_time" -gt "0" ]] || (($glock_match == 0 )); then
 	    printf -v hc "%03d" $chw_count;
+	    demote_time_warning="";
+	    if [[ "$demote_time" -gt "0" ]]; then
+		demote_time_warning="**The demote time is greater than 0.**";
+	    fi
 	    if [ -z $cgfs2_filesystem_name ]; then
 		echo "$hc ---> $cglock $demote_time_warning";
 	    else
@@ -195,26 +197,18 @@ while read line;do
     elif [[ ${line:0:1} =~ ^[a-zA-Z0-9] ]]; then
 	# If another GFS2 filesystem is encountered then then print information
 	# about the previous one if it meets minimum requirements.
-        # If another G: line starts then print information about the previous
-	# one if it meets minimum requirements.
-	glock_match=1;
-	cglock_type=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f1);
-	cglock_number=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f2);
- 	if [ -n "$glock_number" ]; then
-	    if [ "$glock_number" == "$cglock_number" ]; then
-		if [ -z $glock_type ]; then
-		    glock_match=0;
-		elif [ "$glock_type" == "$cglock_type" ]; then
-		    glock_match=0;
-		fi
-	    fi
-	fi
+	demote_time=$(echo $cglock | awk '{print $6}' | cut -d "/" -f2);
+	glock_match=$(is_glock_match "$cglock");
 	if (( $chw_count >= $minimum_hw )) || [[ "$demote_time" -gt "0" ]] || (($glock_match == 0 )); then
 	    printf -v hc "%03d" $chw_count;
+	    demote_time_warning="";
+	    if [[ "$demote_time" -gt "0" ]]; then
+		demote_time_warning="**The demote time is greater than 0.**";
+	    fi
 	    if [ -n $cgfs2_filesystem_name ]; then
-		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp]";
+		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp] $demote_time_warning";
 	    else
-		echo "$hc ---> $cglock";
+		echo "$hc ---> $cglock $demote_time_warning";
 	    fi
 	    if [ -n "$cholder" ]; then
 		echo "           $cholder (HOLDER)";

@@ -8,6 +8,9 @@
 # Usage: ./gfs2_lockdump_count_hw.sh -s -m <minimum number of waiters/holder> -p <path to GFS2 lockdump or glocktop file> -g <glock number> -t <glock type>
 #
 # TODO:
+
+# * Need to create function for when i print the glock or time to seee if should
+#   print the glock.
 # * Currently prints holders > # and glock_number if given. Need to have it just
 #   print the number and not both.
 # * See if finding the filesystem name/year could be done better.
@@ -45,6 +48,10 @@ enable_glock_summary=1;
 show_waiters=1;
 glock_number="";
 glock_type="";
+
+function print_glock() {
+    echo "Print glock or should i do checks somewhere else."
+}
 
 while getopts ":hm:p:swg:t:" opt; do
     case $opt in
@@ -130,6 +137,7 @@ while read line;do
 	fi
 	# If another G: line starts then print information about the previous
 	# one if it meets minimum requirements.
+
 	glock_match=1;
 	cglock_type=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f1);
 	cglock_number=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f2);
@@ -175,7 +183,6 @@ while read line;do
 	    ((holder_count++));
 	elif [[ $line == *f:*W* ]]; then
 	    ((waiter_count++));
-	    #cwaiters+=$'\n'$line;
 	    cwaiters+="\n$line";
 	fi
     elif [[ $line == *I:* ]]; then
@@ -188,7 +195,21 @@ while read line;do
     elif [[ ${line:0:1} =~ ^[a-zA-Z0-9] ]]; then
 	# If another GFS2 filesystem is encountered then then print information
 	# about the previous one if it meets minimum requirements.
-	if (( $chw_count >= $minimum_hw )); then
+        # If another G: line starts then print information about the previous
+	# one if it meets minimum requirements.
+	glock_match=1;
+	cglock_type=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f1);
+	cglock_number=$(echo $cglock | awk '{print $3}' | cut -d":" -f2 | cut -d "/" -f2);
+ 	if [ -n "$glock_number" ]; then
+	    if [ "$glock_number" == "$cglock_number" ]; then
+		if [ -z $glock_type ]; then
+		    glock_match=0;
+		elif [ "$glock_type" == "$cglock_type" ]; then
+		    glock_match=0;
+		fi
+	    fi
+	fi
+	if (( $chw_count >= $minimum_hw )) || [[ "$demote_time" -gt "0" ]] || (($glock_match == 0 )); then
 	    printf -v hc "%03d" $chw_count;
 	    if [ -n $cgfs2_filesystem_name ]; then
 		echo "$hc ---> $cglock [$cgfs2_filesystem_name] [$ctimestamp]";

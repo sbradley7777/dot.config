@@ -367,7 +367,6 @@ def install(path_to_config_files, files_to_install):
                     logging.getLogger(MAIN_LOGGER_NAME).debug(message)
                     configuration_file.set_installed(copy_directory(path_to_src_file, configuration_file.get_path_to_dst()))
     else:
-        files_failed_install_map.append(path_to_config_files)
         message = "The path to the configuration files is invalid so installation will not continue: %s" %(path_to_config_files)
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
     # Loop over list and find any that did not install.

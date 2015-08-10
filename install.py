@@ -1,14 +1,13 @@
 #!/usr/bin/env python
-"""
-This script will install all the required files on the host.
+"""This script will install all the required files on the host.
 
 @author    :  Shane Bradley
 @contact   :  sbradley@redhat.com
 @version   :  0.05
 @copyright :  GPLv2
 
-TODO:
-*
+TODO: * Need to code in a way to know which files failed to installed and which
+        configuration files were not overwritten when they already exist.
 
 Example configuration file to modify or add to configuration installer:
 # cat ~/.dot.config
@@ -26,6 +25,7 @@ platform = Linux
 src_path = dot.config/etc/cluster/scripts/test_script.sh
 dst_path = /etc/cluster/scripts/test_script.sh
 platform = Linux
+
 """
 import sys
 import os
@@ -41,7 +41,7 @@ import ConfigParser
 # #####################################################################
 # Global vars:
 # #####################################################################
-VERSION_NUMBER = "0.05-6"
+VERSION_NUMBER = "1.0"
 MAIN_LOGGER_NAME = "Configs_Installer"
 PATH_TO_INSTALL_CONFIGURATION_FILE = os.path.join(os.environ['HOME'],".dot.config")
 
@@ -358,6 +358,8 @@ def install(path_to_config_files, files_to_install):
                     else:
                         # File already exists so do not override it.
                         configuration_file.set_installed(True)
+                        message = "The configuration file will not be overridden %s." %(configuration_file.get_path_to_dst())
+                        logging.getLogger(MAIN_LOGGER_NAME).debug(message)
                 elif (os.path.isfile(path_to_src_file)):
                     message = "Copying the file %s to %s." %(path_to_src_file, configuration_file.get_path_to_dst())
                     logging.getLogger(MAIN_LOGGER_NAME).debug(message)
@@ -375,7 +377,7 @@ def install(path_to_config_files, files_to_install):
         if ((not configuration_file.is_installed() and (configuration_file.valid_platform()))):
             configuration_files_failed_install.append(configuration_file)
     if (len(configuration_files_failed_install) > 0):
-        message = "The following files failed to installed:\n"
+        message = "The following files failed to installed or was not overridden:\n"
         for configuration_file in configuration_files_failed_install:
             message += "\t%s --> %s\n" %(configuration_file.get_path_to_src(), configuration_file.get_path_to_dst())
         logging.getLogger(MAIN_LOGGER_NAME).error(message.rstrip())

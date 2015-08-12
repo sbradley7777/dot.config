@@ -4,9 +4,9 @@
 # regex) that will have a configuration file uploaded for installer that is
 # included in a git repo. The installer installs certain configuration files and
 # scripts to the remote host.
-# Version: 1.0
+# Version: 1.1
 #
-# Usage: ./install-dot_configs.sh
+# Usage: ./configs-install_remote.sh
 
 configuration_file_upload="$HOME/.dot.config.rhel_cluster";
 

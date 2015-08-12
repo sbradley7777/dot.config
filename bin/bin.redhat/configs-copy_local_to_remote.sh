@@ -2,9 +2,9 @@
 # Author: sbradley@redhat.com
 # Description: The scripts uses /etc/hosts to get a list of hosts (that match a
 # regex) that will have a configuration files uploaded to the remote host.
-# Version: 1.0
+# Version: 1.1
 #
-# Usage: ./install-copy_configs.sh
+# Usage: ./configs-copy_local_to_remote.sh
 
 # NOTE: If the file does not start with "/" then assume it is an config file for
 # user that will go into the root directory for the remote host.

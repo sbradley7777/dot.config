@@ -10,6 +10,15 @@
 
 configuration_file_upload="$HOME/.dot.config.rhel_cluster";
 
+# Script will exit if this function is executed.
+control_c() {
+  # Run if user hits control-c so clean exit.
+  echo -en "\n*** Control-c caught and script will exit.***\n"
+  exit 1
+}
+# Trap keyboard interrupt (control-c)
+trap control_c SIGINT
+
 # If the configuration file is successfully uploaded then it will be added to
 # the string so that it will have files installed, if failed it will not be
 # added and will not have files installed.

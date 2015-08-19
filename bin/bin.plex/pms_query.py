@@ -4,6 +4,8 @@ This script will perform various queries to the Plex Media Server. The script
 uses the API supplied by this project which will need to be installed:
 - https://github.com/mjs7231/python-plexapi
 
+# sudo pip install plexapi
+
 Edit the configuration file to add in username and password.
 $ cat ~/.pms_connect.conf
 [login]
@@ -12,9 +14,12 @@ password = <password>
 pms_name = <name of plex media server>
 
 TODO:
-* Finish the TV Shows query part.
 * Add code to find missing tv shows for a show. For longer shows, put an option
-  to show last 20 seasons or something.
+  to show last 20 seasons or something. Show missing tv shows episodes for only
+  the seasons I have or option to show all missing episodes.
+* Add total GB size for all episodes in season.
+* Add better formatter to format tables so that files shows up better. Maybe
+  should format everything to GB formatted float.
 
 @author    : Shane Bradley
 @contact   : sbradley@redhat.com
@@ -28,14 +33,12 @@ import logging
 import sys
 import os
 import os.path
-
-import json
-import xmltodict
 import math
 import locale
 
 try:
     from plexapi.myplex import MyPlexUser
+    from plexapi.exceptions import NotFound
 except ImportError:
     print "Error: There was an error import the library \"plexapi\". The library is required to be installed."
     print "Info:  The library needs to be installed and is located here: https://github.com/mjs7231/python-plexapi"
@@ -56,7 +59,6 @@ class TableFormatter:
     # Functions for creating a formatted table from lists of lists:
     # #######################################################################
     def __formatTableValue(self, tableValue):
-        import locale
         locale.setlocale(locale.LC_NUMERIC, "")
 
         try:
@@ -233,8 +235,15 @@ def __getOptions(version) :
     cmdParser.add_option("-l", "--list",
                          action="store_true",
                          dest="list",
-                         help="list metadata for all sections or a section",
+                         help="list sections in library",
                          default=False)
+    cmdParser.add_option("-s", "--section_name",
+                         action="store",
+                         dest="section_name",
+                         help="name of the section",
+                         type="string",
+                         metavar="<section name>",
+                         default="")
     cmdParser.add_option("-m", "--movies",
                          action="store_true",
                          dest="movies_query",
@@ -245,19 +254,19 @@ def __getOptions(version) :
                          dest="tv_shows_query",
                          help="query tv shows",
                          default=False)
+    cmdParser.add_option("-T", "--tv_show_title",
+                         action="store",
+                         dest="tv_show_title",
+                         help="title of the tv show",
+                         type="string",
+                         metavar="<title of tv show>",
+                         default="")
     cmdParser.add_option("-c", "--container",
                          action="store",
                          dest="container",
                          help="container type of media file",
                          type="string",
                          metavar="<container>",
-                         default="")
-    cmdParser.add_option("-s", "--section_name",
-                         action="store",
-                         dest="section_name",
-                         help="name of the section",
-                         type="string",
-                         metavar="<section name>",
                          default="")
     (cmdLineOpts, cmdLineArgs) = cmdParser.parse_args()
     return (cmdLineOpts, cmdLineArgs)
@@ -469,7 +478,23 @@ if __name__ == "__main__":
                                                   (not len(cmdLineOpts.section_name) > 0)):
                     counter = 1
                     for video in section.all():
-                        print video.title
+                        title = video.title.split(" (")[0]
+                        if (not len(cmdLineOpts.tv_show_title) > 0):
+                            try:
+                                print "%02d: %s(%d) [Seasons: %02d] [Episodes: %02d]" %(counter, title, video.year, len(pms.library.get(video.title).seasons()), len(pms.library.get(video.title).episodes()))
+                                for season in pms.library.get(video.title).seasons():
+                                    print "\t%s (Episodes: %d)" %(season.title, len(season.episodes()))
+                            except NotFound:
+                                print "%02d: %s(%d) (Warning: data not found for TV Show)." %(counter, title, video.year)
+                            counter = counter + 1
+                        elif (cmdLineOpts.tv_show_title.lower().strip() == title.lower().strip()):
+                            # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
+                            print "%s(%d) [Seasons: %02d] [Episodes: %02d]" %(title, video.year, len(pms.library.get(video.title).seasons()), len(pms.library.get(video.title).episodes()))
+                            for season in pms.library.get(video.title).seasons():
+                                print "\t%s (Episodes: %d)" %(season.title, len(season.episodes()))
+                            # Need way to say if show does not exist or not found.
+                        
+
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

@@ -417,7 +417,7 @@ if __name__ == "__main__":
         # #######################################################################
         # Connect to PMS
         # #######################################################################
-        message = "Connecting to your Plex Media Server."
+        message = "Connecting to your Plex Media Server: %s." %(pms_name)
         logging.getLogger(MAIN_LOGGER_NAME).debug(message)
         plex_user = MyPlexUser.signin(username, password)
         pms = plex_user.getResource(pms_name).connect()
@@ -446,6 +446,7 @@ if __name__ == "__main__":
         # Query Movies
         # #######################################################################
         if (cmdLineOpts.movies_query):
+            logging.getLogger(MAIN_LOGGER_NAME).info("Searching for movies on the pms %s" %(pms_name))
             for section in pms.library.sections():
                 movies_attributes = []
                 if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or
@@ -468,10 +469,15 @@ if __name__ == "__main__":
                     table_formatter = TableFormatter()
                     print table_formatter.toTableString(movies_attributes, ["%s" %(section.title), "Movie Name", "Year", "Container", "Filename", "Size"])
                     print
+                else:
+                    logging.getLogger(MAIN_LOGGER_NAME).error("There was no movies metadata found.")
+
         # #######################################################################
         # Query TV Shows
         # #######################################################################
         if (cmdLineOpts.tv_shows_query):
+            logging.getLogger(MAIN_LOGGER_NAME).info("Searching for tv shows on the pms %s" %(pms_name))
+            output = ""
             for section in pms.library.sections():
                 tv_show_attributes = []
                 if (section.type == "show") and ((section.title == cmdLineOpts.section_name) or
@@ -481,19 +487,31 @@ if __name__ == "__main__":
                         title = video.title.split(" (")[0]
                         if (not len(cmdLineOpts.tv_show_title) > 0):
                             try:
-                                print "%02d: %s(%d) [Seasons: %02d] [Episodes: %02d]" %(counter, title, video.year, len(pms.library.get(video.title).seasons()), len(pms.library.get(video.title).episodes()))
-                                for season in pms.library.get(video.title).seasons():
-                                    print "\t%s (Episodes: %d)" %(season.title, len(season.episodes()))
+                                output += "%02d: %s(%d) [Seasons: %02d] [Episodes: %02d]\n" %(counter, title, video.year, len(pms.library.get(video.title).seasons()), len(pms.library.get(video.title).episodes()))
+                                try:
+                                    for season in pms.library.get(video.title).seasons():
+                                        output += "\t%s (Episodes: %d)\n" %(season.title, len(season.episodes()))
+                                except requests.exceptions.ConnectionError as e:
+                                    logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(video.title))
                             except NotFound:
-                                print "%02d: %s(%d) (Warning: data not found for TV Show)." %(counter, title, video.year)
+                                output += "%02d: %s(%d) (Warning: data not found for TV Show).\n" %(counter, title, video.year)
                             counter = counter + 1
                         elif (cmdLineOpts.tv_show_title.lower().strip() == title.lower().strip()):
                             # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
-                            print "%s(%d) [Seasons: %02d] [Episodes: %02d]" %(title, video.year, len(pms.library.get(video.title).seasons()), len(pms.library.get(video.title).episodes()))
-                            for season in pms.library.get(video.title).seasons():
-                                print "\t%s (Episodes: %d)" %(season.title, len(season.episodes()))
-                            # Need way to say if show does not exist or not found.
-                        
+                            output += "%s(%d) [Seasons: %02d] [Episodes: %02d]\n" %(title, video.year, len(pms.library.get(video.title).seasons()), len(pms.library.get(video.title).episodes()))
+                            try:
+                                for season in pms.library.get(video.title).seasons():
+                                    output += "\t%s (Episodes: %d)\n" %(season.title, len(season.episodes()))
+                            except requests.exceptions.ConnectionError as e:
+                                logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(video.title))
+            if (len(output) > 0):
+                print output
+            else:
+                if (len(cmdLineOpts.tv_show_title) > 0):
+                    logging.getLogger(MAIN_LOGGER_NAME).error("There was no metadata found matching the tv show: %s" %(cmdLineOpts.tv_show_title))
+                else:
+                    logging.getLogger(MAIN_LOGGER_NAME).error("There was no tv show metadata found.")
+
 
     except KeyboardInterrupt:
         print ""

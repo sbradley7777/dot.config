@@ -1,6 +1,5 @@
 #!/usr/bin/python
-"""
-This script will perform various queries to the Plex Media Server.
+"""This script will perform various queries to the Plex Media Server.
 
 The script uses the plex API supplied by this project which will need to be
 installed:
@@ -20,9 +19,9 @@ password = <password>
 pms_name = <name of plex media server>
 
 TODO:
-* Add code to find missing tv shows for a show. For longer shows, put an option
-  to show last 20 seasons or something. Show missing tv shows episodes for only
-  the seasons I have or option to show all missing episodes.
+
+* Change -M to be tv_show_details, so add that code to "print_tv_shows" and add
+  argument "show_details=False"
 
 * Add analyze data options (-a) that will print out missing episodes, movies with filename
   and metadata year dont match, spelling isssues, movies and tvshows that are
@@ -133,6 +132,44 @@ def print_table(rows):
         print(
             " | ".join( format(cdata, "%ds" % width) for width, cdata in zip(widths, row) )
             )
+
+def print_tv_show_information(pms_tv_show):
+    tvdb_query = tvdb_api.Tvdb()
+    # Do reverse split, in case () in show title.
+    tvdb_show = tvdb_query[pms_tv_show.title.rsplit(" (")[0].strip()]
+    pms_tv_show_seasons_attributes = []
+    try:
+        for season in pms.library.get(pms_tv_show.title).seasons():
+            # Make this a more verbose version showing episode titles, create a table of missing: season|episode|title|airdate, add option to show SPECIALS
+            # if (cmdLineOpts.show_missing) and (not int(season.index) == 0):
+            #    print "%d == %d" %(len(tvdb_show[int(season.index)]), len(season.episodes()))
+            has_missing_episodes = "NO"
+            if (len(tvdb_show[int(season.index)]) > 0):
+                if (not len(tvdb_show[int(season.index)]) == len(season.episodes())):
+                    has_missing_episodes = "YES - Missing %d episdoes" %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
+            else:
+                has_missing_episodes = "Unknown"
+            pms_tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
+    except requests.exceptions.ConnectionError as e:
+        logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(pms_tv_show.title))
+        pms_tv_show_seasons_attributes.append(["?", "?", "?"])
+    except tvdb_exceptions.tvdb_seasonnotfound:
+        logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
+        pms_tv_show_seasons_attributes.append(["?", "?", "?"])
+    except NotFound:
+        logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
+        pms_tv_show_seasons_attributes.append(["?", "?", "?"])
+    if (len(pms_tv_show_seasons_attributes) > 0):
+        try:
+            print "%s [Seasons: %02d] [Episodes: %02d]" %(pms_tv_show.title, len(pms.library.get(pms_tv_show.title).seasons()), len(pms.library.get(pms_tv_show.title).episodes()))
+        except NotFound:
+            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
+            print "%s [Seasons: ?] [Episodes: ?]" %(pms_tv_show.title)
+        pms_tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "Missing Episodes"])
+        print_table(pms_tv_show_seasons_attributes)
+        print
+
+
 # ##############################################################################
 # Get user selected options
 # ##############################################################################
@@ -350,8 +387,12 @@ if __name__ == "__main__":
         # #######################################################################
         message = "Connecting to your Plex Media Server: %s." %(pms_name)
         logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-        plex_user = MyPlexUser.signin(username, password)
-        pms = plex_user.getResource(pms_name).connect()
+        try:
+            plex_user = MyPlexUser.signin(username, password)
+            pms = plex_user.getResource(pms_name).connect()
+        except requests.exceptions.SSLError:
+            logging.getLogger(MAIN_LOGGER_NAME).error("There was an error signing on to the pms server: %s." %(pms_name))
+            sys.exit(1)
 
         found_section_name = False
         if ( len(cmdLineOpts.section_name) > 0):
@@ -406,76 +447,11 @@ if __name__ == "__main__":
             elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or
                                                (not len(cmdLineOpts.section_name) > 0)):
                 for tv_show in section.all():
-                    title = tv_show.title.split(" (")[0]
                     if (not len(cmdLineOpts.tv_show_title) > 0):
-                        tvdb_query = tvdb_api.Tvdb()
-                        tvdb_show = tvdb_query[title]
-                        tv_show_seasons_attributes = []
-                        try:
-                            for season in pms.library.get(tv_show.title).seasons():
-                                # Make this a more verbose version showing episode titles, create a table of missing: season|episode|title|airdate, add option to show SPECIALS
-                                # if (cmdLineOpts.show_missing) and (not int(season.index) == 0):
-                                #    print "%d == %d" %(len(tvdb_show[int(season.index)]), len(season.episodes()))
-                                has_missing_episodes = "NO"
-                                if (len(tvdb_show[int(season.index)]) > 0):
-                                    if (not len(tvdb_show[int(season.index)]) == len(season.episodes())):
-                                        has_missing_episodes = "YES - Missing %d episdoes" %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
-                                else:
-                                    has_missing_episodes = "Unknown"
-                                tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
-                        except requests.exceptions.ConnectionError as e:
-                            logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(tv_show.title))
-                            tv_show_seasons_attributes.append(["?", "?", "?"])
-                        except tvdb_exceptions.tvdb_seasonnotfound:
-                            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
-                            tv_show_seasons_attributes.append(["?", "?", "?"])
-                        except NotFound:
-                            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
-                            tv_show_seasons_attributes.append(["?", "?", "?"])
-                        if (len(tv_show_seasons_attributes) > 0):
-                            try:
-                                print "%s(%d) [Seasons: %02d] [Episodes: %02d]" %(title, tv_show.year, len(pms.library.get(tv_show.title).seasons()), len(pms.library.get(tv_show.title).episodes()))
-                            except NotFound:
-                                logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
-                                print "%s(%d) [Seasons: ?] [Episodes: ?]" %(title, tv_show.year)
-                            tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "MISSING_EPISODES"])
-                            print_table(tv_show_seasons_attributes)
-                            print
-                    elif (cmdLineOpts.tv_show_title.lower().strip() == title.lower().strip()):
+                        print_tv_show_information(tv_show)
+                    elif (cmdLineOpts.tv_show_title.lower().strip() == tv_show.title.rsplit(" (")[0].strip().lower()):
                         # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
-                        tvdb_query = tvdb_api.Tvdb()
-                        tvdb_show = tvdb_query[title]
-                        tv_show_seasons_attributes = []
-                        try:
-                            for season in pms.library.get(tv_show.title).seasons():
-                                # Make this a more verbose version showing episode titles, create a table of missing: season|episode|title|airdate, add option to show SPECIALS
-                                #if (cmdLineOpts.show_missing) and (not int(season.index) == 0):
-                                #    print "%d == %d" %(len(tvdb_show[int(season.index)]), len(season.episodes()))
-                                has_missing_episodes = "NO"
-                                if (len(tvdb_show[int(season.index)]) > 0):
-                                    if (not len(tvdb_show[int(season.index)]) == len(season.episodes())):
-                                        has_missing_episodes = "YES - Missing %d episdoes" %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
-                                else:
-                                    has_missing_episodes = "Unknown"
-                                tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
-                        except requests.exceptions.ConnectionError as e:
-                            logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(tv_show.title))
-                            tv_show_seasons_attributes.append(["?", "?", "?"])
-                        except tvdb_exceptions.tvdb_seasonnotfound:
-                            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
-                            tv_show_seasons_attributes.append(["?", "?", "?"])
-                        except NotFound:
-                            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
-                            tv_show_seasons_attributes.append(["?", "?", "?"])
-                        if (len(tv_show_seasons_attributes) > 0):
-                            try:
-                                print "%s(%d) [Seasons: %02d] [Episodes: %02d]" %(title, tv_show.year, len(pms.library.get(tv_show.title).seasons()), len(pms.library.get(tv_show.title).episodes()))
-                            except NotFound:
-                                logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
-                                print "%s(%d) [Seasons: ?] [Episodes: ?]" %(title, tv_show.year)
-                            tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "MISSING_EPISODES"])
-                            print_table(tv_show_seasons_attributes)
-                            print
+                        print_tv_show_information(tv_show)
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

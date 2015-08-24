@@ -1,10 +1,16 @@
 #!/usr/bin/python
 """
-This script will perform various queries to the Plex Media Server. The script
-uses the API supplied by this project which will need to be installed:
-- https://github.com/mjs7231/python-plexapi
+This script will perform various queries to the Plex Media Server.
 
+The script uses the plex API supplied by this project which will need to be
+installed:
+- https://github.com/mjs7231/python-plexapi
 # sudo pip install plexapi
+
+This script uses this tvdb API suppied by this project which will need to be
+installed:
+- https://github.com/dbr/tvdb_api
+# sudo easy_install tvdb_api
 
 Edit the configuration file to add in username and password.
 $ cat ~/.pms_connect.conf
@@ -17,14 +23,20 @@ TODO:
 * Add code to find missing tv shows for a show. For longer shows, put an option
   to show last 20 seasons or something. Show missing tv shows episodes for only
   the seasons I have or option to show all missing episodes.
-* Add total GB size for all episodes in season.
-* Add better formatter to format tables so that files shows up better. Maybe
-  should format everything to GB formatted float.
 
+* Add analyze data options (-a) that will print out missing episodes, movies with filename
+  and metadata year dont match, spelling isssues, movies and tvshows that are
+  1080p without the corrrect 1080p,720p, in filename. It prints a summary.
+
+* Add option to create a url to search like youtube or torrent for missing in
+  details output.
+
+* Move tv_show into a single function cause i got duplicate code.
 @author    : Shane Bradley
-@contact   : sbradley@redhat.com
-@version   : 0.1
+@contact   : shanebradley@gmail.com
+@version   : 0.3
 @copyright : GPLv2
+
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
 import ConfigParser
@@ -40,9 +52,29 @@ try:
     from plexapi.myplex import MyPlexUser
     from plexapi.exceptions import NotFound
 except ImportError:
-    print "Error: There was an error import the library \"plexapi\". The library is required to be installed."
+    print "Error: There was an error importing the library \"plexapi\". The library is required to be installed."
     print "Info:  The library needs to be installed and is located here: https://github.com/mjs7231/python-plexapi"
     sys.exit(1)
+
+try:
+    import requests
+    from requests.exceptions import ConnectionError
+except ImportError:
+    print "Error: There was an error importing the library \"ConnectionError\" from \"requests.exceptions\". The library is required to be installed."
+    print "Info:  The library needs to be installed called \"requests\"."
+    sys.exit(1)
+
+try:
+    import tvdb_api
+    import tvdb_exceptions
+except ImportError:
+    print "Error: There was an error importing the library \"tvdb_api\". The library is required to be installed."
+    print "Info:  The library needs to be installed and is located at: https://github.com/dbr/tvdb_api"
+    sys.exit(1)
+
+# add try block
+#import tvdb_api
+#from tvdb_exceptions import tvdb_seasonnotfound
 
 # #####################################################################
 # Global vars:
@@ -51,159 +83,56 @@ VERSION_NUMBER = "0.1-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 CONFIG_FILE = os.path.expanduser("~/.pms_query.conf")
 
-# #####################################################################
-# Helper classes
-# #####################################################################
-class TableFormatter:
-    # #######################################################################
-    # Functions for creating a formatted table from lists of lists:
-    # #######################################################################
-    def __formatTableValue(self, tableValue):
-        locale.setlocale(locale.LC_NUMERIC, "")
-
-        try:
-            if type(tableValue) is int:
-                inum = int(tableValue)
-                return locale.format("%.*f", (0, inum), True)
-            else:
-                return str(tableValue)
-        except UnicodeEncodeError:
-            return tableValue.encode("utf-8")
-
-    def __getMaxColumnWidth(self, table, index):
-        try:
-            return max([len(self.__formatTableValue(row[index])) for row in table])
-        except IndexError:
-            return -1
-
-    def toTableString(self, table, headerList=None):
-        if (not len(table) > 0):
-            return ""
-        tString = ""
-        tableStringsList = self.formatStringListsToTable(table, headerList)
-        for tableStrings in tableStringsList:
-            currentLine = ""
-            for ts in tableStrings:
-                currentLine += ts
-            tString += "%s\n" %(currentLine)
-        return tString.rstrip()
-
-    def formatStringListsToTable(self, table, headerList=None):
-        """
-        This function will take an array of arrays and then output a
-        single string that is a formatted table.
-
-        An empty list will be returned if the column count is not the
-        same for each row in the table.
-
-        I got code from this url and modified it:
-        http://ginstrom.com/scribbles/2.17/09/04/pretty-printing-a-table-in-python/
-
-        Example(added spacing to make example clear):
-        table = [["",       "names", "birthyear", "age"], ["NCuser", "bob",   1976,         35]]
-        """
-        # Copy the table so that we do not ref the orginal list and change it.
-        copyOfTable = []
-        for currentList in table:
-            newList = []
-            for item in currentList:
-                newList.append(item)
-            if (len(newList) > 0):
-                copyOfTable.append(newList)
-
-        # Return empty list and print error if all the rows in table
-        # dont have same column count.
-        if (len(copyOfTable) > 0):
-            # Add header to the list if one was passed to it and table is not empty.
-            if (not headerList == None):
-                copyOfTable.insert(0, headerList)
-            # Make sure that table and header contain the same number
-            # of columns.
-            colCount = len(copyOfTable[0])
-            for currentRow in copyOfTable:
-                currentColCount = len(currentRow)
-                if (not (currentColCount == colCount)):
-                    message = "The table contains columns with a different columns counts and will not be processed."
-                    logging.getLogger(sx.MAIN_LOGGER_NAME).debug(message)
-                    return []
-        else:
-            message = "The table contains no rows in the table and will not be processed."
-            logging.getLogger(sx.MAIN_LOGGER_NAME).debug(message)
-            return []
-        # This function will append new rows if the item in the column
-        # for a row is an array/list. If there is a None value or
-        # empty string then replace with "-" for no value rep.
-        currentRowIndex = 0
-        for currentRow in copyOfTable:
-            newRows = []
-            currentColIndex = 0
-            for currentCol in currentRow:
-                if (currentCol == None):
-                   currentRow[currentColIndex] = "-"
-                elif (not (len(currentCol) > 0)):
-                    currentRow[currentColIndex] = "-"
-                elif (type(currentCol) == list):
-                    currentColList = currentCol
-                    if (len(currentCol) > 0):
-                        currentRow[currentColIndex] = currentColList.pop(0)
-                    for ccListIndex in range(0, len(currentColList)):
-                        try:
-                            newRows[ccListIndex][currentColIndex] = currentColList[ccListIndex]
-                        except IndexError:
-                            newRow = []
-                            for i in range(len(currentRow)):
-                                newRow[i] = ""
-                            newRow[currentColIndex] = currentColList[ccListIndex]
-                            newRows.append(newRow)
-                currentColIndex = currentColIndex + 1
-            for row in newRows:
-                copyOfTable.insert(currentRowIndex + 1,row)
-            currentRowIndex = currentRowIndex  + 1
-        # Fix the max spacing for each column after iterating over
-        # each row.
-        tableStringsList = []
-        col_paddings = []
-        for i in range(len(copyOfTable[0])):
-            maxColumnWidth = self.__getMaxColumnWidth(copyOfTable, i)
-            if (maxColumnWidth >= 0):
-                col_paddings.append(maxColumnWidth)
-        # If header was given then use the max column size to build
-        # the seperator.
-        if (not headerList == None):
-            headerSeperatorList = []
-            for colMaxSize in col_paddings:
-                currentHeaderSeperator = ""
-                currentHeaderSeperator += "-" * colMaxSize
-                headerSeperatorList.append(currentHeaderSeperator)
-            copyOfTable.insert(1, headerSeperatorList)
-        for row in copyOfTable:
-            # Left col string has no spacing.
-            tableStrings = []
-            try:
-                tableStrings.append( str(row[0].ljust(col_paddings[0] + 1)))
-            except UnicodeEncodeError:
-                print row
-            # Add spacing to the rest of the columns.
-            for i in range(1, len(row)):
-                # Add spacing to to the right side with ljust.
-                try:
-                    tableStrings.append(str(self.__formatTableValue(row[i]).ljust(col_paddings[i] + 2)))
-                except IndexError:
-                    continue
-            tableStringsList.append(tableStrings)
-        return tableStringsList
-
 # ##############################################################################
 # Helper functions
 # ##############################################################################
-def humanize_file_size(size):
-    size = abs(size)
-    if (size==0):
-        return "0B"
+def humanize_bytes(size, unit_abbrev=""):
     units = ['B','KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB']
-    p = math.floor(math.log(size, 2)/10)
-    return "%.3f%s" % (size/math.pow(1024,p),units[int(p)])
+    size = abs(size)
+    if (size == 0):
+        if (not len(unit_abbrev) > 0):
+            unit_abbrev = "B"
+        return "0%s" %(unit_abbrev)
+    elif (len(unit_abbrev) > 0):
+        index = 0
+        for unit in units:
+            if (unit_abbrev.lower() == unit.lower()):
+                break
+            index = index + 1
+        p = float(index)
+        return "%.2f%s" % (size/math.pow(1024,p),units[int(p)])
+    else:
+        p = math.floor(math.log(size, 2)/10)
+        return "%.2f%s" % (size/math.pow(1024,p),units[int(p)])
 
+def print_table(rows):
+    """
+    Prints out a table using the data in `rows`, which is assumed to be a
+    sequence of sequences with the 0th element being the header.
+    https://gist.github.com/lonetwin/4721748
+    """
+    # Convert all values in rows to strings.
+    converted_rows_to_str = []
+    for row in rows:
+        current_row = []
+        for item in row:
+            current_row.append(str(item))
+        if (len(current_row) > 0):
+            converted_rows_to_str.append(current_row)
+    # - figure out each column widths which is max column size for all rows.
+    widths = [ len(max(columns, key=len)) for columns in zip(*converted_rows_to_str) ]
+    # - print the header
+    header, data = converted_rows_to_str[0], converted_rows_to_str[1:]
+    print(
+        ' | '.join( format(title, "%ds" % width) for width, title in zip(widths, header) )
+        )
+    # - print the separator
+    print( '-+-'.join( '-' * width for width in widths ) )
+    # - print the data
+    for row in data:
+        print(
+            " | ".join( format(cdata, "%ds" % width) for width, cdata in zip(widths, row) )
+            )
 # ##############################################################################
 # Get user selected options
 # ##############################################################################
@@ -244,16 +173,13 @@ def __getOptions(version) :
                          type="string",
                          metavar="<section name>",
                          default="")
-    cmdParser.add_option("-m", "--movies",
-                         action="store_true",
-                         dest="movies_query",
-                         help="query movies",
-                         default=False)
-    cmdParser.add_option("-t", "--tv_shows",
-                         action="store_true",
-                         dest="tv_shows_query",
-                         help="query tv shows",
-                         default=False)
+    #cmdParser.add_option("-t", "--type",
+    #                     action="store",
+    #                     dest="type",
+    #                     help="type of media",
+    #                     type="string",
+    #                     metavar="<type of media>",
+    #                     default="")
     cmdParser.add_option("-T", "--tv_show_title",
                          action="store",
                          dest="tv_show_title",
@@ -261,6 +187,11 @@ def __getOptions(version) :
                          type="string",
                          metavar="<title of tv show>",
                          default="")
+    cmdParser.add_option("-M", "--show_missing_details",
+                         action="store_true",
+                         dest="show_missing_details",
+                         help="show details for missing episodes for tv show seasons",
+                         default=False)
     cmdParser.add_option("-c", "--container",
                          action="store",
                          dest="container",
@@ -439,80 +370,112 @@ if __name__ == "__main__":
             for section in pms.library.sections():
                 sections.append([str(index), section.title, section.type])
                 index = index +  1;
-            table_formatter = TableFormatter()
-            print table_formatter.toTableString(sections, ["-", "Section Name", "Section Type"])
+            sections.insert(0, ["-", "Section Name", "Section Type"])
+            print_table(sections)
+            sys.exit()
 
         # #######################################################################
-        # Query Movies
+        # Do the queries
         # #######################################################################
-        if (cmdLineOpts.movies_query):
-            logging.getLogger(MAIN_LOGGER_NAME).info("Searching for movies on the pms %s" %(pms_name))
-            for section in pms.library.sections():
-                movies_attributes = []
-                if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or
-                                                  (not len(cmdLineOpts.section_name) > 0)):
-                    counter = 1
-                    for video in section.all():
-                        ccounter = counter
-                        # Get file details about the file for this metadata.
-                        for ipart in video.iter_parts():
-                            ipart_container = ipart.container
-                            if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
-                                ipart_filename = os.path.basename(ipart.file)
-                                ipart_size = humanize_file_size(ipart.size)
-                                movies_attributes.append([str(ccounter), video.title, str(video.year), ipart_container, ipart_filename, ipart_size])
-                                # Dont increase count but replace with dash.
-                                ccounter = "-"
-                        if (ccounter == "-"):
-                            counter = counter + 1;
-                if (len(movies_attributes) > 0):
-                    table_formatter = TableFormatter()
-                    print table_formatter.toTableString(movies_attributes, ["%s" %(section.title), "Movie Name", "Year", "Container", "Filename", "Size"])
+        for section in pms.library.sections():
+            media_attributes = []
+            if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or
+                                              (not len(cmdLineOpts.section_name) > 0)):
+                counter = 1
+                total_section_size = 0
+                for movie in section.all():
+                    ccounter = counter
+                    # Get file details about the file for this metadata.
+                    for ipart in movie.iter_parts():
+                        ipart_container = ipart.container
+                        if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
+                            ipart_filename = os.path.basename(ipart.file)
+                            ipart_size = humanize_bytes(ipart.size, "GiB")
+                            total_section_size = total_section_size + int(ipart.size)
+                            media_attributes.append([str(ccounter), movie.title, str(movie.year), ipart_container, ipart_filename, ipart_size])
+                            # Dont increase count but replace with dash.
+                            ccounter = "-"
+                    if (ccounter == "-"):
+                        counter = counter + 1;
+                if (len(media_attributes) > 0):
+                    media_attributes.insert(0, ["%s" %(section.title), "Movie Name", "Year", "Container", "Filename", "Size"])
+                    media_attributes.append(["-", "-", "-", "-", "-", "-"])
+                    media_attributes.append(["-", "-", "-", "-", "Total Section Size:", humanize_bytes(total_section_size, "GiB")])
+                    print_table(media_attributes)
                     print
-                else:
-                    logging.getLogger(MAIN_LOGGER_NAME).error("There was no movies metadata found.")
-
-        # #######################################################################
-        # Query TV Shows
-        # #######################################################################
-        if (cmdLineOpts.tv_shows_query):
-            logging.getLogger(MAIN_LOGGER_NAME).info("Searching for tv shows on the pms %s" %(pms_name))
-            output = ""
-            for section in pms.library.sections():
-                tv_show_attributes = []
-                if (section.type == "show") and ((section.title == cmdLineOpts.section_name) or
-                                                  (not len(cmdLineOpts.section_name) > 0)):
-                    counter = 1
-                    for video in section.all():
-                        title = video.title.split(" (")[0]
-                        if (not len(cmdLineOpts.tv_show_title) > 0):
+            elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or
+                                               (not len(cmdLineOpts.section_name) > 0)):
+                for tv_show in section.all():
+                    title = tv_show.title.split(" (")[0]
+                    if (not len(cmdLineOpts.tv_show_title) > 0):
+                        tvdb_query = tvdb_api.Tvdb()
+                        tvdb_show = tvdb_query[title]
+                        tv_show_seasons_attributes = []
+                        try:
+                            for season in pms.library.get(tv_show.title).seasons():
+                                # Make this a more verbose version showing episode titles, create a table of missing: season|episode|title|airdate, add option to show SPECIALS
+                                # if (cmdLineOpts.show_missing) and (not int(season.index) == 0):
+                                #    print "%d == %d" %(len(tvdb_show[int(season.index)]), len(season.episodes()))
+                                has_missing_episodes = "NO"
+                                if (len(tvdb_show[int(season.index)]) > 0):
+                                    if (not len(tvdb_show[int(season.index)]) == len(season.episodes())):
+                                        has_missing_episodes = "YES - Missing %d episdoes" %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
+                                else:
+                                    has_missing_episodes = "Unknown"
+                                tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
+                        except requests.exceptions.ConnectionError as e:
+                            logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(tv_show.title))
+                            tv_show_seasons_attributes.append(["?", "?", "?"])
+                        except tvdb_exceptions.tvdb_seasonnotfound:
+                            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
+                            tv_show_seasons_attributes.append(["?", "?", "?"])
+                        except NotFound:
+                            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
+                            tv_show_seasons_attributes.append(["?", "?", "?"])
+                        if (len(tv_show_seasons_attributes) > 0):
                             try:
-                                output += "%02d: %s(%d) [Seasons: %02d] [Episodes: %02d]\n" %(counter, title, video.year, len(pms.library.get(video.title).seasons()), len(pms.library.get(video.title).episodes()))
-                                try:
-                                    for season in pms.library.get(video.title).seasons():
-                                        output += "\t%s (Episodes: %d)\n" %(season.title, len(season.episodes()))
-                                except requests.exceptions.ConnectionError as e:
-                                    logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(video.title))
+                                print "%s(%d) [Seasons: %02d] [Episodes: %02d]" %(title, tv_show.year, len(pms.library.get(tv_show.title).seasons()), len(pms.library.get(tv_show.title).episodes()))
                             except NotFound:
-                                output += "%02d: %s(%d) (Warning: data not found for TV Show).\n" %(counter, title, video.year)
-                            counter = counter + 1
-                        elif (cmdLineOpts.tv_show_title.lower().strip() == title.lower().strip()):
-                            # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
-                            output += "%s(%d) [Seasons: %02d] [Episodes: %02d]\n" %(title, video.year, len(pms.library.get(video.title).seasons()), len(pms.library.get(video.title).episodes()))
+                                logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
+                                print "%s(%d) [Seasons: ?] [Episodes: ?]" %(title, tv_show.year)
+                            tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "MISSING_EPISODES"])
+                            print_table(tv_show_seasons_attributes)
+                            print
+                    elif (cmdLineOpts.tv_show_title.lower().strip() == title.lower().strip()):
+                        # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
+                        tvdb_query = tvdb_api.Tvdb()
+                        tvdb_show = tvdb_query[title]
+                        tv_show_seasons_attributes = []
+                        try:
+                            for season in pms.library.get(tv_show.title).seasons():
+                                # Make this a more verbose version showing episode titles, create a table of missing: season|episode|title|airdate, add option to show SPECIALS
+                                #if (cmdLineOpts.show_missing) and (not int(season.index) == 0):
+                                #    print "%d == %d" %(len(tvdb_show[int(season.index)]), len(season.episodes()))
+                                has_missing_episodes = "NO"
+                                if (len(tvdb_show[int(season.index)]) > 0):
+                                    if (not len(tvdb_show[int(season.index)]) == len(season.episodes())):
+                                        has_missing_episodes = "YES - Missing %d episdoes" %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
+                                else:
+                                    has_missing_episodes = "Unknown"
+                                tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
+                        except requests.exceptions.ConnectionError as e:
+                            logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(tv_show.title))
+                            tv_show_seasons_attributes.append(["?", "?", "?"])
+                        except tvdb_exceptions.tvdb_seasonnotfound:
+                            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
+                            tv_show_seasons_attributes.append(["?", "?", "?"])
+                        except NotFound:
+                            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
+                            tv_show_seasons_attributes.append(["?", "?", "?"])
+                        if (len(tv_show_seasons_attributes) > 0):
                             try:
-                                for season in pms.library.get(video.title).seasons():
-                                    output += "\t%s (Episodes: %d)\n" %(season.title, len(season.episodes()))
-                            except requests.exceptions.ConnectionError as e:
-                                logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(video.title))
-            if (len(output) > 0):
-                print output
-            else:
-                if (len(cmdLineOpts.tv_show_title) > 0):
-                    logging.getLogger(MAIN_LOGGER_NAME).error("There was no metadata found matching the tv show: %s" %(cmdLineOpts.tv_show_title))
-                else:
-                    logging.getLogger(MAIN_LOGGER_NAME).error("There was no tv show metadata found.")
-
-
+                                print "%s(%d) [Seasons: %02d] [Episodes: %02d]" %(title, tv_show.year, len(pms.library.get(tv_show.title).seasons()), len(pms.library.get(tv_show.title).episodes()))
+                            except NotFound:
+                                logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, title))
+                                print "%s(%d) [Seasons: ?] [Episodes: ?]" %(title, tv_show.year)
+                            tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "MISSING_EPISODES"])
+                            print_table(tv_show_seasons_attributes)
+                            print
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

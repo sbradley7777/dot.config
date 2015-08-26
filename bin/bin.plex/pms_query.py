@@ -1,28 +1,32 @@
 #!/usr/bin/python
-"""This script will perform various queries to the Plex Media Server.
+"""@name        : pms_query.py
+@description : This script will perform various queries to the Plex Media Server.
+@author      : Shane Bradley
+@contact     :  shanebradley@gmail.com
+@version     : 0.4
+@copyright   : GPLv2
 
-The script uses the plex API supplied by this project which will need to be
-installed:
-- https://github.com/mjs7231/python-plexapi
-# sudo pip install plexapi
+Requirements:
+  The script uses the plex API supplied by this project which will need to be
+  installed:
 
-This script uses this tvdb API suppied by this project which will need to be
-installed:
-- https://github.com/dbr/tvdb_api
-# sudo easy_install tvdb_api
+  - https://github.com/mjs7231/python-plexapi
+  # sudo pip install plexapi
 
-Edit the configuration file to add in username and password.
-$ cat ~/.pms_connect.conf
-[login]
-username = <login>
-password = <password>
-pms_name = <name of plex media server>
+  This script uses this tvdb API suppied by this project which will need to be
+  installed:
+  - https://github.com/dbr/tvdb_api
+  # sudo easy_install tvdb_api
+
+Configuration File
+  Edit the configuration file to add in username and password.
+  $ cat ~/.pms_connect.conf
+  [login]
+  username = <login>
+  password = <password>
+  pms_name = <name of plex media server>
 
 TODO:
-
-* Change -M to be tv_show_details, so add that code to "print_tv_shows" and add
-  argument "show_details=False"
-
 * Add analyze data options (-a) that will print out missing episodes, movies with filename
   and metadata year dont match, spelling isssues, movies and tvshows that are
   1080p without the corrrect 1080p,720p, in filename. It prints a summary.
@@ -30,11 +34,16 @@ TODO:
 * Add option to create a url to search like youtube or torrent for missing in
   details output.
 
-* Move tv_show into a single function cause i got duplicate code.
-@author    : Shane Bradley
-@contact   : shanebradley@gmail.com
-@version   : 0.3
-@copyright : GPLv2
+* Need error checking for tvdb commands, and other stuff.
+
+* The "The Code" not showing up cause (UK) in title,need a way to just get
+  title.  What about tv shows like "the office" with UK and US version. Need to
+  figure that out, and changed from rsplit to split for now. this query is
+  correct: "tvdb_show = tvdb_query["The Code (UK)"]" whereas this is incorrect
+  "tvdb_show = tvdb_query["The Code"]", so i need a function to verify correct
+  tvshow that is in pms such as verifing: country, date first aired.  Basically
+  need a function that gets tvdb information and it verifies the correct tv
+  show.
 
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
@@ -104,6 +113,14 @@ def humanize_bytes(size, unit_abbrev=""):
         p = math.floor(math.log(size, 2)/10)
         return "%.2f%s" % (size/math.pow(1024,p),units[int(p)])
 
+def __format_row_item(item):
+    import locale
+    locale.setlocale(locale.LC_NUMERIC, "")
+    try:
+        return str(item)
+    except UnicodeEncodeError:
+        return item.encode("utf-8")
+
 def print_table(rows):
     """
     Prints out a table using the data in `rows`, which is assumed to be a
@@ -115,7 +132,7 @@ def print_table(rows):
     for row in rows:
         current_row = []
         for item in row:
-            current_row.append(str(item))
+            current_row.append(__format_row_item(item))
         if (len(current_row) > 0):
             converted_rows_to_str.append(current_row)
     # - figure out each column widths which is max column size for all rows.
@@ -133,26 +150,42 @@ def print_table(rows):
             " | ".join( format(cdata, "%ds" % width) for width, cdata in zip(widths, row) )
             )
 
-def print_tv_show_information(pms_tv_show):
+def print_tv_show_information(pms_tv_show, show_missing_details=False):
+    skip_specials = True
+    # Put tvdb query in its own function to verify information and get correct
+    # tvshow that matches what is in PMS.
     tvdb_query = tvdb_api.Tvdb()
     # Do reverse split, in case () in show title.
-    tvdb_show = tvdb_query[pms_tv_show.title.rsplit(" (")[0].strip()]
+    tvdb_show = tvdb_query[pms_tv_show.title.split(" (")[0].strip()]
     pms_tv_show_seasons_attributes = []
+    pms_tv_show_missing_episodes = []
     try:
         for season in pms.library.get(pms_tv_show.title).seasons():
-            # Make this a more verbose version showing episode titles, create a table of missing: season|episode|title|airdate, add option to show SPECIALS
-            # if (cmdLineOpts.show_missing) and (not int(season.index) == 0):
-            #    print "%d == %d" %(len(tvdb_show[int(season.index)]), len(season.episodes()))
-            has_missing_episodes = "NO"
-            if (len(tvdb_show[int(season.index)]) > 0):
-                if (not len(tvdb_show[int(season.index)]) == len(season.episodes())):
-                    has_missing_episodes = "YES - Missing %d episdoes" %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
+            has_missing_episodes = ""
+            if (len(tvdb_show[int(season.index)]) == len(season.episodes())):
+                has_missing_episodes = "0"
+            elif (not len(tvdb_show[int(season.index)]) == len(season.episodes())):
+                has_missing_episodes = "Missing %d episodes on PMS." %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
+                if (len(tvdb_show[int(season.index)]) < len(season.episodes())):
+                    has_missing_episodes = "The PMS episode count(%d) is higher than what is on TVDB(%d)." %(len(season.episodes()), len(tvdb_show[int(season.index)]))
+                if (show_missing_details):
+                    # keys are the episodes numbers, find out which episdoes i have and remove from list of episodes
+                    if (skip_specials and (season.index == "0" or season.title == "Specials")):
+                        continue
+                    pms_episodes = []
+                    for episode in season.episodes():
+                        pms_episodes.append(int(episode.index))
+                    missing_episodes = list(set(tvdb_show[int(season.index)].keys()) - set(pms_episodes))
+                    for episode_num in missing_episodes:
+                        pms_tv_show_missing_episodes.append((int(season.index), episode_num))
             else:
-                has_missing_episodes = "Unknown"
+                # Possible more episodes then on tvdb
+                has_missing_episodes = "Unknown or Error occurred: PMS episodes found: %d | TVDB episodes found:  %d" %(len(season.episodes()), len(tvdb_show[int(season.index)]))
             pms_tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
     except requests.exceptions.ConnectionError as e:
         logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(pms_tv_show.title))
         pms_tv_show_seasons_attributes.append(["?", "?", "?"])
+        print tvdb_show
     except tvdb_exceptions.tvdb_seasonnotfound:
         logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
         pms_tv_show_seasons_attributes.append(["?", "?", "?"])
@@ -168,7 +201,19 @@ def print_tv_show_information(pms_tv_show):
         pms_tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "Missing Episodes"])
         print_table(pms_tv_show_seasons_attributes)
         print
+        if (show_missing_details and (len(pms_tv_show_missing_episodes) > 0)):
+            # Show create the table while i am going through the or do after
+            # fact and create print_table() structure for details. Cause
+            # currently i am overriding, so build structure if option
+            # enabled. Lists of Lists.
+            print "%s Missing Episodes" %(tv_show.title)
+            missing_episodes_details = []
+            for missing_episodes in pms_tv_show_missing_episodes:
+                missing_episodes_details.append([str(missing_episodes[0]), str(missing_episodes[1]), tvdb_show[missing_episodes[0]][missing_episodes[1]]['episodename']])
 
+            missing_episodes_details.insert(0, ["Season", "Episode", "Episode Title"])
+            print_table(missing_episodes_details)
+            print
 
 # ##############################################################################
 # Get user selected options
@@ -448,10 +493,12 @@ if __name__ == "__main__":
                                                (not len(cmdLineOpts.section_name) > 0)):
                 for tv_show in section.all():
                     if (not len(cmdLineOpts.tv_show_title) > 0):
-                        print_tv_show_information(tv_show)
+                        print_tv_show_information(tv_show, show_missing_details=cmdLineOpts.show_missing_details)
                     elif (cmdLineOpts.tv_show_title.lower().strip() == tv_show.title.rsplit(" (")[0].strip().lower()):
                         # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
-                        print_tv_show_information(tv_show)
+                        print_tv_show_information(tv_show, show_missing_details=cmdLineOpts.show_missing_details)
+
+
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

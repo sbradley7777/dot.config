@@ -34,16 +34,15 @@ TODO:
 * Add option to create a url to search like youtube or torrent for missing in
   details output.
 
-* Need error checking for tvdb commands, and other stuff.
+* On tvdb query on matching: Possible that it is a match without an overview or
+  firstaired date. Return whatever match we got. What would be ideal is getting
+  the tvdb id from pms and match that but i did not see how with plexapi.
 
-* The "The Code" not showing up cause (UK) in title,need a way to just get
-  title.  What about tv shows like "the office" with UK and US version. Need to
-  figure that out, and changed from rsplit to split for now. this query is
-  correct: "tvdb_show = tvdb_query["The Code (UK)"]" whereas this is incorrect
-  "tvdb_show = tvdb_query["The Code"]", so i need a function to verify correct
-  tvshow that is in pms such as verifing: country, date first aired.  Basically
-  need a function that gets tvdb information and it verifies the correct tv
-  show.
+* Need to add try/expect "requests.exceptions.Timeout" to any section doing PMS cause if
+  host is asleep and takes time to spin up.
+
+* Throw error if -t for type and -s for section used at same time. Choose one or
+  the other.
 
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
@@ -150,70 +149,94 @@ def print_table(rows):
             " | ".join( format(cdata, "%ds" % width) for width, cdata in zip(widths, row) )
             )
 
-def print_tv_show_information(pms_tv_show, show_missing_details=False):
-    skip_specials = True
+def get_tvdb_tv_show(pms_tv_show):
     # Put tvdb query in its own function to verify information and get correct
     # tvshow that matches what is in PMS.
     tvdb_query = tvdb_api.Tvdb()
     # Do reverse split, in case () in show title.
     tvdb_show = tvdb_query[pms_tv_show.title.split(" (")[0].strip()]
-    pms_tv_show_seasons_attributes = []
-    pms_tv_show_missing_episodes = []
-    try:
-        for season in pms.library.get(pms_tv_show.title).seasons():
-            has_missing_episodes = ""
-            if (len(tvdb_show[int(season.index)]) == len(season.episodes())):
-                has_missing_episodes = "0"
-            elif (not len(tvdb_show[int(season.index)]) == len(season.episodes())):
-                has_missing_episodes = "Missing %d episodes on PMS." %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
-                if (len(tvdb_show[int(season.index)]) < len(season.episodes())):
-                    has_missing_episodes = "The PMS episode count(%d) is higher than what is on TVDB(%d)." %(len(season.episodes()), len(tvdb_show[int(season.index)]))
-                if (show_missing_details):
-                    # keys are the episodes numbers, find out which episdoes i have and remove from list of episodes
-                    if (skip_specials and (season.index == "0" or season.title == "Specials")):
-                        continue
-                    pms_episodes = []
-                    for episode in season.episodes():
-                        pms_episodes.append(int(episode.index))
-                    missing_episodes = list(set(tvdb_show[int(season.index)].keys()) - set(pms_episodes))
-                    for episode_num in missing_episodes:
-                        pms_tv_show_missing_episodes.append((int(season.index), episode_num))
-            else:
-                # Possible more episodes then on tvdb
-                has_missing_episodes = "Unknown or Error occurred: PMS episodes found: %d | TVDB episodes found:  %d" %(len(season.episodes()), len(tvdb_show[int(season.index)]))
-            pms_tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
-    except requests.exceptions.ConnectionError as e:
-        logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(pms_tv_show.title))
-        pms_tv_show_seasons_attributes.append(["?", "?", "?"])
-        print tvdb_show
-    except tvdb_exceptions.tvdb_seasonnotfound:
-        logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
-        pms_tv_show_seasons_attributes.append(["?", "?", "?"])
-    except NotFound:
-        logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
-        pms_tv_show_seasons_attributes.append(["?", "?", "?"])
-    if (len(pms_tv_show_seasons_attributes) > 0):
+    if (not tvdb_show == None):
+        tvdb_match = False
+        if (not tvdb_show.data.get("overview") == None):
+            if (tvdb_show.data.get("overview").strip().lower() == pms_tv_show.summary.strip().lower()):
+                print "First match for overview date:  %s" %(pms_tv_show.title.split(" (")[0].strip())
+                return tvdb_show
+        if (not tvdb_show.data.get("firstaired") == None):
+            if (tvdb_show.data.get("firstaired").strip() == pms_tv_show.originallyAvailableAt.strftime("%Y-%m-%d").strip()):
+                print "First match for firstaired date:  %s" %(pms_tv_show.title.split(" (")[0].strip())
+                return tvdb_show
+        tvdb_show = tvdb_query[pms_tv_show.title.strip()]
+        if (not tvdb_show == None):
+            if (not tvdb_show.data.get("overview") == None):
+                if (tvdb_show.data.get("overview").strip().lower() == pms_tv_show.summary.strip().lower()):
+                    print "Second match for overview date:  %s" %(pms_tv_show.title.strip())
+                    return tvdb_show
+            if (not tvdb_show.data.get("firstaired") == None):
+                if (tvdb_show.data.get("firstaired").strip() == pms_tv_show.originallyAvailableAt.strftime("%Y-%m-%d").strip()):
+                    print "Second match for firstaired:  %s" %(pms_tv_show.title.strip())
+                    return tvdb_show
+    # Possible that it is a match without an overview or firstaired date. Return whatever match we got.
+    return tvdb_show
+
+def print_tv_show_information(pms_tv_show, show_missing_details=False):
+    skip_specials = True
+    tvdb_show = get_tvdb_tv_show(pms_tv_show)
+    if (tvdb_show == None):
+        logging.getLogger(MAIN_LOGGER_NAME).debug("There was no match for the tv show \"%s\" on \"tvdb\"." %(pms_tv_show.title))
+    else:
+        pms_tv_show_seasons_attributes = []
+        pms_tv_show_missing_episodes = []
         try:
-            print "%s [Seasons: %02d] [Episodes: %02d]" %(pms_tv_show.title, len(pms.library.get(pms_tv_show.title).seasons()), len(pms.library.get(pms_tv_show.title).episodes()))
+            for season in pms.library.get(pms_tv_show.title).seasons():
+                has_missing_episodes = ""
+                if (len(tvdb_show[int(season.index)]) == len(season.episodes())):
+                    has_missing_episodes = "0"
+                elif (len(tvdb_show[int(season.index)]) < len(season.episodes())):
+                    has_missing_episodes = "The PMS episode count(%d) is higher than what is on TVDB(%d)." %(len(season.episodes()), len(tvdb_show[int(season.index)]))
+                elif (len(tvdb_show[int(season.index)]) > len(season.episodes())):
+                    has_missing_episodes = "%d missing episodes on PMS." %(len(tvdb_show[int(season.index)]) - len(season.episodes()))
+                    if (show_missing_details):
+                        # keys are the episodes numbers, find out which episdoes i have and remove from list of episodes
+                        if (skip_specials and (season.index == "0" or season.title == "Specials")):
+                            continue
+                        pms_episodes = []
+                        for episode in season.episodes():
+                            pms_episodes.append(int(episode.index))
+                        missing_episodes = list(set(tvdb_show[int(season.index)].keys()) - set(pms_episodes))
+                        for episode_num in missing_episodes:
+                            pms_tv_show_missing_episodes.append((int(season.index), episode_num))
+                pms_tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
+        except requests.exceptions.ConnectionError as e:
+            logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(pms_tv_show.title))
+            pms_tv_show_seasons_attributes.append(["?", "?", "?"])
+        except tvdb_exceptions.tvdb_seasonnotfound:
+            logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
+            pms_tv_show_seasons_attributes.append(["?", "?", "?"])
         except NotFound:
             logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
-            print "%s [Seasons: ?] [Episodes: ?]" %(pms_tv_show.title)
-        pms_tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "Missing Episodes"])
-        print_table(pms_tv_show_seasons_attributes)
-        print
-        if (show_missing_details and (len(pms_tv_show_missing_episodes) > 0)):
-            # Show create the table while i am going through the or do after
-            # fact and create print_table() structure for details. Cause
-            # currently i am overriding, so build structure if option
-            # enabled. Lists of Lists.
-            print "%s Missing Episodes" %(tv_show.title)
-            missing_episodes_details = []
-            for missing_episodes in pms_tv_show_missing_episodes:
-                missing_episodes_details.append([str(missing_episodes[0]), str(missing_episodes[1]), tvdb_show[missing_episodes[0]][missing_episodes[1]]['episodename']])
-
-            missing_episodes_details.insert(0, ["Season", "Episode", "Episode Title"])
-            print_table(missing_episodes_details)
+            pms_tv_show_seasons_attributes.append(["?", "?", "?"])
+        if (len(pms_tv_show_seasons_attributes) > 0):
+            try:
+                print "%s [Seasons: %02d] [Episodes: %02d]" %(pms_tv_show.title, len(pms.library.get(pms_tv_show.title).seasons()), len(pms.library.get(pms_tv_show.title).episodes()))
+            except NotFound:
+                logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
+                print "%s [Seasons: ?] [Episodes: ?]" %(pms_tv_show.title)
+            pms_tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "Missing Episodes"])
+            print_table(pms_tv_show_seasons_attributes)
             print
+            if (show_missing_details and (len(pms_tv_show_missing_episodes) > 0)):
+                # Show create the table while i am going through the or do after
+                # fact and create print_table() structure for details. Cause
+                # currently i am overriding, so build structure if option
+                # enabled. Lists of Lists.
+                print "%s: Missing Episodes" %(tv_show.title)
+                missing_episodes_details = []
+                for missing_episodes in pms_tv_show_missing_episodes:
+                    missing_episodes_details.append([str(missing_episodes[0]), str(missing_episodes[1]), tvdb_show[missing_episodes[0]][missing_episodes[1]]['episodename']])
+
+                missing_episodes_details.insert(0, ["Season", "Missing Episode", "Missing Episode Title"])
+                print_table(missing_episodes_details)
+                print
 
 # ##############################################################################
 # Get user selected options
@@ -248,6 +271,11 @@ def __getOptions(version) :
                          dest="list",
                          help="list sections in library",
                          default=False)
+    #cmdParser.add_option("-a", "--analyze",
+    #                     action="store_true",
+    #                     dest="analyze",
+    #                     help="analyze the metadata and filename",
+    #                     default=False)
     cmdParser.add_option("-s", "--section_name",
                          action="store",
                          dest="section_name",
@@ -255,13 +283,13 @@ def __getOptions(version) :
                          type="string",
                          metavar="<section name>",
                          default="")
-    #cmdParser.add_option("-t", "--type",
-    #                     action="store",
-    #                     dest="type",
-    #                     help="type of media",
-    #                     type="string",
-    #                     metavar="<type of media>",
-    #                     default="")
+    cmdParser.add_option("-t", "--section_type",
+                         action="store",
+                         dest="section_type",
+                         help="type of media for a section: movie or show",
+                         type="string",
+                         metavar="<type of media for section>",
+                         default="")
     cmdParser.add_option("-T", "--tv_show_title",
                          action="store",
                          dest="tv_show_title",
@@ -463,10 +491,18 @@ if __name__ == "__main__":
         # #######################################################################
         # Do the queries
         # #######################################################################
+        def search_section(section_typesection, section_name_option, section_type_option):
+            # Need to way to know if this section should be reviewed
+            pass
         for section in pms.library.sections():
             media_attributes = []
-            if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or
-                                              (not len(cmdLineOpts.section_name) > 0)):
+            # if ((section.title == cmdineOpts.section_name) or (not len(cmdLineOpts.section_name) > 0))
+            # if ((section.type == cmdineOpts.section_type) or (not len(cmdLineOpts.section_type) > 0))
+            # then
+            # if (section.type == "movie")
+            # elif (section.type == "show")
+            # else log_unknown_section_msg
+            if (section.type == "movie") and ((section.title == cmdineOpts.section_name) or (not len(cmdLineOpts.section_name) > 0)):
                 counter = 1
                 total_section_size = 0
                 for movie in section.all():
@@ -497,8 +533,6 @@ if __name__ == "__main__":
                     elif (cmdLineOpts.tv_show_title.lower().strip() == tv_show.title.rsplit(" (")[0].strip().lower()):
                         # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
                         print_tv_show_information(tv_show, show_missing_details=cmdLineOpts.show_missing_details)
-
-
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

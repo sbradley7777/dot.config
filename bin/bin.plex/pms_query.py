@@ -41,8 +41,15 @@ TODO:
 * Need to add try/expect "requests.exceptions.Timeout" to any section doing PMS cause if
   host is asleep and takes time to spin up.
 
-* Throw error if -t for type and -s for section used at same time. Choose one or
-  the other.
+* Add examples
+
+* Add configuration options for tags.
+
+* Need to analyze TV show analyze code and analyze the full path like
+  show_name(year)/season/episode-filename
+
+* In analyze write out in info message why something failed a test like pms said
+  movie title was X and filename said Y.
 
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
@@ -204,7 +211,9 @@ def print_tv_show_information(pms_tv_show, show_missing_details=False):
                             pms_episodes.append(int(episode.index))
                         missing_episodes = list(set(tvdb_show[int(season.index)].keys()) - set(pms_episodes))
                         for episode_num in missing_episodes:
-                            pms_tv_show_missing_episodes.append((int(season.index), episode_num))
+                            # Create tuple of season num and episode num to use
+                            # to query tvdb for missing episodes.
+                            pms_tv_show_missing_episodes.append((int(season.index), episode_num, ))
                 pms_tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
         except requests.exceptions.ConnectionError as e:
             logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(pms_tv_show.title))
@@ -216,6 +225,7 @@ def print_tv_show_information(pms_tv_show, show_missing_details=False):
             logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
             pms_tv_show_seasons_attributes.append(["?", "?", "?"])
         if (len(pms_tv_show_seasons_attributes) > 0):
+            # Print details of episodes on PMS.
             try:
                 print "%s [Seasons: %02d] [Episodes: %02d]" %(pms_tv_show.title, len(pms.library.get(pms_tv_show.title).seasons()), len(pms.library.get(pms_tv_show.title).episodes()))
             except NotFound:
@@ -224,17 +234,20 @@ def print_tv_show_information(pms_tv_show, show_missing_details=False):
             pms_tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "Missing Episodes"])
             print_table(pms_tv_show_seasons_attributes)
             print
+            # If enabled print details of episodes on tvdb.
             if (show_missing_details and (len(pms_tv_show_missing_episodes) > 0)):
-                # Show create the table while i am going through the or do after
-                # fact and create print_table() structure for details. Cause
-                # currently i am overriding, so build structure if option
-                # enabled. Lists of Lists.
                 print "%s: Missing Episodes" %(tv_show.title)
                 missing_episodes_details = []
                 for missing_episodes in pms_tv_show_missing_episodes:
-                    missing_episodes_details.append([str(missing_episodes[0]), str(missing_episodes[1]), tvdb_show[missing_episodes[0]][missing_episodes[1]]['episodename']])
-
-                missing_episodes_details.insert(0, ["Season", "Missing Episode", "Missing Episode Title"])
+                    try:
+                        missing_episodes_details.append([str(missing_episodes[0]), str(missing_episodes[1]),
+                                                         tvdb_show[missing_episodes[0]][missing_episodes[1]]["firstaired"],
+                                                         tvdb_show[missing_episodes[0]][missing_episodes[1]]["episodename"]])
+                    except tvdb_exceptions.tvdb_episodenotfound:
+                        logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s episode %s for %s" %(missing_episodes[0],
+                                                                                                                 missing_episodes[1],
+                                                                                                                 pms_tv_show.title))
+                missing_episodes_details.insert(0, ["Season", "Missing Episode", "Date Aired", "Missing Episode Title"])
                 print_table(missing_episodes_details)
                 print
 
@@ -271,11 +284,11 @@ def __getOptions(version) :
                          dest="list",
                          help="list sections in library",
                          default=False)
-    #cmdParser.add_option("-a", "--analyze",
-    #                     action="store_true",
-    #                     dest="analyze",
-    #                     help="analyze the metadata and filename",
-    #                     default=False)
+    cmdParser.add_option("-a", "--analyze",
+                         action="store_true",
+                         dest="analyze",
+                         help="analyze the metadata and filename",
+                         default=False)
     cmdParser.add_option("-s", "--section_name",
                          action="store",
                          dest="section_name",
@@ -488,21 +501,78 @@ if __name__ == "__main__":
             print_table(sections)
             sys.exit()
 
+
+        if (len(cmdLineOpts.section_type) > 0) and (len(cmdLineOpts.section_name) > 0):
+            logging.getLogger(MAIN_LOGGER_NAME).error("The -t and -s options cannot be used at the same time")
+        elif (not len(cmdLineOpts.section_type) > 0) and (not len(cmdLineOpts.section_name) > 0):
+            logging.getLogger(MAIN_LOGGER_NAME).error("A value for the option -t or -s is required.")
+
         # #######################################################################
-        # Do the queries
+        # Print metadata to console
         # #######################################################################
-        def search_section(section_typesection, section_name_option, section_type_option):
-            # Need to way to know if this section should be reviewed
-            pass
+        section_types = []
+        for section in pms.library.sections():
+            if (section.type not in section_types):
+                section_types.append(section.type)
+
+        # Just add analyze code to here, if analyze disabled then just print, if
+        # analyze enable then analyze media and only output the tests that fail.
+        if (cmdLineOpts.analyze):
+            logging.getLogger(MAIN_LOGGER_NAME).info("Analzying is still work in progress.")
+            for section in pms.library.sections():
+                media_attributes = []
+                if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
+                    total_section_size = 0
+                    for movie in section.all():
+                        # Get file details about the file for this metadata.
+                        for ipart in movie.iter_parts():
+                            ipart_container = ipart.container
+                            if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
+                                ipart_filename = os.path.basename(ipart.file)
+                                import re
+                                # Need to finish breaking down to movie_title,
+                                # year, tags, extenstion.
+                                regex = "^(?P<movie_title>[a-zA-Z_0-9\-+]*)\(.*(?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
+                                rem = re.compile(regex)
+                                mo = rem.match(ipart_filename)
+                                if (mo):
+                                    try:
+                                        correct_title = ""
+                                        correct_year = ""
+                                        correct_tags = ""
+                                        correct_ext = ""
+                                        if (not str(movie.title).lower() == mo.group("movie_title").lower().replace("_", " ")):
+                                            correct_title = "*"
+                                        if (not str(movie.year) == mo.group("year")):
+                                            correct_year = "*"
+                                        if (not (mo.group("extension") in ["mkv", "mp4", "m4v"])):
+                                            correct_ext = "*"
+                                        # Tags should follow this sequence:
+                                        # ptX, resolution(1080p,720p), movie version(EE, DC)
+                                        tags = mo.group("tags").split("-")
+                                        for tag in tags:
+                                            pass
+                                        if ((len(correct_title) > 0) or (len(correct_year) > 0) or
+                                            (len(correct_tags) > 0) or (len(correct_ext) > 0)):
+                                            media_attributes.append([ipart_filename, correct_title, correct_year, correct_tags, correct_ext])
+                                    except IndexError:
+                                        media_attributes.append([ipart_filename, "?", "?", "?","?"])
+                                        logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s." %(ipart_filename))
+                                else:
+                                    media_attributes.append([ipart_filename, "?", "?", "?","?"])
+                                    logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s." %(ipart_filename))
+                if (len(media_attributes) > 0):
+                    media_attributes.insert(0, ["filename", "movie_title", "year", "tags", "extension"])
+                    print_table(media_attributes)
+                    print
+                    print "? - Represents unknown because parsing error occurred."
+                    print "* - Represents incorrect values."
+                    print
+            # exit, should make stuff below incased in else.
+            sys.exit()
         for section in pms.library.sections():
             media_attributes = []
-            # if ((section.title == cmdineOpts.section_name) or (not len(cmdLineOpts.section_name) > 0))
-            # if ((section.type == cmdineOpts.section_type) or (not len(cmdLineOpts.section_type) > 0))
-            # then
-            # if (section.type == "movie")
-            # elif (section.type == "show")
-            # else log_unknown_section_msg
-            if (section.type == "movie") and ((section.title == cmdineOpts.section_name) or (not len(cmdLineOpts.section_name) > 0)):
+            if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
                 counter = 1
                 total_section_size = 0
                 for movie in section.all():
@@ -525,8 +595,7 @@ if __name__ == "__main__":
                     media_attributes.append(["-", "-", "-", "-", "Total Section Size:", humanize_bytes(total_section_size, "GiB")])
                     print_table(media_attributes)
                     print
-            elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or
-                                               (not len(cmdLineOpts.section_name) > 0)):
+            elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
                 for tv_show in section.all():
                     if (not len(cmdLineOpts.tv_show_title) > 0):
                         print_tv_show_information(tv_show, show_missing_details=cmdLineOpts.show_missing_details)

@@ -1,14 +1,17 @@
 #!/usr/bin/python
-"""@name        : pms_query.py
+"""
+@name        : pms_query.py
 @description : This script will perform various queries to the Plex Media Server.
 @author      : Shane Bradley
 @contact     :  shanebradley@gmail.com
-@version     : 0.4
+@version     : 0.5
 @copyright   : GPLv2
 
+#######################################################################
 Requirements:
-  The script uses the plex API supplied by this project which will need to be
-  installed:
+#######################################################################
+The script uses the plex API supplied by this project which will need to be
+installed:
 
   - https://github.com/mjs7231/python-plexapi
   # sudo pip install plexapi
@@ -18,15 +21,22 @@ Requirements:
   - https://github.com/dbr/tvdb_api
   # sudo easy_install tvdb_api
 
+#######################################################################
 Configuration File
-  Edit the configuration file to add in username and password.
-  $ cat ~/.pms_connect.conf
+#######################################################################
+Edit the configuration file to add in username and password.
+  $ cat ~/.pms_queryconf
   [login]
   username = <login>
   password = <password>
   pms_name = <name of plex media server>
 
-TODO:
+  [filenames]
+  filename_extensions = mp4 m4v mkv
+  filename_tags = pt1 pt2 pt3 1080p 720p
+#######################################################################
+TODO
+#######################################################################
 * Add analyze data options (-a) that will print out missing episodes, movies with filename
   and metadata year dont match, spelling isssues, movies and tvshows that are
   1080p without the corrrect 1080p,720p, in filename. It prints a summary.
@@ -454,10 +464,26 @@ if __name__ == "__main__":
             sys.exit(1)
         configParser = ConfigParser.RawConfigParser()
         configParser.read(CONFIG_FILE)
-        username = configParser.get("login", "username").strip()
-        password = configParser.get("login", "password").strip()
-        pms_name = configParser.get("login", "pms_name").strip()
-
+        try:
+            username = configParser.get("login", "username").strip()
+            password = configParser.get("login", "password").strip()
+            pms_name = configParser.get("login", "pms_name").strip()
+        except ConfigParser.NoOptionError:
+            logging.getLogger(MAIN_LOGGER_NAME).error("There was an error parsing the configuration file: %s" %(CONFIG_FILE))
+            sys.exit(1)
+        # Optional configurations options.
+        filename_extensions = ""
+        filename_tags = ""
+        try:
+            filename_extensions = configParser.get("filenames", "filename_extensions").strip().split()
+        except ConfigParser.NoOptionError:
+            # These can be skipped if not set.
+            pass
+        try:
+            filename_tags = configParser.get("filenames", "filename_tags").strip().split()
+        except ConfigParser.NoOptionError:
+            # These can be skipped if not set.
+            pass
         if (not len(username) > 0):
             logging.getLogger(MAIN_LOGGER_NAME).error("Please specfic a username in the configuration file: %s" %(CONFIG_FILE))
             sys.exit(1)
@@ -467,7 +493,6 @@ if __name__ == "__main__":
         elif(not len(pms_name) > 0):
             logging.getLogger(MAIN_LOGGER_NAME).error("Please specfic a Plex Media Server name in the configuration file: %s" %(CONFIG_FILE))
             sys.exit(1)
-
         # #######################################################################
         # Connect to PMS
         # #######################################################################
@@ -545,22 +570,24 @@ if __name__ == "__main__":
                                             pms_title = __format_item(movie.title).lower()
                                         if (not str(__format_item(movie.year)).lower() == __format_item(mo.group("year")).lower()):
                                             pms_year = __format_item(movie.year)
-                                        if (not (__format_item(mo.group("extension")).lower() in ["mkv", "mp4", "m4v"])):
-                                            pms_ext = "*"
+                                        if (( not __format_item(mo.group("extension")).lower() in filename_extensions) and (len(filename_extensions) > 0)):
+                                            pms_ext = __format_item(mo.group("extension"))
                                         # Tags should follow this sequence:
                                         # ptX, resolution(1080p,720p), movie version(EE, DC)
                                         tags = mo.group("tags").split("-")
                                         for tag in tags:
-                                            pass
+                                            if ((not tag in filename_tags) and (len(filename_tags) > 0)):
+                                                pms_tags = "%s, %s" %(pms_tags, tag)
+                                        pms_tags = pms_tags.strip(", ").strip()
                                         if ((len(pms_title) > 0) or (len(pms_year) > 0) or
                                             (len(pms_tags) > 0) or (len(pms_ext) > 0)):
                                             media_attributes.append([ipart_filename, pms_title, pms_year, pms_tags, pms_ext])
                                     except IndexError:
                                         media_attributes.append([ipart_filename, "?", "?", "?","?"])
-                                        logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s." %(ipart_filename))
+                                        logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s" %(ipart_filename))
                                 else:
                                     media_attributes.append([ipart_filename, "?", "?", "?","?"])
-                                    logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s." %(ipart_filename))
+                                    logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s" %(ipart_filename))
                 if (len(media_attributes) > 0):
                     media_attributes.insert(0, ["filename", "PMS Movie Title", "PMS Year", "tags", "extension"])
                     print_table(media_attributes)

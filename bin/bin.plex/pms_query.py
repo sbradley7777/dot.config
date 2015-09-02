@@ -119,7 +119,7 @@ def humanize_bytes(size, unit_abbrev=""):
         p = math.floor(math.log(size, 2)/10)
         return "%.2f%s" % (size/math.pow(1024,p),units[int(p)])
 
-def __format_row_item(item):
+def __format_item(item):
     import locale
     locale.setlocale(locale.LC_NUMERIC, "")
     try:
@@ -138,7 +138,7 @@ def print_table(rows):
     for row in rows:
         current_row = []
         for item in row:
-            current_row.append(__format_row_item(item))
+            current_row.append(__format_item(item))
         if (len(current_row) > 0):
             converted_rows_to_str.append(current_row)
     # - figure out each column widths which is max column size for all rows.
@@ -532,29 +532,29 @@ if __name__ == "__main__":
                                 import re
                                 # Need to finish breaking down to movie_title,
                                 # year, tags, extenstion.
-                                regex = "^(?P<movie_title>[a-zA-Z_0-9\-+]*)\(.*(?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
+                                regex = "^(?P<movie_title>[a-zA-Z_0-9\-+',&]*)\(.*(?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
                                 rem = re.compile(regex)
                                 mo = rem.match(ipart_filename)
                                 if (mo):
                                     try:
-                                        correct_title = ""
-                                        correct_year = ""
-                                        correct_tags = ""
-                                        correct_ext = ""
-                                        if (not str(movie.title).lower() == mo.group("movie_title").lower().replace("_", " ")):
-                                            correct_title = "*"
-                                        if (not str(movie.year) == mo.group("year")):
-                                            correct_year = "*"
-                                        if (not (mo.group("extension") in ["mkv", "mp4", "m4v"])):
-                                            correct_ext = "*"
+                                        pms_title = ""
+                                        pms_year = ""
+                                        pms_tags = ""
+                                        pms_ext = ""
+                                        if (not __format_item(movie.title).lower() == __format_item(mo.group("movie_title")).lower().replace("_", " ")):
+                                            pms_title = __format_item(movie.title).lower()
+                                        if (not str(__format_item(movie.year)).lower() == __format_item(mo.group("year")).lower()):
+                                            pms_year = __format_item(movie.year)
+                                        if (not (__format_item(mo.group("extension")).lower() in ["mkv", "mp4", "m4v"])):
+                                            pms_ext = "*"
                                         # Tags should follow this sequence:
                                         # ptX, resolution(1080p,720p), movie version(EE, DC)
                                         tags = mo.group("tags").split("-")
                                         for tag in tags:
                                             pass
-                                        if ((len(correct_title) > 0) or (len(correct_year) > 0) or
-                                            (len(correct_tags) > 0) or (len(correct_ext) > 0)):
-                                            media_attributes.append([ipart_filename, correct_title, correct_year, correct_tags, correct_ext])
+                                        if ((len(pms_title) > 0) or (len(pms_year) > 0) or
+                                            (len(pms_tags) > 0) or (len(pms_ext) > 0)):
+                                            media_attributes.append([ipart_filename, pms_title, pms_year, pms_tags, pms_ext])
                                     except IndexError:
                                         media_attributes.append([ipart_filename, "?", "?", "?","?"])
                                         logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s." %(ipart_filename))
@@ -562,11 +562,13 @@ if __name__ == "__main__":
                                     media_attributes.append([ipart_filename, "?", "?", "?","?"])
                                     logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s." %(ipart_filename))
                 if (len(media_attributes) > 0):
-                    media_attributes.insert(0, ["filename", "movie_title", "year", "tags", "extension"])
+                    media_attributes.insert(0, ["filename", "PMS Movie Title", "PMS Year", "tags", "extension"])
                     print_table(media_attributes)
                     print
-                    print "? - Represents unknown because parsing error occurred."
-                    print "* - Represents incorrect values."
+                    print "- \"?\": Represents unknown because parsing error occurred."
+                    print "- \"*\": Represents incorrect value."
+                    print "- The value that is in PMS will be printed if value in filename does not match."
+                    print "- All strings are represented in lower case."
                     print
             # exit, should make stuff below incased in else.
             sys.exit()

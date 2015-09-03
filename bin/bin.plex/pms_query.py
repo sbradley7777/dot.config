@@ -37,30 +37,16 @@ Edit the configuration file to add in username and password.
 #######################################################################
 TODO
 #######################################################################
-* Add analyze data options (-a) that will print out missing episodes, movies with filename
-  and metadata year dont match, spelling isssues, movies and tvshows that are
-  1080p without the corrrect 1080p,720p, in filename. It prints a summary.
+* Need to analyze (-a) TV show analyze code and analyze the full path like
+  show_name(year)/season/episode-filename
 
 * Add option to create a url to search like youtube or torrent for missing in
   details output.
 
-* On tvdb query on matching: Possible that it is a match without an overview or
-  firstaired date. Return whatever match we got. What would be ideal is getting
-  the tvdb id from pms and match that but i did not see how with plexapi.
-
 * Need to add try/expect "requests.exceptions.Timeout" to any section doing PMS cause if
   host is asleep and takes time to spin up.
 
-* Add examples
-
-* Add configuration options for tags.
-
-* Need to analyze TV show analyze code and analyze the full path like
-  show_name(year)/season/episode-filename
-
-* In analyze write out in info message why something failed a test like pms said
-  movie title was X and filename said Y.
-
+* Add examples to usage().
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
 import ConfigParser
@@ -71,6 +57,7 @@ import os
 import os.path
 import math
 import locale
+import re
 
 try:
     from plexapi.myplex import MyPlexUser
@@ -169,28 +156,44 @@ def print_table(rows):
 def get_tvdb_tv_show(pms_tv_show):
     # Put tvdb query in its own function to verify information and get correct
     # tvshow that matches what is in PMS.
-    tvdb_query = tvdb_api.Tvdb()
+    tvdb_query = None
+    tvdb_show = None
+    try:
+        tvdb_query = tvdb_api.Tvdb()
+    except tvdb_exceptions.tvdb_error:
+        logging.getLogger(MAIN_LOGGER_NAME).error("There was a timeout error connecting to tvdb.com for metadata on the show: \"%s\"" %(pms_tv_show.title))
+        return tvdb_show
     # Do reverse split, in case () in show title.
-    tvdb_show = tvdb_query[pms_tv_show.title.split(" (")[0].strip()]
+    try:
+        tvdb_show = tvdb_query[pms_tv_show.title.split(" (")[0].strip()]
+    except tvdb_exceptions.tvdb_error:
+        logging.getLogger(MAIN_LOGGER_NAME).error("There was an error connecting to tvdb.com for metadata on the show: \"%s\"" %(pms_tv_show.title))
+        tvdb_show = None
+    except tvdb_shownotfound:
+        logging.getLogger(MAIN_LOGGER_NAME).error("There was no match for the tv show \"%s\" on tvdb.com." %(pms_tv_show.title))
+        tvdb_show = None
     if (not tvdb_show == None):
         tvdb_match = False
         if (not tvdb_show.data.get("overview") == None):
             if (tvdb_show.data.get("overview").strip().lower() == pms_tv_show.summary.strip().lower()):
-                print "First match for overview date:  %s" %(pms_tv_show.title.split(" (")[0].strip())
                 return tvdb_show
         if (not tvdb_show.data.get("firstaired") == None):
             if (tvdb_show.data.get("firstaired").strip() == pms_tv_show.originallyAvailableAt.strftime("%Y-%m-%d").strip()):
-                print "First match for firstaired date:  %s" %(pms_tv_show.title.split(" (")[0].strip())
                 return tvdb_show
-        tvdb_show = tvdb_query[pms_tv_show.title.strip()]
+        try:
+            tvdb_show = tvdb_query[pms_tv_show.title.strip()]
+        except tvdb_exceptions.tvdb_error:
+            logging.getLogger(MAIN_LOGGER_NAME).error("There was an error connecting to tvdb.com for metadata on the show: \"%s\"" %(pms_tv_show.title))
+            tvdb_show = None
+        except tvdb_shownotfound:
+            logging.getLogger(MAIN_LOGGER_NAME).debug("There was no match for the tv show \"%s\" on tvdb.com." %(pms_tv_show.title))
+            tvdb_show = None
         if (not tvdb_show == None):
             if (not tvdb_show.data.get("overview") == None):
                 if (tvdb_show.data.get("overview").strip().lower() == pms_tv_show.summary.strip().lower()):
-                    print "Second match for overview date:  %s" %(pms_tv_show.title.strip())
                     return tvdb_show
             if (not tvdb_show.data.get("firstaired") == None):
                 if (tvdb_show.data.get("firstaired").strip() == pms_tv_show.originallyAvailableAt.strftime("%Y-%m-%d").strip()):
-                    print "Second match for firstaired:  %s" %(pms_tv_show.title.strip())
                     return tvdb_show
     # Possible that it is a match without an overview or firstaired date. Return whatever match we got.
     return tvdb_show
@@ -505,11 +508,15 @@ if __name__ == "__main__":
             logging.getLogger(MAIN_LOGGER_NAME).error("There was an error signing on to the pms server: %s." %(pms_name))
             sys.exit(1)
 
+        # Get section name and search to see if it exists.
         found_section_name = False
-        if ( len(cmdLineOpts.section_name) > 0):
+        if (len(cmdLineOpts.section_name) > 0):
             for section in pms.library.sections():
                 if (section.title == cmdLineOpts.section_name):
                     found_section_name = True
+            if (not found_section_name):
+                logging.getLogger(MAIN_LOGGER_NAME).error("The section name does not exist: %s" %(cmdLineOpts.section_name))
+                sys.exit(1)
         else:
             found_section_name = True
 
@@ -554,7 +561,6 @@ if __name__ == "__main__":
                             ipart_container = ipart.container
                             if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
                                 ipart_filename = os.path.basename(ipart.file)
-                                import re
                                 # Need to finish breaking down to movie_title,
                                 # year, tags, extenstion.
                                 regex = "^(?P<movie_title>[a-zA-Z_0-9\-+',&]*)\(.*(?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
@@ -584,19 +590,27 @@ if __name__ == "__main__":
                                             media_attributes.append([ipart_filename, pms_title, pms_year, pms_tags, pms_ext])
                                     except IndexError:
                                         media_attributes.append([ipart_filename, "?", "?", "?","?"])
-                                        logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s" %(ipart_filename))
+                                        logging.getLogger(MAIN_LOGGER_NAME).debug("There was a parsing error for: %s" %(ipart_filename))
                                 else:
                                     media_attributes.append([ipart_filename, "?", "?", "?","?"])
-                                    logging.getLogger(MAIN_LOGGER_NAME).error("There was a parsing error for: %s" %(ipart_filename))
-                if (len(media_attributes) > 0):
-                    media_attributes.insert(0, ["filename", "PMS Movie Title", "PMS Year", "tags", "extension"])
-                    print_table(media_attributes)
-                    print
-                    print "- \"?\": Represents unknown because parsing error occurred."
-                    print "- \"*\": Represents incorrect value."
-                    print "- The value that is in PMS will be printed if value in filename does not match."
-                    print "- All strings are represented in lower case."
-                    print
+                                    logging.getLogger(MAIN_LOGGER_NAME).debug("There was a parsing error for: %s" %(ipart_filename))
+                    if (len(media_attributes) > 0):
+                        media_attributes.insert(0, ["filename", "PMS Movie Title", "PMS Year", "tags", "extension"])
+                        print_table(media_attributes)
+                        print
+                        print "- \"?\": Represents unknown because parsing error occurred."
+                        print "- \"*\": Represents incorrect value."
+                        print "- The value that is in PMS will be printed if value in filename does not match."
+                        print "- All strings are represented in lower case."
+                        print
+                elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
+                    for pms_tv_show in section.all():
+                        if (not len(cmdLineOpts.tv_show_title) > 0):
+                            print_tv_show_information(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
+                        elif (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.strip().lower()):
+                            print "Match: %s" %(pms_tv_show.title)
+                        elif (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower()):
+                            print "Match: %s" %(pms_tv_show.title)
             # exit, should make stuff below incased in else.
             sys.exit()
         for section in pms.library.sections():
@@ -625,12 +639,15 @@ if __name__ == "__main__":
                     print_table(media_attributes)
                     print
             elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
-                for tv_show in section.all():
+                for pms_tv_show in section.all():
                     if (not len(cmdLineOpts.tv_show_title) > 0):
-                        print_tv_show_information(tv_show, show_missing_details=cmdLineOpts.show_missing_details)
-                    elif (cmdLineOpts.tv_show_title.lower().strip() == tv_show.title.rsplit(" (")[0].strip().lower()):
+                        print_tv_show_information(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
+                    elif (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.strip().lower()):
                         # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
-                        print_tv_show_information(tv_show, show_missing_details=cmdLineOpts.show_missing_details)
+                        print_tv_show_information(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
+                    elif (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower()):
+                        # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
+                        print_tv_show_information(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

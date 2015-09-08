@@ -1,10 +1,9 @@
 #!/usr/bin/python
-"""
-@name        : pms_query.py
+"""@name        : pms_query.py
 @description : This script will perform various queries to the Plex Media Server.
 @author      : Shane Bradley
 @contact     :  shanebradley@gmail.com
-@version     : 0.5
+@version     : 0.65
 @copyright   : GPLv2
 
 #######################################################################
@@ -47,6 +46,10 @@ TODO
   host is asleep and takes time to spin up.
 
 * Add examples to usage().
+
+* Trim down colorize class after I save the output and make sure pep
+  complaint. Save class to snippets first.
+
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
 import ConfigParser
@@ -83,10 +86,6 @@ except ImportError:
     print "Info:  The library needs to be installed and is located at: https://github.com/dbr/tvdb_api"
     sys.exit(1)
 
-# add try block
-#import tvdb_api
-#from tvdb_exceptions import tvdb_seasonnotfound
-
 # #####################################################################
 # Global vars:
 # #####################################################################
@@ -94,10 +93,132 @@ VERSION_NUMBER = "0.1-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 CONFIG_FILE = os.path.expanduser("~/.pms_query.conf")
 
+class ColorizeConsoleText(object):
+    """
+    References from:
+    - https://gist.github.com/Jossef/0ee20314577925b4027f and modified bit.
+    - https://gist.github.com/arulrajnet/47ff2674ad9da6dcac00
+    - http://misc.flogisoft.com/bash/tip_colors_and_formatting (colors)
+    """
+    def __init__(self, text, **user_styles):
+        styles = {
+            # styles
+            'reset': '\033[0m',
+            'bold': '\033[01m',
+            'disabled': '\033[02m',
+            'underline': '\033[04m',
+            'reverse': '\033[07m',
+            'strike_through': '\033[09m',
+            'invisible': '\033[08m',
+            # text colors
+            'fg_black': '\033[30m',
+            'fg_red': '\033[31m',
+            'fg_green': '\033[32m',
+            'fg_yellow': '\033[33m',
+            'fg_blue': '\033[34m',
+            'fg_purple': '\033[35m',
+            'fg_cyan': '\033[36m',
+            'fg_light_grey': '\033[37m',
+            'fg_dark_grey': '\033[90m',
+            'fg_light_red': '\033[91m',
+            'fg_light_green': '\033[92m',
+            'fg_light_yellow': '\033[93m',
+            'fg_light_blue': '\033[94m',
+            'fg_pink': '\033[95m',
+            'fg_light_cyan': '\033[96m',
+            'fg_white': '\033[97m',
+            'fg_default': '\033[39m',
+            # background colors
+            'bg_black': '\033[40m',
+            'bg_red': '\033[41m',
+            'bg_green': '\033[42m',
+            'bg_yellow': '\033[43m',
+            'bg_blue': '\033[44m',
+            'bg_purple': '\033[45m',
+            'bg_cyan': '\033[46m',
+            'bg_light_grey': '\033[47m',
+            'bg_dark_grey': '\033[100m',
+            'bg_light_red': '\033[101m',
+            'bg_light_green': '\033[102m',
+            'bg_light_yellow': '\033[103m',
+            'bg_light_blue': '\033[104m',
+            'bg_light_purple': '\033[105m',
+            'bg_light_cyan': '\033[106m',
+            'bg_white': '\033[107m',
+            'bg_default': '\033[49m'
+        }
+
+        self.color_text = ''
+        for style in user_styles:
+            try:
+                self.color_text += styles[style]
+            except KeyError:
+                raise KeyError('def color: parameter `{}` does not exist'.format(style))
+
+        self.color_text += text
+
+    def __format__(self):
+        return '\033[0m{}\033[0m'.format(self.color_text)
+
+    @classmethod
+    def red(clazz, text):
+        cls = clazz(text, bold=True, fg_red=True)
+        return cls.__format__()
+
+    @classmethod
+    def bg_red(clazz, text):
+        cls = clazz(text, bold=True, bg_red=True)
+        return cls.__format__()
+
+    @classmethod
+    def yellow(clazz, text):
+        cls = clazz(text, bold=True, fg_yellow=True)
+        return cls.__format__()
+
+    @classmethod
+    def bg_yellow(clazz, text):
+        cls = clazz(text, bold=True, bg_yellow=True)
+        return cls.__format__()
+
+    @classmethod
+    def green(clazz, text):
+        cls = clazz(text, bold=True, fg_green=True)
+        return cls.__format__()
+
+    @classmethod
+    def bg_green(clazz, text):
+        cls = clazz(text, bold=True, bg_green=True)
+        return cls.__format__()
+
+    @classmethod
+    def light_green(clazz, text):
+        cls = clazz(text, bold=False, fg_light_green=True)
+        return cls.__format__()
+
+    @classmethod
+    def bg_light_green(clazz, text):
+        cls = clazz(text, bold=False, bg_light_green=True)
+        return cls.__format__()
+
+    @classmethod
+    def light_grey(clazz, text):
+        cls = clazz(text, bold=False, fg_light_grey=True)
+        return cls.__format__()
+
+    @classmethod
+    def bg_light_grey(clazz, text):
+        cls = clazz(text, bold=False, bg_light_grey=True)
+        return cls.__format__()
+
+    @classmethod
+    def custom(clazz, text, **custom_styles):
+        cls = clazz(text, **custom_styles)
+        return cls.__format__()
+
 # ##############################################################################
 # Helper functions
 # ##############################################################################
-def humanize_bytes(size, unit_abbrev=""):
+def __humanize_bytes(size, unit_abbrev=""):
     units = ['B','KiB','MiB','GiB','TiB','PiB','EiB','ZiB','YiB']
     size = abs(size)
     if (size == 0):
@@ -124,36 +245,46 @@ def __format_item(item):
     except UnicodeEncodeError:
         return item.encode("utf-8")
 
-def print_table(rows):
+# ##############################################################################
+# Helper functions for metadata
+# ##############################################################################
+def __print_table(rows, colorize=True):
     """
     Prints out a table using the data in `rows`, which is assumed to be a
     sequence of sequences with the 0th element being the header.
     https://gist.github.com/lonetwin/4721748
     """
     # Convert all values in rows to strings.
-    converted_rows_to_str = []
-    for row in rows:
-        current_row = []
-        for item in row:
-            current_row.append(__format_item(item))
-        if (len(current_row) > 0):
-            converted_rows_to_str.append(current_row)
-    # - figure out each column widths which is max column size for all rows.
-    widths = [ len(max(columns, key=len)) for columns in zip(*converted_rows_to_str) ]
-    # - print the header
-    header, data = converted_rows_to_str[0], converted_rows_to_str[1:]
-    print(
-        ' | '.join( format(title, "%ds" % width) for width, title in zip(widths, header) )
-        )
-    # - print the separator
-    print( '-+-'.join( '-' * width for width in widths ) )
-    # - print the data
-    for row in data:
+    if (len(rows) > 0):
+        converted_rows_to_str = []
+        for row in rows:
+            current_row = []
+            for item in row:
+                current_row.append(__format_item(item))
+            if (len(current_row) > 0):
+                converted_rows_to_str.append(current_row)
+        # Figure out each column widths which is max column size for all rows.
+        widths = [ len(max(columns, key=len)) for columns in zip(*converted_rows_to_str) ]
+        # Print seperator
+        print('-+-'.join( '-' * width for width in widths))
+        # Print the header
+        header, data = converted_rows_to_str[0], converted_rows_to_str[1:]
         print(
-            " | ".join( format(cdata, "%ds" % width) for width, cdata in zip(widths, row) )
-            )
+            ' | '.join( format(title, "%ds" % width) for width, title in zip(widths, header) )
+        )
+        # Print seperator
+        print('-+-'.join( '-' * width for width in widths))
+        # Print the data
+        count = 0
+        for row in data:
+            row_string = " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
+            if (not row_string.startswith("-")):
+                count = count + 1
+            if (( (count % 2) == 0) and (colorize == True)):
+                row_string = ColorizeConsoleText.light_grey(row_string)
+            print row_string
 
-def get_tvdb_tv_show(pms_tv_show):
+def __get_tvdb_tv_show(pms_tv_show):
     # Put tvdb query in its own function to verify information and get correct
     # tvshow that matches what is in PMS.
     tvdb_query = None
@@ -198,9 +329,12 @@ def get_tvdb_tv_show(pms_tv_show):
     # Possible that it is a match without an overview or firstaired date. Return whatever match we got.
     return tvdb_show
 
-def print_tv_show_information(pms_tv_show, show_missing_details=False):
+def __analyze_tv_show(pms_tv_show):
+    logging.getLogger(MAIN_LOGGER_NAME).warning("The analyzing option is currently not working and the show: \"%s\" will not be analyzed." %(pms_tv_show.title)
+
+def __print_tv_show(pms_tv_show, show_missing_details=False):
     skip_specials = True
-    tvdb_show = get_tvdb_tv_show(pms_tv_show)
+    tvdb_show = __get_tvdb_tv_show(pms_tv_show)
     if (tvdb_show == None):
         logging.getLogger(MAIN_LOGGER_NAME).debug("There was no match for the tv show \"%s\" on \"tvdb\"." %(pms_tv_show.title))
     else:
@@ -245,11 +379,11 @@ def print_tv_show_information(pms_tv_show, show_missing_details=False):
                 logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
                 print "%s [Seasons: ?] [Episodes: ?]" %(pms_tv_show.title)
             pms_tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "Missing Episodes"])
-            print_table(pms_tv_show_seasons_attributes)
-            print
+            __print_table(pms_tv_show_seasons_attributes)
             # If enabled print details of episodes on tvdb.
             if (show_missing_details and (len(pms_tv_show_missing_episodes) > 0)):
-                print "%s: Missing Episodes" %(tv_show.title)
+                print
+                print "%s: Missing Episodes" %(pms_tv_show.title)
                 missing_episodes_details = []
                 for missing_episodes in pms_tv_show_missing_episodes:
                     try:
@@ -261,8 +395,10 @@ def print_tv_show_information(pms_tv_show, show_missing_details=False):
                                                                                                                  missing_episodes[1],
                                                                                                                  pms_tv_show.title))
                 missing_episodes_details.insert(0, ["Season", "Missing Episode", "Date Aired", "Missing Episode Title"])
-                print_table(missing_episodes_details)
-                print
+                __print_table(missing_episodes_details)
+            print
+            print "---------------------"
+            print
 
 # ##############################################################################
 # Get user selected options
@@ -496,6 +632,7 @@ if __name__ == "__main__":
         elif(not len(pms_name) > 0):
             logging.getLogger(MAIN_LOGGER_NAME).error("Please specfic a Plex Media Server name in the configuration file: %s" %(CONFIG_FILE))
             sys.exit(1)
+
         # #######################################################################
         # Connect to PMS
         # #######################################################################
@@ -530,7 +667,7 @@ if __name__ == "__main__":
                 sections.append([str(index), section.title, section.type])
                 index = index +  1;
             sections.insert(0, ["-", "Section Name", "Section Type"])
-            print_table(sections)
+            __print_table(sections)
             sys.exit()
 
 
@@ -596,7 +733,7 @@ if __name__ == "__main__":
                                     logging.getLogger(MAIN_LOGGER_NAME).debug("There was a parsing error for: %s" %(ipart_filename))
                     if (len(media_attributes) > 0):
                         media_attributes.insert(0, ["filename", "PMS Movie Title", "PMS Year", "tags", "extension"])
-                        print_table(media_attributes)
+                        __print_table(media_attributes)
                         print
                         print "- \"?\": Represents unknown because parsing error occurred."
                         print "- \"*\": Represents incorrect value."
@@ -606,11 +743,11 @@ if __name__ == "__main__":
                 elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
                     for pms_tv_show in section.all():
                         if (not len(cmdLineOpts.tv_show_title) > 0):
-                            print_tv_show_information(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
-                        elif (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.strip().lower()):
-                            print "Match: %s" %(pms_tv_show.title)
-                        elif (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower()):
-                            print "Match: %s" %(pms_tv_show.title)
+                            __analyze_tv_show(pms_tv_show)
+                        elif ((cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.strip().lower()) or
+                              (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower())):
+                            __analyze_tv_show(pms_tv_show)
+
             # exit, should make stuff below incased in else.
             sys.exit()
         for section in pms.library.sections():
@@ -625,7 +762,7 @@ if __name__ == "__main__":
                         ipart_container = ipart.container
                         if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
                             ipart_filename = os.path.basename(ipart.file)
-                            ipart_size = humanize_bytes(ipart.size, "GiB")
+                            ipart_size = __humanize_bytes(ipart.size, "GiB")
                             total_section_size = total_section_size + int(ipart.size)
                             media_attributes.append([str(ccounter), movie.title, str(movie.year), ipart_container, ipart_filename, ipart_size])
                             # Dont increase count but replace with dash.
@@ -635,19 +772,20 @@ if __name__ == "__main__":
                 if (len(media_attributes) > 0):
                     media_attributes.insert(0, ["%s" %(section.title), "Movie Name", "Year", "Container", "Filename", "Size"])
                     media_attributes.append(["-", "-", "-", "-", "-", "-"])
-                    media_attributes.append(["-", "-", "-", "-", "Total Section Size:", humanize_bytes(total_section_size, "GiB")])
-                    print_table(media_attributes)
+                    media_attributes.append(["-", "-", "-", "-", "Total Section Size:", __humanize_bytes(total_section_size, "GiB")])
+                    __print_table(media_attributes)
                     print
             elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
                 for pms_tv_show in section.all():
                     if (not len(cmdLineOpts.tv_show_title) > 0):
-                        print_tv_show_information(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
-                    elif (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.strip().lower()):
-                        # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
-                        print_tv_show_information(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
-                    elif (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower()):
-                        # Allow for multiple tv shows with same name. For example BSG.org and BGS.2003
-                        print_tv_show_information(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
+                        __print_tv_show(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
+                    elif ((cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.strip().lower()) or
+                          (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower())):
+                        # Allow for multiple tv shows with same name. For
+                        # example BSG.org and BGS.2003. I assume that metadata
+                        # is for the correct show. Running analyze should show
+                        # if not.
+                        __print_tv_show(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

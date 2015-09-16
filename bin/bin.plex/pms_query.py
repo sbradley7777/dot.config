@@ -1,23 +1,24 @@
 #!/usr/bin/python
 """@name        : pms_query.py
-@description : This script will perform various queries to the Plex Media Server.
+
+@description : This script will perform various queries to the Plex Media
+               Server(PMS). This script can do basic analyzing of filenames
+               vs. the pms title, displaying missing episodes for a tv show that
+               has a season on PMS, and listing of media on PMS.
 @author      : Shane Bradley
 @contact     :  shanebradley@gmail.com
-@version     : 0.65
+@version     : 0.5-1
 @copyright   : GPLv2
 
 #######################################################################
 Requirements:
 #######################################################################
 The script uses the plex API supplied by this project which will need to be
-installed:
-
-  - https://github.com/mjs7231/python-plexapi
+installed: https://github.com/mjs7231/python-plexapi
   # sudo pip install plexapi
 
-  This script uses this tvdb API suppied by this project which will need to be
-  installed:
-  - https://github.com/dbr/tvdb_api
+This script uses this tvdb API suppied by this project which will need to be
+installed: https://github.com/dbr/tvdb_api
   # sudo easy_install tvdb_api
 
 #######################################################################
@@ -33,9 +34,19 @@ Edit the configuration file to add in username and password.
   [filenames]
   filename_extensions = mp4 m4v mkv
   filename_tags = pt1 pt2 pt3 1080p 720p
+
 #######################################################################
 TODO
 #######################################################################
+
+* Need to handle cases when some config options are not configured like
+  "filename*" that are optional. Note: not even sure using those config options
+  yet. Check later.
+
+* Need to add code to fix (-f) filenames. Probably needs to be do u want to
+  change to X, hit yes or can change automatically with default
+  suggestion. (Y/N/M) and M for modify manually.
+
 * Need to analyze (-a) TV show analyze code and analyze the full path like
   show_name(year)/season/episode-filename
 
@@ -49,6 +60,11 @@ TODO
 
 * Trim down colorize class after I save the output and make sure pep
   complaint. Save class to snippets first.
+
+* Add container option to tvshow functions.
+
+* What about naming conventions? I use lower case but what they use upper/lower
+  and whitespaces.
 
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
@@ -89,7 +105,7 @@ except ImportError:
 # #####################################################################
 # Global vars:
 # #####################################################################
-VERSION_NUMBER = "0.1-1"
+VERSION_NUMBER = "0.5-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 CONFIG_FILE = os.path.expanduser("~/.pms_query.conf")
 
@@ -102,58 +118,21 @@ class ColorizeConsoleText(object):
     """
     def __init__(self, text, **user_styles):
         styles = {
-            # styles
-            'reset': '\033[0m',
-            'bold': '\033[01m',
-            'disabled': '\033[02m',
-            'underline': '\033[04m',
-            'reverse': '\033[07m',
-            'strike_through': '\033[09m',
-            'invisible': '\033[08m',
-            # text colors
-            'fg_black': '\033[30m',
-            'fg_red': '\033[31m',
-            'fg_green': '\033[32m',
-            'fg_yellow': '\033[33m',
-            'fg_blue': '\033[34m',
-            'fg_purple': '\033[35m',
-            'fg_cyan': '\033[36m',
+            #foreground colors
             'fg_light_grey': '\033[37m',
             'fg_dark_grey': '\033[90m',
-            'fg_light_red': '\033[91m',
-            'fg_light_green': '\033[92m',
-            'fg_light_yellow': '\033[93m',
-            'fg_light_blue': '\033[94m',
-            'fg_pink': '\033[95m',
-            'fg_light_cyan': '\033[96m',
-            'fg_white': '\033[97m',
             'fg_default': '\033[39m',
             # background colors
-            'bg_black': '\033[40m',
-            'bg_red': '\033[41m',
-            'bg_green': '\033[42m',
-            'bg_yellow': '\033[43m',
-            'bg_blue': '\033[44m',
-            'bg_purple': '\033[45m',
-            'bg_cyan': '\033[46m',
             'bg_light_grey': '\033[47m',
             'bg_dark_grey': '\033[100m',
-            'bg_light_red': '\033[101m',
-            'bg_light_green': '\033[102m',
-            'bg_light_yellow': '\033[103m',
-            'bg_light_blue': '\033[104m',
-            'bg_light_purple': '\033[105m',
-            'bg_light_cyan': '\033[106m',
-            'bg_white': '\033[107m',
             'bg_default': '\033[49m'
         }
-
         self.color_text = ''
         for style in user_styles:
             try:
                 self.color_text += styles[style]
             except KeyError:
-                raise KeyError('def color: parameter `{}` does not exist'.format(style))
+                pass
 
         self.color_text += text
 
@@ -161,58 +140,8 @@ class ColorizeConsoleText(object):
         return '\033[0m{}\033[0m'.format(self.color_text)
 
     @classmethod
-    def red(clazz, text):
-        cls = clazz(text, bold=True, fg_red=True)
-        return cls.__format__()
-
-    @classmethod
-    def bg_red(clazz, text):
-        cls = clazz(text, bold=True, bg_red=True)
-        return cls.__format__()
-
-    @classmethod
-    def yellow(clazz, text):
-        cls = clazz(text, bold=True, fg_yellow=True)
-        return cls.__format__()
-
-    @classmethod
-    def bg_yellow(clazz, text):
-        cls = clazz(text, bold=True, bg_yellow=True)
-        return cls.__format__()
-
-    @classmethod
-    def green(clazz, text):
-        cls = clazz(text, bold=True, fg_green=True)
-        return cls.__format__()
-
-    @classmethod
-    def bg_green(clazz, text):
-        cls = clazz(text, bold=True, bg_green=True)
-        return cls.__format__()
-
-    @classmethod
-    def light_green(clazz, text):
-        cls = clazz(text, bold=False, fg_light_green=True)
-        return cls.__format__()
-
-    @classmethod
-    def bg_light_green(clazz, text):
-        cls = clazz(text, bold=False, bg_light_green=True)
-        return cls.__format__()
-
-    @classmethod
     def light_grey(clazz, text):
-        cls = clazz(text, bold=False, fg_light_grey=True)
-        return cls.__format__()
-
-    @classmethod
-    def bg_light_grey(clazz, text):
-        cls = clazz(text, bold=False, bg_light_grey=True)
-        return cls.__format__()
-
-    @classmethod
-    def custom(clazz, text, **custom_styles):
-        cls = clazz(text, **custom_styles)
+        cls = clazz(text, fg_light_grey=True)
         return cls.__format__()
 
 # ##############################################################################
@@ -280,7 +209,8 @@ def __print_table(rows, colorize=True):
             row_string = " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
             if (not row_string.startswith("-")):
                 count = count + 1
-            if (( (count % 2) == 0) and (colorize == True)):
+            # Skip colorizing filler lines with no data "-|-|-".
+            if (((count % 2) == 0) and (colorize == True) and (not row_string.replace(" ", "").startswith("-|-|-"))):
                 row_string = ColorizeConsoleText.light_grey(row_string)
             print row_string
 
@@ -329,10 +259,25 @@ def __get_tvdb_tv_show(pms_tv_show):
     # Possible that it is a match without an overview or firstaired date. Return whatever match we got.
     return tvdb_show
 
-def __analyze_tv_show(pms_tv_show):
-    logging.getLogger(MAIN_LOGGER_NAME).warning("The analyzing option is currently not working and the show: \"%s\" will not be analyzed." %(pms_tv_show.title)
+def __analyze_tv_show(pms_tv_show, episode_container=""):
+    logging.getLogger(MAIN_LOGGER_NAME).warning("The analyzing option is currently not working and the show: \"%s\" will not be analyzed." %(pms_tv_show.title))
+    for season in pms.library.get(pms_tv_show.title).seasons():
+        for episode in season.episodes():
+            for ipart in episode.iter_parts():
+                ipart_container = ipart.container
+                if ((episode_container == ipart_container) or (not len(episode_container) > 0)):
+                    ipart_filename = os.path.basename(ipart.file)
+                    (path_to_tv_show, season_dir) = os.path.split(os.path.split(ipart.file)[0])
+                    print "FILE: %s | %s | %s" %(os.path.basename(path_to_tv_show), season_dir, ipart_filename)
+                    print "PMS:  %s(%s) | season_%s | %s" %(pms_tv_show.title.lower(), pms_tv_show.year, season.index, episode.index)
+                    print "----------------"
+                    # split season_d to (season, d) and case int(d) == pms.season.index
+                    # Check tvshow directory contains year
+                    # check container
+                    # check title
+                    # some might include epidsode title
 
-def __print_tv_show(pms_tv_show, show_missing_details=False):
+def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=False):
     skip_specials = True
     tvdb_show = __get_tvdb_tv_show(pms_tv_show)
     if (tvdb_show == None):
@@ -360,7 +305,8 @@ def __print_tv_show(pms_tv_show, show_missing_details=False):
                         for episode_num in missing_episodes:
                             # Create tuple of season num and episode num to use
                             # to query tvdb for missing episodes.
-                            pms_tv_show_missing_episodes.append((int(season.index), episode_num, ))
+                            if ((episode_container == ipart_container) or (not len(episode_container) > 0)):
+                                pms_tv_show_missing_episodes.append((int(season.index), episode_num, ))
                 pms_tv_show_seasons_attributes.append([season.title, len(season.episodes()), has_missing_episodes])
         except requests.exceptions.ConnectionError as e:
             logging.getLogger(MAIN_LOGGER_NAME).debug("The metadata for the seasons failed: %s" %(pms_tv_show.title))
@@ -427,6 +373,11 @@ def __getOptions(version) :
                          action="store_true",
                          dest="disableLoggingToConsole",
                          help="disables logging to console",
+                         default=False)
+    cmdParser.add_option("-r", "--refresh",
+                         action="store_true",
+                         dest="refresh",
+                         help="rescan or refresh all sections or specific section (-s)",
                          default=False)
     cmdParser.add_option("-l", "--list",
                          action="store_true",
@@ -500,10 +451,20 @@ class OptionParserExtended(OptionParser):
         """
         Print examples at the bottom of the help message.
         """
+        examplesMessage = "\nExamples:"
+        examplesMessage += "\nList all the sections.\n"
+        examplesMessage += "$ %s -l\n" %(self.__commandName)
+        examplesMessage += "\nList all the media of a certain type like show.\n"
+        examplesMessage += "$ %s -t show\n" %(self.__commandName)
+        examplesMessage += "\nList all the media for the section \"Movies\".\n"
+        examplesMessage += "$ %s -s Movies\n" %(self.__commandName)
+        examplesMessage += "\nList all the media that is a movie(type) using the container \"mkv\".\n"
+        examplesMessage += "$ %s -t movie -c mkv\n" %(self.__commandName)
+        examplesMessage += "\nAnalyze all the media in the section \"Documentaries\" that has a tv show called \"Some Show\". \nIn addition, the missing episodes for the tv show's season on PMS will be shown.\n"
+        examplesMessage += "$ %s -s Documentaries -T \"Some Show\" -a -M\n" %(self.__commandName)
         self.print_version()
-        examplesMessage = "\n"
         OptionParser.print_help(self)
-        #print examplesMessage
+        print examplesMessage
 
 class ExtendOption (Option):
     """
@@ -595,6 +556,19 @@ if __name__ == "__main__":
             streamHandler.setLevel(logging.CRITICAL)
 
         # #######################################################################
+        # Check for invalid options enabled.
+        # #######################################################################
+        if (len(cmdLineOpts.section_type) > 0) and (len(cmdLineOpts.section_name) > 0):
+            logging.getLogger(MAIN_LOGGER_NAME).error("The -t and -s options cannot be used at the same time.")
+            sys.exit(1)
+        elif (not len(cmdLineOpts.section_type) > 0) and (not len(cmdLineOpts.section_name) > 0):
+            logging.getLogger(MAIN_LOGGER_NAME).error("A value for the option -t or -s is required.")
+            sys.exit(1)
+        if ((cmdLineOpts.analyze) and (cmdLineOpts.show_missing_details)):
+            logging.getLogger(MAIN_LOGGER_NAME).error("The -a and -M options cannot be used at the same time.")
+            sys.exit(1)
+
+        # #######################################################################
         # Get login and password for connnecting to pms
         # #######################################################################
         if (not os.path.exists(CONFIG_FILE)):
@@ -645,17 +619,25 @@ if __name__ == "__main__":
             logging.getLogger(MAIN_LOGGER_NAME).error("There was an error signing on to the pms server: %s." %(pms_name))
             sys.exit(1)
 
-        # Get section name and search to see if it exists.
-        found_section_name = False
+        # Verify section_name exists if option has value.
         if (len(cmdLineOpts.section_name) > 0):
+            found_section_name = False
             for section in pms.library.sections():
-                if (section.title == cmdLineOpts.section_name):
+                if (section.title.lower().strip() == cmdLineOpts.section_name.lower().strip()):
                     found_section_name = True
             if (not found_section_name):
                 logging.getLogger(MAIN_LOGGER_NAME).error("The section name does not exist: %s" %(cmdLineOpts.section_name))
                 sys.exit(1)
-        else:
-            found_section_name = True
+
+        # Verify section_type exists if option has value.
+        if (len(cmdLineOpts.section_type) > 0):
+            found_section_type = False
+            for section in pms.library.sections():
+                if (section.type.lower().strip() == cmdLineOpts.section_type.lower().strip()):
+                    found_section_type = True
+            if (not found_section_type):
+                logging.getLogger(MAIN_LOGGER_NAME).error("The section type does not exist: %s" %(cmdLineOpts.section_type))
+                sys.exit(1)
 
         # #######################################################################
         # List sections
@@ -670,22 +652,22 @@ if __name__ == "__main__":
             __print_table(sections)
             sys.exit()
 
-
-        if (len(cmdLineOpts.section_type) > 0) and (len(cmdLineOpts.section_name) > 0):
-            logging.getLogger(MAIN_LOGGER_NAME).error("The -t and -s options cannot be used at the same time")
-        elif (not len(cmdLineOpts.section_type) > 0) and (not len(cmdLineOpts.section_name) > 0):
-            logging.getLogger(MAIN_LOGGER_NAME).error("A value for the option -t or -s is required.")
+        # #######################################################################
+        # Refresh sections
+        # #######################################################################
+        if (cmdLineOpts.refresh):
+            for section in pms.library.sections():
+                if (((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)) or
+                    (not (len(cmdLineOpts.section_name) > 0) and (not len(cmdLineOpts.section_type) > 0))):
+                    logging.getLogger(MAIN_LOGGER_NAME).info("Refreshing section: %s(type: %s)" %(section.title, section.type))
+                    section.refresh()
 
         # #######################################################################
-        # Print metadata to console
+        # Analyze or print metadata to console
         # #######################################################################
-        section_types = []
-        for section in pms.library.sections():
-            if (section.type not in section_types):
-                section_types.append(section.type)
-
         # Just add analyze code to here, if analyze disabled then just print, if
         # analyze enable then analyze media and only output the tests that fail.
+        logging.getLogger(MAIN_LOGGER_NAME).info("Fetching the metadata from sources can take some time, be patient.")
         if (cmdLineOpts.analyze):
             logging.getLogger(MAIN_LOGGER_NAME).info("Analzying is still work in progress.")
             for section in pms.library.sections():
@@ -748,44 +730,43 @@ if __name__ == "__main__":
                               (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower())):
                             __analyze_tv_show(pms_tv_show)
 
-            # exit, should make stuff below incased in else.
-            sys.exit()
-        for section in pms.library.sections():
-            media_attributes = []
-            if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
-                counter = 1
-                total_section_size = 0
-                for movie in section.all():
-                    ccounter = counter
-                    # Get file details about the file for this metadata.
-                    for ipart in movie.iter_parts():
-                        ipart_container = ipart.container
-                        if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
-                            ipart_filename = os.path.basename(ipart.file)
-                            ipart_size = __humanize_bytes(ipart.size, "GiB")
-                            total_section_size = total_section_size + int(ipart.size)
-                            media_attributes.append([str(ccounter), movie.title, str(movie.year), ipart_container, ipart_filename, ipart_size])
-                            # Dont increase count but replace with dash.
-                            ccounter = "-"
-                    if (ccounter == "-"):
-                        counter = counter + 1;
-                if (len(media_attributes) > 0):
-                    media_attributes.insert(0, ["%s" %(section.title), "Movie Name", "Year", "Container", "Filename", "Size"])
-                    media_attributes.append(["-", "-", "-", "-", "-", "-"])
-                    media_attributes.append(["-", "-", "-", "-", "Total Section Size:", __humanize_bytes(total_section_size, "GiB")])
-                    __print_table(media_attributes)
-                    print
-            elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
-                for pms_tv_show in section.all():
-                    if (not len(cmdLineOpts.tv_show_title) > 0):
-                        __print_tv_show(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
-                    elif ((cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.strip().lower()) or
-                          (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower())):
-                        # Allow for multiple tv shows with same name. For
-                        # example BSG.org and BGS.2003. I assume that metadata
-                        # is for the correct show. Running analyze should show
-                        # if not.
-                        __print_tv_show(pms_tv_show, show_missing_details=cmdLineOpts.show_missing_details)
+        else:
+            for section in pms.library.sections():
+                media_attributes = []
+                if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
+                    counter = 1
+                    total_section_size = 0
+                    for movie in section.all():
+                        ccounter = counter
+                        # Get file details about the file for this metadata.
+                        for ipart in movie.iter_parts():
+                            ipart_container = ipart.container
+                            if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
+                                ipart_filename = os.path.basename(ipart.file)
+                                ipart_size = __humanize_bytes(ipart.size, "GiB")
+                                total_section_size = total_section_size + int(ipart.size)
+                                media_attributes.append([str(ccounter), movie.title, str(movie.year), ipart_container, ipart_filename, ipart_size])
+                                # Dont increase count but replace with dash.
+                                ccounter = "-"
+                        if (ccounter == "-"):
+                            counter = counter + 1;
+                    if (len(media_attributes) > 0):
+                        media_attributes.insert(0, ["%s" %(section.title), "Movie Name", "Year", "Container", "Filename", "Size"])
+                        media_attributes.append(["-", "-", "-", "-", "-", "-"])
+                        media_attributes.append(["-", "-", "-", "-", "Total Section Size:", __humanize_bytes(total_section_size, "GiB")])
+                        __print_table(media_attributes)
+                        print
+                elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
+                    for pms_tv_show in section.all():
+                        if (not len(cmdLineOpts.tv_show_title) > 0):
+                            __print_tv_show(pms_tv_show, cmdLineOpts.container, cmdLineOpts.show_missing_details)
+                        elif ((cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.strip().lower()) or
+                              (cmdLineOpts.tv_show_title.lower().strip() == pms_tv_show.title.rsplit(" (")[0].strip().lower())):
+                            # Allow for multiple tv shows with same name. For
+                            # example BSG.org and BGS.2003. I assume that
+                            # metadata is for the correct show. Running analyze
+                            # should show if not.
+                            __print_tv_show(pms_tv_show, cmdLineOpts.container, cmdLineOpts.show_missing_details)
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

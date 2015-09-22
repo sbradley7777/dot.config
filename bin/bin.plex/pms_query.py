@@ -58,14 +58,14 @@ TODO
 
 * Add examples to usage().
 
-* Trim down colorize class after I save the output and make sure pep
-  complaint. Save class to snippets first.
-
-* Add container option to tvshow functions.
-
 * What about naming conventions? I use lower case but what they use upper/lower
   and whitespaces.
 
+* Need to check for resolution to add 1080p or 720p tags to filename.
+
+* Need to add best guess if regex fails, like use the pms name instead.
+
+* If 1080p or 720p then tag it.
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
 import ConfigParser
@@ -374,6 +374,11 @@ def __getOptions(version) :
                          dest="disableLoggingToConsole",
                          help="disables logging to console",
                          default=False)
+    cmdParser.add_option("-y", "--skip_confirmation",
+                         action="store_true",
+                         dest="disableConfirmation",
+                         help="disables asking user for confirmation on certain actions",
+                         default=False)
     cmdParser.add_option("-r", "--refresh",
                          action="store_true",
                          dest="refresh",
@@ -388,6 +393,11 @@ def __getOptions(version) :
                          action="store_true",
                          dest="analyze",
                          help="analyze the metadata and filename",
+                         default=False)
+    cmdParser.add_option("-f", "--fix_filenames",
+                         action="store_true",
+                         dest="fix_filenames",
+                         help="fix any filenames that are incorrect",
                          default=False)
     cmdParser.add_option("-s", "--section_name",
                          action="store",
@@ -588,12 +598,14 @@ if __name__ == "__main__":
         filename_extensions = ""
         filename_tags = ""
         try:
-            filename_extensions = configParser.get("filenames", "filename_extensions").strip().split()
+            # convert to lowercase for comparing
+            filename_extensions = [x.lower() for x in configParser.get("filenames", "filename_extensions").strip().split()]
         except ConfigParser.NoOptionError:
             # These can be skipped if not set.
             pass
         try:
-            filename_tags = configParser.get("filenames", "filename_tags").strip().split()
+            # convert to lowercase for comparing
+            filename_tags = [x.lower() for x in configParser.get("filenames", "filename_tags").strip().split()]
         except ConfigParser.NoOptionError:
             # These can be skipped if not set.
             pass
@@ -676,45 +688,84 @@ if __name__ == "__main__":
                     total_section_size = 0
                     for movie in section.all():
                         # Get file details about the file for this metadata.
+                        #
+                        #
+                        # Need "requests.exceptions.Timeout" try/except catch over here for ipart query.
+                        #
+                        #
+                        #from pprint import pprint
+                        #def print_r(the_object):
+                        #    print ("CLASS: ", the_object.__class__.__name__, " (BASE CLASS: ", the_object.__class__.__bases__,")")
+                        #    pprint(vars(the_object))
+                        #print_r(my_object)
+                        #print "---"
                         for ipart in movie.iter_parts():
+                            #
+                            # NEED TO ADD THE RESOLUTION TAG to fileename
+                            # NEED TO JUST COMAPRE FILENAMES on what code thinks should be and what it actually is
+                            #
+                            ipart_video_resolution = ipart.media.videoResolution
+                            ipart_audio_codec = ipart.media.audioCodec       # Not sure i need to tag this either cause multiple audio streams
+                            ipart_audio_channels = ipart.media.audioChannels # No need to tag those
+                            print "%s (%s | %s | %s)" %( os.path.basename(ipart.file), ipart_video_resolution, ipart_audio_codec, ipart_audio_channels)
                             ipart_container = ipart.container
                             if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
                                 ipart_filename = os.path.basename(ipart.file)
                                 # Need to finish breaking down to movie_title,
                                 # year, tags, extenstion.
-                                regex = "^(?P<movie_title>[a-zA-Z_0-9\-+',&]*)\(.*(?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
+                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+',&]*)\(.*(?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
+                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+',&]*)\((?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
+                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)\((?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
+                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)(\((?P<year>[0-9]{4})\)(?P<tags>.*))?\.(?P<extension>[a-zA-Z0-9]{3})"
+                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)(\((?P<year>[0-9]{4})\))?(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})"
+                                regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)(\((?P<year>[0-9]{4})\))(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})"
                                 rem = re.compile(regex)
                                 mo = rem.match(ipart_filename)
-                                if (mo):
-                                    try:
-                                        pms_title = ""
-                                        pms_year = ""
-                                        pms_tags = ""
-                                        pms_ext = ""
-                                        if (not __format_item(movie.title).lower() == __format_item(mo.group("movie_title")).lower().replace("_", " ")):
-                                            pms_title = __format_item(movie.title).lower()
-                                        if (not str(__format_item(movie.year)).lower() == __format_item(mo.group("year")).lower()):
-                                            pms_year = __format_item(movie.year)
-                                        if (( not __format_item(mo.group("extension")).lower() in filename_extensions) and (len(filename_extensions) > 0)):
-                                            pms_ext = __format_item(mo.group("extension"))
-                                        # Tags should follow this sequence:
-                                        # ptX, resolution(1080p,720p), movie version(EE, DC)
-                                        tags = mo.group("tags").split("-")
-                                        for tag in tags:
-                                            if ((not tag in filename_tags) and (len(filename_tags) > 0)):
-                                                pms_tags = "%s, %s" %(pms_tags, tag)
-                                        pms_tags = pms_tags.strip(", ").strip()
-                                        if ((len(pms_title) > 0) or (len(pms_year) > 0) or
-                                            (len(pms_tags) > 0) or (len(pms_ext) > 0)):
-                                            media_attributes.append([ipart_filename, pms_title, pms_year, pms_tags, pms_ext])
-                                    except IndexError:
-                                        media_attributes.append([ipart_filename, "?", "?", "?","?"])
-                                        logging.getLogger(MAIN_LOGGER_NAME).debug("There was a parsing error for: %s" %(ipart_filename))
+                                if (not mo):
+                                    logging.getLogger(MAIN_LOGGER_NAME).info("There was a parsing error for: \"%s\" but a best guess of PMS based filename will be attempted." %(ipart_filename))
+                                    pms_modified_filename = "%s(%s)%s" %(__format_item(movie.title).lower().replace(" ", "_").replace(":_", ":"),
+                                                                          __format_item(movie.year), os.path.splitext(ipart_filename)[1])
+                                    media_attributes.append([ipart_filename, pms_modified_filename])
                                 else:
-                                    media_attributes.append([ipart_filename, "?", "?", "?","?"])
-                                    logging.getLogger(MAIN_LOGGER_NAME).debug("There was a parsing error for: %s" %(ipart_filename))
+                                    try:
+                                        # If no year is given and just filename
+                                        mo_year = "0000"
+                                        try:
+                                            mo_year = __format_item(mo.group("year")).lower()
+                                        except IndexError:
+                                            pass
+                                        except AttributeError:
+                                            pass
+                                        pms_modified_filename = ""
+                                        if ((not __format_item(movie.title).lower() == __format_item(mo.group("movie_title")).lower().replace("_", " ")) or
+                                            (not str(__format_item(movie.year)).lower() == mo_year) or
+                                            ((not __format_item(mo.group("extension")).lower() in filename_extensions) and (len(filename_extensions) > 0))):
+                                            # Tags should follow this sequence:
+                                            # ptX, resolution(1080p,720p), movie version(EE, DC)
+                                            pms_tags = ""
+                                            try:
+                                                for tag in mo.group("tags").split("-"):
+                                                    tag = tag.lower()
+                                                    if (len(tag) > 0):
+                                                        if ((tag in filename_tags) and (len(filename_tags) > 0)):
+                                                            pms_tags = "%s-%s" %(pms_tags, tag)
+                                                if (len(pms_tags) > 0):
+                                                    pms_tags = pms_tags.rstrip("-")
+                                            except IndexError:
+                                                pass
+                                            except AttributeError:
+                                                pass
+                                            pms_modified_filename = "%s(%s)%s.%s" %(__format_item(movie.title).lower().replace(" ", "_").replace(":_", ":"),
+                                                                                    __format_item(movie.year), pms_tags,
+                                                                                    mo.group("extension").lower())
+
+                                        if (len(pms_modified_filename) > 0):
+                                            media_attributes.append([ipart_filename, pms_modified_filename])
+                                    except IndexError:
+                                        media_attributes.append([ipart_filename, "?"])
+                                        logging.getLogger(MAIN_LOGGER_NAME).debug("There was a parsing error for: \"%s\"" %(ipart_filename))
                     if (len(media_attributes) > 0):
-                        media_attributes.insert(0, ["filename", "PMS Movie Title", "PMS Year", "tags", "extension"])
+                        media_attributes.insert(0, ["filename", "filename based on PMS"])
                         __print_table(media_attributes)
                         print
                         print "- \"?\": Represents unknown because parsing error occurred."

@@ -346,6 +346,32 @@ def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=Fals
             print "---------------------"
             print
 
+def get_pms_preferred_filename(pms_video):
+    pms_preferred_filename = ""
+    # Need to catch iterator no next exception
+    ipart0 = pms_video.iter_parts().next()
+    if (pms_video.type == "movie"):
+        ipart_filename = os.path.basename(ipart0.file)
+        regex = "^[a-zA-Z_0-9].*\)(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})"
+        rem = re.compile(regex)
+        mo = rem.match(ipart_filename)
+        filename_tags = ""
+        if (mo):
+            filename_tags = mo.group("tags")
+            # Need to prio pt, parts,etc over other tags and make first.
+            # Does container and extension match and dont need to regex ext?
+        if (len(filename_tags) > 0):
+            # Here is where I will orgainize the tags, or might be better to
+            # create function that pulls in the tags from config file.
+            pass
+        preferred_tags = "-%s" %(ipart0.media.videoResolution)
+        pms_modified_filename = "%s(%s)%s.%s" %(__format_item(pms_video.title).lower().replace(" ", "_").replace(":_", ":"),
+                                                __format_item(pms_video.year), preferred_tags,
+                                                __format_item(ipart0.container).lower())
+
+        # debug
+        print "%s == %s" %(ipart_filename, pms_modified_filename)
+    return pms_modified_filename
 # ##############################################################################
 # Get user selected options
 # ##############################################################################
@@ -691,33 +717,17 @@ if __name__ == "__main__":
                         #
                         #
                         # Need "requests.exceptions.Timeout" try/except catch over here for ipart query.
+                        # NEED TO ADD THE RESOLUTION TAG to fileename
+                        # NEED TO JUST COMAPRE FILENAMES on what code thinks should be and what it actually is
+                        #
+                        #                             ipart_video_resolution = ipart.media.videoResolution
                         #
                         #
-                        #from pprint import pprint
-                        #def print_r(the_object):
-                        #    print ("CLASS: ", the_object.__class__.__name__, " (BASE CLASS: ", the_object.__class__.__bases__,")")
-                        #    pprint(vars(the_object))
-                        #print_r(my_object)
-                        #print "---"
+                        pms_preferred_filename = get_pms_preferred_filename(movie)
+                        print pms_preferred_filename
                         for ipart in movie.iter_parts():
-                            #
-                            # NEED TO ADD THE RESOLUTION TAG to fileename
-                            # NEED TO JUST COMAPRE FILENAMES on what code thinks should be and what it actually is
-                            #
-                            ipart_video_resolution = ipart.media.videoResolution
-                            ipart_audio_codec = ipart.media.audioCodec       # Not sure i need to tag this either cause multiple audio streams
-                            ipart_audio_channels = ipart.media.audioChannels # No need to tag those
-                            print "%s (%s | %s | %s)" %( os.path.basename(ipart.file), ipart_video_resolution, ipart_audio_codec, ipart_audio_channels)
-                            ipart_container = ipart.container
-                            if ((cmdLineOpts.container == ipart_container) or (not len(cmdLineOpts.container) > 0)):
+                            if ((cmdLineOpts.container == ipart.container) or (not len(cmdLineOpts.container) > 0)):
                                 ipart_filename = os.path.basename(ipart.file)
-                                # Need to finish breaking down to movie_title,
-                                # year, tags, extenstion.
-                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+',&]*)\(.*(?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
-                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+',&]*)\((?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
-                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)\((?P<year>[0-9]{4})\)(?P<tags>.*)\.(?P<extension>[a-zA-Z0-9]{3})"
-                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)(\((?P<year>[0-9]{4})\)(?P<tags>.*))?\.(?P<extension>[a-zA-Z0-9]{3})"
-                                # regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)(\((?P<year>[0-9]{4})\))?(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})"
                                 regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)(\((?P<year>[0-9]{4})\))(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})"
                                 rem = re.compile(regex)
                                 mo = rem.match(ipart_filename)

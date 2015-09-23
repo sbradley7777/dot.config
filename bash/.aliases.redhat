@@ -15,18 +15,23 @@ if [[ `command -v lsb_release >/dev/null 2>&1` -eq "0" ]] ; then
     alias whichdistro='lsb_release --id --release --codename | grep "Distributor ID" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
     alias whichrelease='lsb_release --id --release --codename | grep "Release" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
     alias whichcodename='lsb_release --id --release --codename | grep "Codename" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
-    #release=$(whichrelease);
-    #major_release=${release::1}
-    #if [[ "$major_release" -lt "7" ]]; then
+    release=$(whichrelease);
+    major_release=${release::1}
+    if [[ "$major_release" -lt "7" ]]; then
         ##############################################################################
         # Network and Firewall
         ##############################################################################
-	#alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers';
-        #alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers';
-        #alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers';
-        #alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers';
-        #alias firewall=iptlist;
-    #fi
+	alias iptlist='sudo /sbin/iptables -L -n -v --line-numbers';
+        alias iptlistin='sudo /sbin/iptables -L INPUT -n -v --line-numbers';
+        alias iptlistout='sudo /sbin/iptables -L OUTPUT -n -v --line-numbers';
+        alias iptlistfw='sudo /sbin/iptables -L FORWARD -n -v --line-numbers';
+        alias firewall=iptlist;
+    fi
+    if [[ "$major_release" -eq "6" ]]; then
+	alias ha_update="cman_tool version -r";
+    elif [[ "$major_release" -eq "5" ]]; then
+	alias ha_update="ccs_tool update /etc/cluster/cluster.conf";
+    fi
 fi
 ##############################################################################
 # Adminstrator aliases

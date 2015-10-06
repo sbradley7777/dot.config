@@ -33,6 +33,11 @@ if [[ `command -v lsb_release >/dev/null 2>&1` -eq "0" ]] ; then
 	alias ha_update="ccs_tool update /etc/cluster/cluster.conf";
     fi
 fi
+if [[ `command -v subscription-manager >/dev/null 2>&1` -eq "0" ]] ; then
+    # alias subscription-manager-enabled_repos="subscription-manager repos --list | grep 'Enabled:   1' -B 3 | grep 'Repo ID' | awk '{ print $3 }'";
+    alias subscription-manager-enabled_repos="subscription-manager repos --list | grep 'Enabled:   1' -B 3 | grep 'Repo ID' | cut -d ":" -f 2";
+fi
+
 ##############################################################################
 # Adminstrator aliases
 ##############################################################################

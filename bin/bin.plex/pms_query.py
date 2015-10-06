@@ -39,6 +39,11 @@ Edit the configuration file to add in username and password.
 TODO
 #######################################################################
 
+* NO PUNCUATION IN FILENAME SO NEED TO SEND THROUGH FILTER. OSX complained and
+  just bad practice.
+
+* Remove config option for tags and code for options tags.
+
 * Need to handle cases when some config options are not configured like
   "filename*" that are optional. Note: not even sure using those config options
   yet. Check later.
@@ -66,6 +71,7 @@ TODO
 * Need to add best guess if regex fails, like use the pms name instead.
 
 * If 1080p or 720p then tag it.
+
 """
 from optparse import OptionParser, Option, SUPPRESS_HELP
 import ConfigParser
@@ -346,32 +352,66 @@ def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=Fals
             print "---------------------"
             print
 
-def get_pms_preferred_filename(pms_video):
-    pms_preferred_filename = ""
-    # Need to catch iterator no next exception
-    ipart0 = pms_video.iter_parts().next()
-    if (pms_video.type == "movie"):
-        ipart_filename = os.path.basename(ipart0.file)
-        regex = "^[a-zA-Z_0-9].*\)(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})"
-        rem = re.compile(regex)
-        mo = rem.match(ipart_filename)
-        filename_tags = ""
-        if (mo):
-            filename_tags = mo.group("tags")
-            # Need to prio pt, parts,etc over other tags and make first.
-            # Does container and extension match and dont need to regex ext?
-        if (len(filename_tags) > 0):
-            # Here is where I will orgainize the tags, or might be better to
-            # create function that pulls in the tags from config file.
-            pass
-        preferred_tags = "-%s" %(ipart0.media.videoResolution)
-        pms_modified_filename = "%s(%s)%s.%s" %(__format_item(pms_video.title).lower().replace(" ", "_").replace(":_", ":"),
-                                                __format_item(pms_video.year), preferred_tags,
-                                                __format_item(ipart0.container).lower())
+def get_preferred_tags(ipart):
+    # The resolution and if multiple part tags always added.
+    # List of Stack Suffixes: https://github.com/plexinc-plugins/Scanners.bundle/blob/master/Contents/Resources/Common/Stack.py#L12
+    stack_suffixes = ['cd', 'dvd', 'part', 'pt', 'disk', 'disc', 'scene']
 
-        # debug
-        print "%s == %s" %(ipart_filename, pms_modified_filename)
-    return pms_modified_filename
+    #rem = re.compile("^[a-zA-Z_0-9].*\)(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})")
+    #rem = re.compile("^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)(\((?P<year>[0-9]{4})\))?(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})")
+    regex_title = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)"
+    regex_year = "(\((?P<year>[0-9]{4})\))?"
+    regex_tags = "(?P<tags>.*)?"
+    regex_ext  = "\.(?P<extension>[a-zA-Z0-9]{3})"
+    rem = re.compile("%s%s%s%s" %(regex_title, regex_year, regex_tags, regex_ext))
+    mo = rem.match(os.path.basename(ipart.file))
+    tags = ""
+    preferred_tags = []
+    if (mo):
+        # Remove empty strings
+        tags = [x for x in mo.group("tags").replace(" ", "").split("-") if x != '']
+        part_tag = ""
+        for tag in tags:
+            # Split the tags up, replace 1080p or 720p with PMS styple.
+            tag = tag.lower().replace("1080p", "1080").replace("720p", "720").strip().rstrip()
+            if ((tag.startswith("part")) or (tag.startswith("pt"))):
+                part_tag = tag
+            else:
+                preferred_tags.append(tag)
+        # Add in resolution tag, based on pms.
+        if (not ipart.media.videoResolution in preferred_tags):
+            preferred_tags.insert(0, ipart.media.videoResolution)
+        # Change all part tags to "ptX", insert as first tag.
+        if (len(part_tag) > 0):
+            part_num = int(filter(str.isdigit, part_tag))
+            preferred_tags.insert(0, "pt%d"%(part_num))
+    return preferred_tags
+
+def get_pms_preferred_filename(pms_video, ipart):
+    # This function analyze the filename of file(or part of a movie)
+    # and outputs the preferred name including tags on existing filename.
+    pms_preferred_filename = ""
+    pms_preferred_tags = ""
+    tags = get_preferred_tags(ipart)
+    if (len(tags) > 0):
+        for tag in tags:
+            pms_preferred_tags += "-%s" %(tag)
+    #
+    # NOTE: everafter still not parsing correctly, probably need to check
+    # DO I CHEKC SYNTAX OR CARE
+    #
+    # pms thinks video is different type than tag pms says 720 and i got 1080, pms probably correct, should i just remove any resolution tags and then just use what pms believes it is:
+    #  justice_league-doom(2012)-1080p.m4v                                    | justice_league:doom(2012)-720-1080.m4v
+    #
+    # Looks like pms detecting orrrectly and i fix it. Nee to look for those
+    # other resolution tags and have them removed and replaced with what pms
+    # says. I checked with mediainfo.
+    if (pms_video.type == "movie"):
+        pms_preferred_filename= "%s(%s)%s.%s" %(__format_item(pms_video.title).lower().replace(" ", "_").replace(":_", ":").replace("_-_", "-"),
+                                                __format_item(pms_video.year), __format_item(pms_preferred_tags),
+                                                __format_item(ipart.file.rsplit(".", 1)[1]).lower())
+
+    return pms_preferred_filename
 # ##############################################################################
 # Get user selected options
 # ##############################################################################
@@ -713,67 +753,9 @@ if __name__ == "__main__":
                 if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
                     total_section_size = 0
                     for movie in section.all():
-                        # Get file details about the file for this metadata.
-                        #
-                        #
-                        # Need "requests.exceptions.Timeout" try/except catch over here for ipart query.
-                        # NEED TO ADD THE RESOLUTION TAG to fileename
-                        # NEED TO JUST COMAPRE FILENAMES on what code thinks should be and what it actually is
-                        #
-                        #                             ipart_video_resolution = ipart.media.videoResolution
-                        #
-                        #
-                        pms_preferred_filename = get_pms_preferred_filename(movie)
-                        print pms_preferred_filename
                         for ipart in movie.iter_parts():
                             if ((cmdLineOpts.container == ipart.container) or (not len(cmdLineOpts.container) > 0)):
-                                ipart_filename = os.path.basename(ipart.file)
-                                regex = "^(?P<movie_title>[a-zA-Z_0-9\-+', &\.]*)(\((?P<year>[0-9]{4})\))(?P<tags>.*)?\.(?P<extension>[a-zA-Z0-9]{3})"
-                                rem = re.compile(regex)
-                                mo = rem.match(ipart_filename)
-                                if (not mo):
-                                    logging.getLogger(MAIN_LOGGER_NAME).info("There was a parsing error for: \"%s\" but a best guess of PMS based filename will be attempted." %(ipart_filename))
-                                    pms_modified_filename = "%s(%s)%s" %(__format_item(movie.title).lower().replace(" ", "_").replace(":_", ":"),
-                                                                          __format_item(movie.year), os.path.splitext(ipart_filename)[1])
-                                    media_attributes.append([ipart_filename, pms_modified_filename])
-                                else:
-                                    try:
-                                        # If no year is given and just filename
-                                        mo_year = "0000"
-                                        try:
-                                            mo_year = __format_item(mo.group("year")).lower()
-                                        except IndexError:
-                                            pass
-                                        except AttributeError:
-                                            pass
-                                        pms_modified_filename = ""
-                                        if ((not __format_item(movie.title).lower() == __format_item(mo.group("movie_title")).lower().replace("_", " ")) or
-                                            (not str(__format_item(movie.year)).lower() == mo_year) or
-                                            ((not __format_item(mo.group("extension")).lower() in filename_extensions) and (len(filename_extensions) > 0))):
-                                            # Tags should follow this sequence:
-                                            # ptX, resolution(1080p,720p), movie version(EE, DC)
-                                            pms_tags = ""
-                                            try:
-                                                for tag in mo.group("tags").split("-"):
-                                                    tag = tag.lower()
-                                                    if (len(tag) > 0):
-                                                        if ((tag in filename_tags) and (len(filename_tags) > 0)):
-                                                            pms_tags = "%s-%s" %(pms_tags, tag)
-                                                if (len(pms_tags) > 0):
-                                                    pms_tags = pms_tags.rstrip("-")
-                                            except IndexError:
-                                                pass
-                                            except AttributeError:
-                                                pass
-                                            pms_modified_filename = "%s(%s)%s.%s" %(__format_item(movie.title).lower().replace(" ", "_").replace(":_", ":"),
-                                                                                    __format_item(movie.year), pms_tags,
-                                                                                    mo.group("extension").lower())
-
-                                        if (len(pms_modified_filename) > 0):
-                                            media_attributes.append([ipart_filename, pms_modified_filename])
-                                    except IndexError:
-                                        media_attributes.append([ipart_filename, "?"])
-                                        logging.getLogger(MAIN_LOGGER_NAME).debug("There was a parsing error for: \"%s\"" %(ipart_filename))
+                                media_attributes.append([os.path.basename(ipart.file), get_pms_preferred_filename(movie, ipart)])
                     if (len(media_attributes) > 0):
                         media_attributes.insert(0, ["filename", "filename based on PMS"])
                         __print_table(media_attributes)

@@ -19,140 +19,87 @@ from optparse import OptionParser, Option, SUPPRESS_HELP
 VERSION_NUMBER = "0.1-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
-def writeToFile(pathToFilename, data, appendToFile=True, createFile=False):
-    """
-    This function will write a string to a file.
+# #####################################################################
+# Helper File Functions
+# ####################################################################
 
-    @return: Returns True if the string was successfully written to the file,
-    otherwise False is returned.
-    @rtype: Boolean
-
-    @param pathToFilename: The path to the file that will have a string written
-    to it.
-    @type pathToFilename: String
-    @param data: The string that will be written to the file.
-    @type data: String
-    @param appendToFile: If True then the data will be appened to the file, if
-    False then the data will overwrite the contents of the file.
-    @type appendToFile: Boolean
-    @param createFile: If True then the file will be created if it does not
-    exists, if False then file will not be created if it does not exist
-    resulting in no data being written to the file.
-    @type createFile: Boolean
-    """
-    [parentDir, filename] = os.path.split(pathToFilename)
-    if (os.path.isfile(pathToFilename) or (os.path.isdir(parentDir) and createFile)):
+def write_to_file(path_to_filename, data, append_to_file=True, create_file=False):
+    [parent_dir, filename] = os.path.split(path_to_filename)
+    if (os.path.isfile(path_to_filename) or (os.path.isdir(parent_dir) and create_file)):
         try:
-            filemode = "w"
-            if (appendToFile):
-                filemode = "a"
-            fout = open(pathToFilename, filemode)
+            file_mode = "w"
+            if (append_to_file):
+                file_mode = "a"
+            fout = open(path_to_filename, file_mode)
             fout.write(data + "\n")
             fout.close()
             return True
         except UnicodeEncodeError, e:
-            message = "There was a unicode encode error writing to the file: %s." %(pathToFilename)
+            message = "There was a unicode encode error writing to the file: %s." %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
         except IOError:
-            message = "There was an error writing to the file: %s." %(pathToFilename)
+            message = "There was an error writing to the file: %s." %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
     return False
 
-def mkdirs(pathToDSTDir):
-    """
-    This function will attempt to create a directory with the path of the value of pathToDSTDir.
-
-    @return: Returns True if the directory was created or already exists.
-    @rtype: Boolean
-
-    @param pathToDSTDir: The path to the directory that will be created.
-    @type pathToDSTDir: String
-    """
-    if (os.path.isdir(pathToDSTDir)):
+def mkdirs(path_to_dir):
+    if (os.path.isdir(path_to_dir)):
         return True
-    elif ((not os.access(pathToDSTDir, os.F_OK)) and (len(pathToDSTDir) > 0)):
+    elif ((not os.access(path_to_dir, os.F_OK)) and (len(path_to_dir) > 0)):
         try:
-            os.makedirs(pathToDSTDir)
+            os.makedirs(path_to_dir)
         except (OSError, os.error):
-            message = "Could not create the directory: %s." %(pathToDSTDir)
+            message = "Could not create the directory: %s." %(path_to_dir)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
         except (IOError, os.error):
-            message = "Could not create the directory with the path: %s." %(pathToDSTDir)
+            message = "Could not create the directory with the path: %s." %(path_to_dir)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
-    return os.path.isdir(pathToDSTDir)
+    return os.path.isdir(path_to_dir)
 
-
-def getDataFromFile(pathToSrcFile) :
-    """
-    This function will return the data in an array. Where each newline in file
-    is a seperate item in the array. This should really just be used on
-    relatively small files.
-
-    None is returned if no file is found.
-
-    @return: Returns an array of Strings, where each newline in file is an item
-    in the array.
-    @rtype: Array
-
-    @param pathToSrcFile: The path to the file which will be read.
-    @type pathToSrcFile: String
-    """
-    if (len(pathToSrcFile) > 0) :
+def getDataFromFile(path_to_filename) :
+    if (len(path_to_filename) > 0) :
         try:
-            fin = open(pathToSrcFile, "r")
+            fin = open(path_to_filename, "r")
             data = fin.readlines()
             fin.close()
             return data
         except (IOError, os.error):
-            message = "An error occured reading the file: %s." %(pathToSrcFile)
+            message = "An error occured reading the file: %s." %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
     return None
 
 # ##############################################################################
 # Get user selected options
 # ##############################################################################
-def __getOptions(version) :
-    """
-    This function creates the OptionParser and returns commandline
-    a tuple of the selected commandline options and commandline args.
-
-    The cmdlineOpts which is the options user selected and cmdLineArgs
-    is value passed and  not associated with an option.
-
-    @return: A tuple of the selected commandline options and commandline args.
-    @rtype: Tuple
-
-    @param version: The version of the this script.
-    @type version: String
-    """
-    cmdParser = OptionParserExtended(version)
-    cmdParser.add_option("-d", "--debug",
+def __get_options(version) :
+    cmd_parser = OptionParserExtended(version)
+    cmd_parser.add_option("-d", "--debug",
                          action="store_true",
                          dest="enableDebugLogging",
                          help="enables debug logging",
                          default=False)
-    cmdParser.add_option("-q", "--quiet",
+    cmd_parser.add_option("-q", "--quiet",
                          action="store_true",
                          dest="disableLoggingToConsole",
                          help="disables logging to console",
                          default=False)
-    cmdParser.add_option("-y", "--no_ask",
+    cmd_parser.add_option("-y", "--no_ask",
                         action="store_true",
                          dest="disableQuestions",
                          help="disables all questions and assumes yes",
                          default=False)
-    cmdParser.add_option("-p", "--path_to_filename",
+    cmd_parser.add_option("-p", "--path_to_filename",
                          action="store",
                          dest="pathToSrc",
                          help="the path to the filename that will be parsed",
                          type="string",
                          metavar="<input filename>",
                          default="")
-    cmdParser.add_option("-o", "--path_to_output_filename",
+    cmd_parser.add_option("-o", "--path_to_output_filename",
                          action="store",
                          dest="pathToDst",
                          help="the path to the output filename",
@@ -160,70 +107,31 @@ def __getOptions(version) :
                          metavar="<output filename>",
                          default="")
  # Get the options and return the result.
-    (cmdLineOpts, cmdLineArgs) = cmdParser.parse_args()
-    return (cmdLineOpts, cmdLineArgs)
+    (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
+    return (cmdLine_opts, cmdLine_args)
 
 # ##############################################################################
 # OptParse classes for commandline options
 # ##############################################################################
 class OptionParserExtended(OptionParser):
-    """
-    This is the class that gets the command line options the end user
-    selects.
-    """
     def __init__(self, version) :
-        """
-        @param version: The version of the this script.
-        @type version: String
-        """
-        self.__commandName = os.path.basename(sys.argv[0])
-        versionMessage = "%s %s\n" %(self.__commandName, version)
-
-        commandDescription  ="%s \n"%(self.__commandName)
-
+        self.__command_name = os.path.basename(sys.argv[0])
         OptionParser.__init__(self, option_class=ExtendOption,
-                              version=versionMessage,
-                              description=commandDescription)
+                              version="%s %s\n" %(self.__command_name, version),
+                              description="%s \n"%(self.__command_name))
 
     def print_help(self):
-        """
-        Print examples at the bottom of the help message.
-        """
         self.print_version()
-        examplesMessage = "\n"
+        examples_message = "\n"
         OptionParser.print_help(self)
-        #print examplesMessage
+        #print examples_message
 
 class ExtendOption (Option):
-    """
-    Allow to specify comma delimited list of entries for arrays
-    and dictionaries.
-    """
     ACTIONS = Option.ACTIONS + ("extend",)
     STORE_ACTIONS = Option.STORE_ACTIONS + ("extend",)
     TYPED_ACTIONS = Option.TYPED_ACTIONS + ("extend",)
 
     def take_action(self, action, dest, opt, value, values, parser):
-        """
-        This function is a wrapper to take certain options passed on command
-        prompt and wrap them into an Array.
-
-        @param action: The type of action that will be taken. For example:
-        "store_true", "store_false", "extend".
-        @type action: String
-        @param dest: The name of the variable that will be used to store the
-        option.
-        @type dest: String/Boolean/Array
-        @param opt: The option string that triggered the action.
-        @type opt: String
-        @param value: The value of opt(option) if it takes a
-        value, if not then None.
-        @type value:
-        @param values: All the opt(options) in a dictionary.
-        @type values: Dictionary
-        @param parser: The option parser that was orginally called.
-        @type parser: OptionParser
-        """
         if (action == "extend") :
             valueList = []
             try:
@@ -243,15 +151,11 @@ class ExtendOption (Option):
 # Main Function
 # ###############################################################################
 if __name__ == "__main__":
-    """
-    When the script is executed then this code is ran. If there was files(not
-    directories) created then 0 will be returned, else a 1 is returned.
-    """
     try:
         # #######################################################################
         # Get the options from the commandline.
         # #######################################################################
-        (cmdLineOpts, cmdLineArgs) = __getOptions(VERSION_NUMBER)
+        (cmdline_opts, cmdline_args) = __get_options(VERSION_NUMBER)
         # #######################################################################
         # Setup the logger and create config directory
         # #######################################################################
@@ -274,24 +178,24 @@ if __name__ == "__main__":
         # means you can call it like the other predefined message
         # functions. Example: logging.getLogger("loggerName").status(message)
         setattr(logger, "status", lambda *args: logger.log(logging.STATUS, *args))
-        streamHandler = logging.StreamHandler()
-        streamHandler.setLevel(logLevel)
-        streamHandler.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
-        logger.addHandler(streamHandler)
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logLevel)
+        stream_handler.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
+        logger.addHandler(stream_handler)
 
         # #######################################################################
         # Set the logging levels.
         # #######################################################################
-        if ((cmdLineOpts.enableDebugLogging) and (not cmdLineOpts.disableLoggingToConsole)):
+        if ((cmdline_opts.enableDebugLogging) and (not cmdline_opts.disableLoggingToConsole)):
             logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
-            streamHandler.setLevel(logging.DEBUG)
+            stream_handler.setLevel(logging.DEBUG)
             message = "Debugging has been enabled."
             logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-        if (cmdLineOpts.disableLoggingToConsole):
-            streamHandler.setLevel(logging.CRITICAL)
+        if (cmdline_opts.disableLoggingToConsole):
+            stream_handler.setLevel(logging.CRITICAL)
 
         # #######################################################################
-        # 
+        # Run main
         # #######################################################################
         message = "The script ran."
         logging.getLogger(MAIN_LOGGER_NAME).info(message)

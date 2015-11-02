@@ -39,6 +39,14 @@ Edit the configuration file to add in username and password.
 TODO
 #######################################################################
 
+* Verify with `mediainfo` the data that plex has on video file before doing
+  anything with it.
+  - https://stackoverflow.com/questions/684015/how-can-i-get-the-resolution-width-and-height-for-a-video-file-from-a-linux-co
+  $ brew install media-info
+  $ mediainfo /Volumes/videos/movies-collections/movies/m4v-1080p/superman_shazam_return_of_black_adam\(2011\)-1080p.m4v | grep -ie Width -ie Height
+  Width                                    : 1 422 pixels
+  Height                                   : 800 pixels
+
 * NO PUNCUATION IN FILENAME SO NEED TO SEND THROUGH FILTER. OSX complained and
   just bad practice.
 

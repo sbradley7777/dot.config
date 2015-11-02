@@ -86,4 +86,7 @@ if [[ `type bugzilla &> /dev/null` -eq "0" ]] ; then
     # Markdown formatted
     alias sosbzq_six_md='bugzilla query --product "Red Hat Enterprise Linux 6" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV --outputformat "* [%{id} - %{short_desc}](https://bugzilla.redhat.com/show_bug.cgi?id=%{id})"';
     alias sosbzq_seven_md='bugzilla query --product "Red Hat Enterprise Linux 7" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV --outputformat "* [%{id} - %{short_desc}](https://bugzilla.redhat.com/show_bug.cgi?id=%{id})"';
+
+    alias sosbz_six-eight_rpl='bugzilla query --assigned_to sbradley@redhat.com --blocked 1274384 --outputformat "%{id} | %{component} | %{bug_status} | %{assigned_to} | %{short_desc}"';
+
 fi

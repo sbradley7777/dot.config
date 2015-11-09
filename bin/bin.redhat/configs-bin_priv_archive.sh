@@ -1,9 +1,9 @@
 #!/bin/sh
 # Author: sbradley@redhat.com
 # Description: The scripts uses /etc/hosts to get a list of hosts (that match a
-# regex) that will archive the ~/bin/bin.priv directory or any *.priv config 
+# regex) that will archive the ~/bin/bin.priv directory or any *.priv config
 # file for each of the remote  hosts.
-# Version: 1.0
+# Version: 1.1
 #
 # Usage: ./configs-bin_priv_archive.sh
 
@@ -12,8 +12,7 @@ TODAY=`date '+%F_%s'`;
 # The path to directory that will contain archived files.
 ARCHIVE_DIR="/tmp/`date '+%F_%s'`-bin.priv";
 # The files that will be archived.
-files=( "~/.dot.config" "/root/.bash_profile.priv" "/root/.bashrc.priv" "/root/bin/bin.priv" );
-
+src_files=( "~/.dot.config" "/root/.bash_profile.priv" "/root/.bashrc.priv" "/root/bin/bin.priv" "/etc/cluster/" );
 # Script will exit if this function is executed.
 control_c() {
   # Run if user hits control-c so clean exit.
@@ -37,11 +36,8 @@ do
 	    dst_dir=$ARCHIVE_DIR/$hosti;
 	    mkdir -p $dst_dir 2>/dev/null;
 	    if [ -d $ARCHIVE_DIR ]; then
-		for j in ${!files[@]}; do
-		    src=${files[j]};
-                    # Return 0 if file exists and 1 if files does not exist.
-		    #file_exists=$(ssh $hosti "test -e $src && echo 0 || echo 1")
-		    # if [[ "$file_exists" -eq "0" ]]; then
+		for j in ${!src_files[@]}; do
+		    src=${src_files[j]};
 		    scp -q -r root@$hosti:$src $dst_dir/ 2>/dev/null;
 		    if [[ ! "$?" -eq "0" ]]; then
 			echo "ERROR: There was an archiving the file $src on $hosti.";

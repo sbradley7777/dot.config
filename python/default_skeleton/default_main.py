@@ -60,7 +60,16 @@ def mkdirs(path_to_dir):
             return False
     return os.path.isdir(path_to_dir)
 
-def getDataFromFile(path_to_filename) :
+def get_data_from_file(path_to_filename) :
+    lines = get_data_from_file(path_to_filename)
+    if (not lines == None):
+        data = ""
+        for line in lines:
+            data = "%s%s" %(data, line)
+        return data
+    return None
+
+def get_data_from_file_as_list(path_to_filename) :
     if (len(path_to_filename) > 0) :
         try:
             fin = open(path_to_filename, "r")
@@ -94,14 +103,14 @@ def __get_options(version) :
                          default=False)
     cmd_parser.add_option("-p", "--path_to_filename",
                          action="store",
-                         dest="pathToSrc",
+                         dest="path_to_src_file",
                          help="the path to the filename that will be parsed",
                          type="string",
                          metavar="<input filename>",
                          default="")
     cmd_parser.add_option("-o", "--path_to_output_filename",
                          action="store",
-                         dest="pathToDst",
+                         dest="path_to_dst",
                          help="the path to the output filename",
                          type="string",
                          metavar="<output filename>",

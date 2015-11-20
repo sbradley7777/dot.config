@@ -1,12 +1,13 @@
 #!/usr/bin/python
-"""@name        : pms_query.py
+"""
+@name        : pms_query.py
 
 @description : This script will perform various queries to the Plex Media
                Server(PMS). This script can do basic analyzing of filenames
                vs. the pms title, displaying missing episodes for a tv show that
                has a season on PMS, and listing of media on PMS.
 @author      : Shane Bradley
-@contact     :  shanebradley@gmail.com
+@contact     : shanebradley@gmail.com
 @version     : 0.5-1
 @copyright   : GPLv2
 
@@ -91,6 +92,7 @@ import os.path
 import math
 import locale
 import re
+import string
 
 try:
     from plexapi.myplex import MyPlexUser
@@ -414,12 +416,30 @@ def get_pms_preferred_filename(pms_video, ipart):
     # Looks like pms detecting orrrectly and i fix it. Nee to look for those
     # other resolution tags and have them removed and replaced with what pms
     # says. I checked with mediainfo.
+
+    # ' or single quotes allowed.
     if (pms_video.type == "movie"):
-        pms_preferred_filename= "%s(%s)%s.%s" %(__format_item(pms_video.title).lower().replace(" ", "_").replace(":_", ":").replace("_-_", "-"),
+        #pms_preferred_filename= "%s(%s)%s.%s" %(__format_item(pms_video.title).lower().replace(" ", "_")
+        # son city: street.m4v
+        # don city:gumball.m4v
+        # mr. man.m4v
+        # hot/cold.m4
+
+        # create a dict and private class.
+        # there will be issue with ordering, like semicolon yield strange results. 
+        # need way to replace multiple spaces with 1 space.
+        replace_characters = [": ":"-", ":":"-"]
+        pms_preferred_title = __format_item(pms_video.title).lower().replace(": ", "-").replace(":", "-").replace("/", "_").replace(". ", ".").replace("&", "and")
+        pms_preferred_filename= "%s(%s)%s.%s" %(pms_preferred_title,
                                                 __format_item(pms_video.year), __format_item(pms_preferred_tags),
                                                 __format_item(ipart.file.rsplit(".", 1)[1]).lower())
 
+    # If the character is not a valid character then remove from string.
+    valid_chars = "'-_.() %s%s" % (string.ascii_letters, string.digits)
+    pms_preferred_filename = ''.join(c for c in pms_preferred_filename if c in valid_chars)
+    pms_preferred_filename = pms_preferred_filename.replace(" ", "_")
     return pms_preferred_filename
+
 # ##############################################################################
 # Get user selected options
 # ##############################################################################
@@ -755,6 +775,7 @@ if __name__ == "__main__":
         # analyze enable then analyze media and only output the tests that fail.
         logging.getLogger(MAIN_LOGGER_NAME).info("Fetching the metadata from sources can take some time, be patient.")
         if (cmdLineOpts.analyze):
+            # Analyze the media. Only display data where filenames is not match metadata or there metadata issue.
             logging.getLogger(MAIN_LOGGER_NAME).info("Analzying is still work in progress.")
             for section in pms.library.sections():
                 media_attributes = []
@@ -763,7 +784,8 @@ if __name__ == "__main__":
                     for movie in section.all():
                         for ipart in movie.iter_parts():
                             if ((cmdLineOpts.container == ipart.container) or (not len(cmdLineOpts.container) > 0)):
-                                media_attributes.append([os.path.basename(ipart.file), get_pms_preferred_filename(movie, ipart)])
+                                if (not os.path.basename(ipart.file) == get_pms_preferred_filename(movie, ipart)):
+                                    media_attributes.append([os.path.basename(ipart.file), get_pms_preferred_filename(movie, ipart)])
                     if (len(media_attributes) > 0):
                         media_attributes.insert(0, ["filename", "filename based on PMS"])
                         __print_table(media_attributes)
@@ -782,6 +804,7 @@ if __name__ == "__main__":
                             __analyze_tv_show(pms_tv_show)
 
         else:
+            # Just print information about the media.
             for section in pms.library.sections():
                 media_attributes = []
                 if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):

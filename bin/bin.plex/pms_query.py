@@ -1,6 +1,5 @@
 #!/usr/bin/python
-"""
-@name        : pms_query.py
+"""@name        : pms_query.py
 
 @description : This script will perform various queries to the Plex Media
                Server(PMS). This script can do basic analyzing of filenames
@@ -34,24 +33,22 @@ Edit the configuration file to add in username and password.
 
   [filenames]
   filename_extensions = mp4 m4v mkv
-  filename_tags = pt1 pt2 pt3 1080p 720p
 
 #######################################################################
 TODO
 #######################################################################
 
+* Need to be able to remove resolution tag then add resolution preferred
+  tag. Need to find out where they store all the resolutions. Search the PMS.app
+  recursively unless all binary. Search git for repo again.
+
 * Verify with `mediainfo` the data that plex has on video file before doing
-  anything with it.
-  - https://stackoverflow.com/questions/684015/how-can-i-get-the-resolution-width-and-height-for-a-video-file-from-a-linux-co
-  $ brew install media-info
-  $ mediainfo /Volumes/videos/movies-collections/movies/m4v-1080p/superman_shazam_return_of_black_adam\(2011\)-1080p.m4v | grep -ie Width -ie Height
-  Width                                    : 1 422 pixels
-  Height                                   : 800 pixels
+  anything with it.  -
+  https://stackoverflow.com/questions/684015/how-can-i-get-the-resolution-width-and-height-for-a-video-file-from-a-linux-co
+  $ brew install media-info $ mediainfo
+  /Volumes/videos/movies-collections/movies/m4v-1080p/superman_shazam_return_of_black_adam\(2011\)-1080p.m4v
+  | grep -ie Width -ie Height Width : 1 422 pixels Height : 800 pixels
 
-* NO PUNCUATION IN FILENAME SO NEED TO SEND THROUGH FILTER. OSX complained and
-  just bad practice.
-
-* Remove config option for tags and code for options tags.
 
 * Need to handle cases when some config options are not configured like
   "filename*" that are optional. Note: not even sure using those config options
@@ -363,7 +360,6 @@ def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=Fals
             print
 
 def get_preferred_tags(ipart):
-    # The resolution and if multiple part tags always added.
     # List of Stack Suffixes: https://github.com/plexinc-plugins/Scanners.bundle/blob/master/Contents/Resources/Common/Stack.py#L12
     stack_suffixes = ['cd', 'dvd', 'part', 'pt', 'disk', 'disc', 'scene']
 
@@ -417,19 +413,13 @@ def get_pms_preferred_filename(pms_video, ipart):
     # other resolution tags and have them removed and replaced with what pms
     # says. I checked with mediainfo.
 
-    # ' or single quotes allowed.
     if (pms_video.type == "movie"):
-        #pms_preferred_filename= "%s(%s)%s.%s" %(__format_item(pms_video.title).lower().replace(" ", "_")
+        # ' or single quotes allowed.
+        # Fix names like the following:
         # son city: street.m4v
         # don city:gumball.m4v
         # mr. man.m4v
         # hot/cold.m4
-
-        # create a dict and private class.
-        # there will be issue with ordering, like semicolon yield strange results. 
-        # need way to replace multiple spaces with 1 space.
-        
-        #replace_characters = [": ":"-", ":":"-"]
         pms_preferred_title = __format_item(pms_video.title).lower().replace(": ", "-").replace(":", "-").replace("/", "_").replace(". ", ".").replace("&", "and")
         pms_preferred_filename= "%s(%s)%s.%s" %(pms_preferred_title,
                                                 __format_item(pms_video.year), __format_item(pms_preferred_tags),
@@ -695,12 +685,6 @@ if __name__ == "__main__":
         try:
             # convert to lowercase for comparing
             filename_extensions = [x.lower() for x in configParser.get("filenames", "filename_extensions").strip().split()]
-        except ConfigParser.NoOptionError:
-            # These can be skipped if not set.
-            pass
-        try:
-            # convert to lowercase for comparing
-            filename_tags = [x.lower() for x in configParser.get("filenames", "filename_tags").strip().split()]
         except ConfigParser.NoOptionError:
             # These can be skipped if not set.
             pass

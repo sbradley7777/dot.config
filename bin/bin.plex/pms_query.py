@@ -428,7 +428,8 @@ def get_pms_preferred_filename(pms_video, ipart):
         # create a dict and private class.
         # there will be issue with ordering, like semicolon yield strange results. 
         # need way to replace multiple spaces with 1 space.
-        replace_characters = [": ":"-", ":":"-"]
+        
+        #replace_characters = [": ":"-", ":":"-"]
         pms_preferred_title = __format_item(pms_video.title).lower().replace(": ", "-").replace(":", "-").replace("/", "_").replace(". ", ".").replace("&", "and")
         pms_preferred_filename= "%s(%s)%s.%s" %(pms_preferred_title,
                                                 __format_item(pms_video.year), __format_item(pms_preferred_tags),

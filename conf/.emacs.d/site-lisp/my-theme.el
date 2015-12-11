@@ -93,3 +93,11 @@
 (setq font-lock-maximum-decoration t)
 ;; Trun off limit on font lock mode
 (setq font-lock-maximum-size nil)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Change diff mode colors
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(eval-after-load 'diff-mode
+  '(progn
+     (set-face-foreground 'diff-added "green4")
+     (set-face-foreground 'diff-removed "red3")))

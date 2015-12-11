@@ -6,7 +6,7 @@
                vs. the pms title, displaying missing episodes for a tv show that
                has a season on PMS, and listing of media on PMS.
 @author      : Shane Bradley
-@contact     : shanebradley@gmail.com
+@contact     :  shanebradley@gmail.com
 @version     : 0.5-1
 @copyright   : GPLv2
 
@@ -33,22 +33,24 @@ Edit the configuration file to add in username and password.
 
   [filenames]
   filename_extensions = mp4 m4v mkv
+  filename_tags = pt1 pt2 pt3 1080p 720p
 
 #######################################################################
 TODO
 #######################################################################
 
-* Need to be able to remove resolution tag then add resolution preferred
-  tag. Need to find out where they store all the resolutions. Search the PMS.app
-  recursively unless all binary. Search git for repo again.
-
 * Verify with `mediainfo` the data that plex has on video file before doing
-  anything with it.  -
-  https://stackoverflow.com/questions/684015/how-can-i-get-the-resolution-width-and-height-for-a-video-file-from-a-linux-co
-  $ brew install media-info $ mediainfo
-  /Volumes/videos/movies-collections/movies/m4v-1080p/superman_shazam_return_of_black_adam\(2011\)-1080p.m4v
-  | grep -ie Width -ie Height Width : 1 422 pixels Height : 800 pixels
+  anything with it.
+  - https://stackoverflow.com/questions/684015/how-can-i-get-the-resolution-width-and-height-for-a-video-file-from-a-linux-co
+  $ brew install media-info
+  $ mediainfo /Volumes/videos/movies-collections/movies/m4v-1080p/superman_shazam_return_of_black_adam\(2011\)-1080p.m4v | grep -ie Width -ie Height
+  Width                                    : 1 422 pixels
+  Height                                   : 800 pixels
 
+* NO PUNCUATION IN FILENAME SO NEED TO SEND THROUGH FILTER. OSX complained and
+  just bad practice.
+
+* Remove config option for tags and code for options tags.
 
 * Need to handle cases when some config options are not configured like
   "filename*" that are optional. Note: not even sure using those config options
@@ -89,7 +91,6 @@ import os.path
 import math
 import locale
 import re
-import string
 
 try:
     from plexapi.myplex import MyPlexUser
@@ -156,6 +157,262 @@ class ColorizeConsoleText(object):
     def light_grey(clazz, text):
         cls = clazz(text, fg_light_grey=True)
         return cls.__format__()
+
+
+# #####################################################################
+# Classes for creating tables in html
+# #####################################################################
+import codecs
+class SimpleTableCell(object):
+    """A table class to create table cells.
+    https://raw.githubusercontent.com/matheusportela/simpletable/master/simpletable.py
+    Example:
+    cell = SimpleTableCell('Hello, world!')
+    """
+
+    def __init__(self, text, header=False):
+        """Table cell constructor.
+
+        Keyword arguments:
+        text -- text to be displayed
+        header -- flag to indicate this cell is a header cell.
+        """
+        self.text = text
+        self.header = header
+
+    def __str__(self):
+        """Return the HTML code for the table cell."""
+        if self.header:
+            return '<th>%s</th>' %(self.text)
+        else:
+            return '<td>%s</td>' %(self.text)
+
+
+class SimpleTableRow(object):
+    """A table class to create table rows, populated by table cells.
+
+    Example:
+    # Row from list
+    row = SimpleTableRow(['Hello,', 'world!'])
+
+    # Row from SimpleTableCell
+    cell1 = SimpleTableCell('Hello,')
+    cell2 = SimpleTableCell('world!')
+    row = SimpleTableRow([cell1, cell2])
+    """
+    def __init__(self, cells=[], header=False):
+        """Table row constructor.
+
+        Keyword arguments:
+        cells -- iterable of SimpleTableCell (default None)
+        header -- flag to indicate this row is a header row.
+                  if the cells are SimpleTableCell, it is the programmer's
+                  responsibility to verify whether it was created with the
+                  header flag set to True.
+        """
+        if isinstance(cells[0], SimpleTableCell):
+            self.cells = cells
+        else:
+            self.cells = [SimpleTableCell(cell, header=header) for cell in cells]
+
+        self.header = header
+
+    def __str__(self):
+        """Return the HTML code for the table row and its cells as a string."""
+        row = []
+
+        row.append('<tr>')
+
+        for cell in self.cells:
+            row.append(str(cell))
+
+        row.append('</tr>')
+
+        return '\n'.join(row)
+
+    def __iter__(self):
+        """Iterate through row cells"""
+        for cell in self.cells:
+            yield cell
+
+    def add_cell(self, cell):
+        """Add a SimpleTableCell object to the list of cells."""
+        self.cells.append(cell)
+
+    def add_cells(self, cells):
+        """Add a list of SimpleTableCell objects to the list of cells."""
+        for cell in cells:
+            self.cells.append(cell)
+
+
+class SimpleTable(object):
+    """A table class to create HTML tables, populated by HTML table rows.
+
+    Example:
+    # Table from lists
+    table = SimpleTable([['Hello,', 'world!'], ['How', 'are', 'you?']])
+
+    # Table with header row
+    table = SimpleTable([['Hello,', 'world!'], ['How', 'are', 'you?']],
+                      header_row=['Header1', 'Header2', 'Header3'])
+
+    # Table from SimpleTableRow
+    rows = SimpleTableRow(['Hello,', 'world!'])
+    table = SimpleTable(rows)
+    """
+    def __init__(self, rows=[], header_row=None, css_class=None):
+        """Table constructor.
+
+        Keyword arguments:
+        rows -- iterable of SimpleTableRow
+        header_row -- row that will be displayed at the beginning of the table.
+                      if this row is SimpleTableRow, it is the programmer's
+                      responsibility to verify whether it was created with the
+                      header flag set to True.
+        css_class -- table CSS class
+        """
+        if isinstance(rows[0], SimpleTableRow):
+            self.rows = rows
+        else:
+            self.rows = [SimpleTableRow(row) for row in rows]
+
+        if header_row is None:
+            self.header_row = None
+        elif isinstance(header_row, SimpleTableRow):
+            self.header_row = header_row
+        else:
+            self.header_row = SimpleTableRow(header_row, header=True)
+
+        self.css_class = css_class
+
+    def __str__(self):
+        """Return the HTML code for the table as a string."""
+        table = []
+
+        if self.css_class:
+            table.append('<table class=%s>' % self.css_class)
+        else:
+            table.append('<table>')
+
+        if self.header_row:
+            table.append(str(self.header_row))
+
+        for row in self.rows:
+            table.append(str(row))
+
+        table.append('</table>')
+
+        return '\n'.join(table)
+
+    def __iter__(self):
+        """Iterate through table rows"""
+        for row in self.rows:
+            yield row
+
+    def add_row(self, row):
+        """Add a SimpleTableRow object to the list of rows."""
+        self.rows.append(row)
+
+    def add_rows(self, rows):
+        """Add a list of SimpleTableRow objects to the list of rows."""
+        for row in rows:
+            self.rows.append(row)
+
+
+class HTMLPage(object):
+    """A class to create HTML pages containing CSS and tables."""
+    def __init__(self, tables=[], css=None, encoding="utf-8"):
+        """HTML page constructor.
+
+        Keyword arguments:
+        tables -- List of SimpleTable objects
+        css -- Cascading Style Sheet specification that is appended before the
+               table string
+        encoding -- Characters encoding. Default: UTF-8
+        """
+        self.tables = tables
+        self.css = css
+        self.encoding = encoding
+
+    def __str__(self):
+        """Return the HTML page as a string."""
+        page = []
+
+        if self.css:
+            page.append('<style type="text/css">\n%s\n</style>' % self.css)
+
+        # Set encoding
+        page.append('<meta http-equiv="Content-Type" content="text/html;'
+            'charset=%s">' % self.encoding)
+
+        for table in self.tables:
+            page.append(str(table))
+            page.append('<br />')
+
+        return '\n'.join(page)
+
+    def __iter__(self):
+        """Iterate through tables"""
+        for table in self.tables:
+            yield table
+
+    def save(self, filename):
+        """Save HTML page to a file using the proper encoding"""
+        with codecs.open(filename, 'w', self.encoding) as outfile:
+            for line in str(self):
+                outfile.write(line)
+
+    def add_table(self, table):
+        """Add a SimpleTable to the page list of tables"""
+        self.tables.append(table)
+
+
+def __generate_html_table(data, path_to_html_file):
+    css = """
+    table.mytable {
+        font-family: times;
+        font-size:12px;
+        color:#000000;
+        border-width: 1px;
+        border-color: #eeeeee;
+        border-collapse: collapse;
+        background-color: #ffffff;
+        width=100%;
+        max-width:550px;
+        table-layout:fixed;
+    }
+    table.mytable th {
+        border-width: 1px;
+        padding: 8px;
+        border-style: solid;
+        border-color: #eeeeee;
+        background-color: #e6eed6;
+        color:#000000;
+    }
+    table.mytable td {
+        border-width: 1px;
+        padding: 8px;
+        border-style: solid;
+        border-color: #eeeeee;
+    }
+    #code {
+        display:inline;
+        font-family: courier;
+        color: #3d9400;
+    }
+    #string {
+        display:inline;
+        font-weight: bold;
+    }
+    """
+    # list of lists
+    table1 = SimpleTable(data,
+                         header_row=["-", "Movie Name", "Year", "Container", "Filename", "Size"],
+                         css_class='mytable')
+    page = HTMLPage()
+    page.add_table(table1)
+    page.css = css
+    page.save(path_to_html_file)
 
 # ##############################################################################
 # Helper functions
@@ -226,6 +483,13 @@ def __print_table(rows, colorize=True):
             if (((count % 2) == 0) and (colorize == True) and (not row_string.replace(" ", "").startswith("-|-|-"))):
                 row_string = ColorizeConsoleText.light_grey(row_string)
             print row_string
+
+        # need  headers as arg
+        #data = [['Hello,', 'hello!'], ['How', 'are', 'you?']]
+        #__generate_html_table(data, "/Users/sbradley/test.html")
+        __generate_html_table(rows, "/Users/sbradley/test.html")
+
+# #######################################################################
 
 def __get_tvdb_tv_show(pms_tv_show):
     # Put tvdb query in its own function to verify information and get correct
@@ -360,6 +624,7 @@ def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=Fals
             print
 
 def get_preferred_tags(ipart):
+    # The resolution and if multiple part tags always added.
     # List of Stack Suffixes: https://github.com/plexinc-plugins/Scanners.bundle/blob/master/Contents/Resources/Common/Stack.py#L12
     stack_suffixes = ['cd', 'dvd', 'part', 'pt', 'disk', 'disc', 'scene']
 
@@ -412,25 +677,12 @@ def get_pms_preferred_filename(pms_video, ipart):
     # Looks like pms detecting orrrectly and i fix it. Nee to look for those
     # other resolution tags and have them removed and replaced with what pms
     # says. I checked with mediainfo.
-
     if (pms_video.type == "movie"):
-        # ' or single quotes allowed.
-        # Fix names like the following:
-        # son city: street.m4v
-        # don city:gumball.m4v
-        # mr. man.m4v
-        # hot/cold.m4
-        pms_preferred_title = __format_item(pms_video.title).lower().replace(": ", "-").replace(":", "-").replace("/", "_").replace(". ", ".").replace("&", "and")
-        pms_preferred_filename= "%s(%s)%s.%s" %(pms_preferred_title,
+        pms_preferred_filename= "%s(%s)%s.%s" %(__format_item(pms_video.title).lower().replace(" ", "_").replace(":_", ":").replace("_-_", "-"),
                                                 __format_item(pms_video.year), __format_item(pms_preferred_tags),
                                                 __format_item(ipart.file.rsplit(".", 1)[1]).lower())
 
-    # If the character is not a valid character then remove from string.
-    valid_chars = "'-_.() %s%s" % (string.ascii_letters, string.digits)
-    pms_preferred_filename = ''.join(c for c in pms_preferred_filename if c in valid_chars)
-    pms_preferred_filename = pms_preferred_filename.replace(" ", "_")
     return pms_preferred_filename
-
 # ##############################################################################
 # Get user selected options
 # ##############################################################################
@@ -651,19 +903,6 @@ if __name__ == "__main__":
             streamHandler.setLevel(logging.CRITICAL)
 
         # #######################################################################
-        # Check for invalid options enabled.
-        # #######################################################################
-        if (len(cmdLineOpts.section_type) > 0) and (len(cmdLineOpts.section_name) > 0):
-            logging.getLogger(MAIN_LOGGER_NAME).error("The -t and -s options cannot be used at the same time.")
-            sys.exit(1)
-        elif (not len(cmdLineOpts.section_type) > 0) and (not len(cmdLineOpts.section_name) > 0):
-            logging.getLogger(MAIN_LOGGER_NAME).error("A value for the option -t or -s is required.")
-            sys.exit(1)
-        if ((cmdLineOpts.analyze) and (cmdLineOpts.show_missing_details)):
-            logging.getLogger(MAIN_LOGGER_NAME).error("The -a and -M options cannot be used at the same time.")
-            sys.exit(1)
-
-        # #######################################################################
         # Get login and password for connnecting to pms
         # #######################################################################
         if (not os.path.exists(CONFIG_FILE)):
@@ -685,6 +924,12 @@ if __name__ == "__main__":
         try:
             # convert to lowercase for comparing
             filename_extensions = [x.lower() for x in configParser.get("filenames", "filename_extensions").strip().split()]
+        except ConfigParser.NoOptionError:
+            # These can be skipped if not set.
+            pass
+        try:
+            # convert to lowercase for comparing
+            filename_tags = [x.lower() for x in configParser.get("filenames", "filename_tags").strip().split()]
         except ConfigParser.NoOptionError:
             # These can be skipped if not set.
             pass
@@ -752,6 +997,20 @@ if __name__ == "__main__":
                     (not (len(cmdLineOpts.section_name) > 0) and (not len(cmdLineOpts.section_type) > 0))):
                     logging.getLogger(MAIN_LOGGER_NAME).info("Refreshing section: %s(type: %s)" %(section.title, section.type))
                     section.refresh()
+                    # no noed to exit when doing this.
+
+        # #######################################################################
+        # Check for invalid options enabled.
+        # #######################################################################
+        if (len(cmdLineOpts.section_type) > 0) and (len(cmdLineOpts.section_name) > 0):
+            logging.getLogger(MAIN_LOGGER_NAME).error("The -t and -s options cannot be used at the same time.")
+            sys.exit(1)
+        elif (not len(cmdLineOpts.section_type) > 0) and (not len(cmdLineOpts.section_name) > 0):
+            logging.getLogger(MAIN_LOGGER_NAME).error("A value for the option -t or -s is required.")
+            sys.exit(1)
+        if ((cmdLineOpts.analyze) and (cmdLineOpts.show_missing_details)):
+            logging.getLogger(MAIN_LOGGER_NAME).error("The -a and -M options cannot be used at the same time.")
+            sys.exit(1)
 
         # #######################################################################
         # Analyze or print metadata to console
@@ -760,7 +1019,6 @@ if __name__ == "__main__":
         # analyze enable then analyze media and only output the tests that fail.
         logging.getLogger(MAIN_LOGGER_NAME).info("Fetching the metadata from sources can take some time, be patient.")
         if (cmdLineOpts.analyze):
-            # Analyze the media. Only display data where filenames is not match metadata or there metadata issue.
             logging.getLogger(MAIN_LOGGER_NAME).info("Analzying is still work in progress.")
             for section in pms.library.sections():
                 media_attributes = []
@@ -769,8 +1027,7 @@ if __name__ == "__main__":
                     for movie in section.all():
                         for ipart in movie.iter_parts():
                             if ((cmdLineOpts.container == ipart.container) or (not len(cmdLineOpts.container) > 0)):
-                                if (not os.path.basename(ipart.file) == get_pms_preferred_filename(movie, ipart)):
-                                    media_attributes.append([os.path.basename(ipart.file), get_pms_preferred_filename(movie, ipart)])
+                                media_attributes.append([os.path.basename(ipart.file), get_pms_preferred_filename(movie, ipart)])
                     if (len(media_attributes) > 0):
                         media_attributes.insert(0, ["filename", "filename based on PMS"])
                         __print_table(media_attributes)
@@ -789,7 +1046,6 @@ if __name__ == "__main__":
                             __analyze_tv_show(pms_tv_show)
 
         else:
-            # Just print information about the media.
             for section in pms.library.sections():
                 media_attributes = []
                 if (section.type == "movie") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):

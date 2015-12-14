@@ -367,7 +367,7 @@ class HTMLPage(object):
         self.tables.append(table)
 
 
-def __generate_html_table(data, path_to_html_file):
+def __generate_html_table(headers, data, path_to_html_file):
     css = """
     table.mytable {
         font-family: times;
@@ -406,11 +406,11 @@ def __generate_html_table(data, path_to_html_file):
     }
     """
     # list of lists
-    table1 = SimpleTable(data,
-                         header_row=["-", "Movie Name", "Year", "Container", "Filename", "Size"],
+    table = SimpleTable(data,
+                         header_row=headers,
                          css_class='mytable')
     page = HTMLPage()
-    page.add_table(table1)
+    page.add_table(table)
     page.css = css
     page.save(path_to_html_file)
 
@@ -447,12 +447,17 @@ def __format_item(item):
 # ##############################################################################
 # Helper functions for metadata
 # ##############################################################################
-def __print_table(rows, colorize=True):
+def __print_table(headers, rows, colorize=True, htmlize=False):
     """
     Prints out a table using the data in `rows`, which is assumed to be a
     sequence of sequences with the 0th element being the header.
     https://gist.github.com/lonetwin/4721748
+
+    If htmlize is enabled then create an html version of the output.
     """
+    # Insert the headers so that it gets the right spacing.
+    if (len(headers) > 0):
+        rows.insert(0, headers)
     # Convert all values in rows to strings.
     if (len(rows) > 0):
         converted_rows_to_str = []
@@ -484,10 +489,12 @@ def __print_table(rows, colorize=True):
                 row_string = ColorizeConsoleText.light_grey(row_string)
             print row_string
 
-        # need  headers as arg
-        #data = [['Hello,', 'hello!'], ['How', 'are', 'you?']]
-        #__generate_html_table(data, "/Users/sbradley/test.html")
-        __generate_html_table(rows, "/Users/sbradley/test.html")
+        if (htmlize):
+            converter_headers = []
+            if (len(headers) > 0):
+                converter_headers = converted_rows_to_str.pop(0)
+            __generate_html_table(converter_headers, converted_rows_to_str, "/tmp/pms_query.html")
+            logging.getLogger(MAIN_LOGGER_NAME).info("The output has been written to the file: /tmp/pms_query.html")
 
 # #######################################################################
 
@@ -554,7 +561,7 @@ def __analyze_tv_show(pms_tv_show, episode_container=""):
                     # check title
                     # some might include epidsode title
 
-def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=False):
+def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=False, htmlize=False):
     skip_specials = True
     tvdb_show = __get_tvdb_tv_show(pms_tv_show)
     if (tvdb_show == None):
@@ -601,8 +608,7 @@ def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=Fals
             except NotFound:
                 logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s for %s" %(season.index, pms_tv_show.title))
                 print "%s [Seasons: ?] [Episodes: ?]" %(pms_tv_show.title)
-            pms_tv_show_seasons_attributes.insert(0, ["Season Title", "PMS Episode Count", "Missing Episodes"])
-            __print_table(pms_tv_show_seasons_attributes)
+            __print_table(["Season Title", "PMS Episode Count", "Missing Episodes"], pms_tv_show_seasons_attributes, htmlize=cmdLineOpts.htmlize)
             # If enabled print details of episodes on tvdb.
             if (show_missing_details and (len(pms_tv_show_missing_episodes) > 0)):
                 print
@@ -617,8 +623,7 @@ def __print_tv_show(pms_tv_show, episode_container="", show_missing_details=Fals
                         logging.getLogger(MAIN_LOGGER_NAME).debug("Could not find season %s episode %s for %s" %(missing_episodes[0],
                                                                                                                  missing_episodes[1],
                                                                                                                  pms_tv_show.title))
-                missing_episodes_details.insert(0, ["Season", "Missing Episode", "Date Aired", "Missing Episode Title"])
-                __print_table(missing_episodes_details)
+                __print_table(["Season", "Missing Episode", "Date Aired", "Missing Episode Title"], missing_episodes_details, htmlize=cmdLineOpts.htmlize)
             print
             print "---------------------"
             print
@@ -710,6 +715,11 @@ def __getOptions(version) :
                          action="store_true",
                          dest="disableLoggingToConsole",
                          help="disables logging to console",
+                         default=False)
+    cmdParser.add_option("-H", "--htmlize",
+                         action="store_true",
+                         dest="htmlize",
+                         help="creates a html file of output",
                          default=False)
     cmdParser.add_option("-y", "--skip_confirmation",
                          action="store_true",
@@ -944,6 +954,19 @@ if __name__ == "__main__":
             sys.exit(1)
 
         # #######################################################################
+        # Check for invalid options enabled.
+        # #######################################################################
+        if (len(cmdLineOpts.section_type) > 0) and (len(cmdLineOpts.section_name) > 0):
+            logging.getLogger(MAIN_LOGGER_NAME).error("The -t and -s options cannot be used at the same time.")
+            sys.exit(1)
+        if ((not len(cmdLineOpts.section_type) > 0) and (not len(cmdLineOpts.section_name) > 0) and (not cmdLineOpts.refresh)):
+            logging.getLogger(MAIN_LOGGER_NAME).error("A value for the option -t or -s is required.")
+            sys.exit(1)
+        if ((cmdLineOpts.analyze) and (cmdLineOpts.show_missing_details)):
+            logging.getLogger(MAIN_LOGGER_NAME).error("The -a and -M options cannot be used at the same time.")
+            sys.exit(1)
+
+        # #######################################################################
         # Connect to PMS
         # #######################################################################
         message = "Connecting to your Plex Media Server: %s." %(pms_name)
@@ -984,8 +1007,7 @@ if __name__ == "__main__":
             for section in pms.library.sections():
                 sections.append([str(index), section.title, section.type])
                 index = index +  1;
-            sections.insert(0, ["-", "Section Name", "Section Type"])
-            __print_table(sections)
+            __print_table(["-", "Section Name", "Section Type"], sections)
             sys.exit()
 
         # #######################################################################
@@ -998,19 +1020,6 @@ if __name__ == "__main__":
                     logging.getLogger(MAIN_LOGGER_NAME).info("Refreshing section: %s(type: %s)" %(section.title, section.type))
                     section.refresh()
                     # no noed to exit when doing this.
-
-        # #######################################################################
-        # Check for invalid options enabled.
-        # #######################################################################
-        if (len(cmdLineOpts.section_type) > 0) and (len(cmdLineOpts.section_name) > 0):
-            logging.getLogger(MAIN_LOGGER_NAME).error("The -t and -s options cannot be used at the same time.")
-            sys.exit(1)
-        elif (not len(cmdLineOpts.section_type) > 0) and (not len(cmdLineOpts.section_name) > 0):
-            logging.getLogger(MAIN_LOGGER_NAME).error("A value for the option -t or -s is required.")
-            sys.exit(1)
-        if ((cmdLineOpts.analyze) and (cmdLineOpts.show_missing_details)):
-            logging.getLogger(MAIN_LOGGER_NAME).error("The -a and -M options cannot be used at the same time.")
-            sys.exit(1)
 
         # #######################################################################
         # Analyze or print metadata to console
@@ -1029,8 +1038,7 @@ if __name__ == "__main__":
                             if ((cmdLineOpts.container == ipart.container) or (not len(cmdLineOpts.container) > 0)):
                                 media_attributes.append([os.path.basename(ipart.file), get_pms_preferred_filename(movie, ipart)])
                     if (len(media_attributes) > 0):
-                        media_attributes.insert(0, ["filename", "filename based on PMS"])
-                        __print_table(media_attributes)
+                        __print_table(["filename", "filename based on PMS"], media_attributes, htmlize=cmdLineOpts.htmlize)
                         print
                         print "- \"?\": Represents unknown because parsing error occurred."
                         print "- \"*\": Represents incorrect value."
@@ -1066,10 +1074,9 @@ if __name__ == "__main__":
                         if (ccounter == "-"):
                             counter = counter + 1;
                     if (len(media_attributes) > 0):
-                        media_attributes.insert(0, ["%s" %(section.title), "Movie Name", "Year", "Container", "Filename", "Size"])
                         media_attributes.append(["-", "-", "-", "-", "-", "-"])
                         media_attributes.append(["-", "-", "-", "-", "Total Section Size:", __humanize_bytes(total_section_size, "GiB")])
-                        __print_table(media_attributes)
+                        __print_table(["%s" %(section.title), "Movie Name", "Year", "Container", "Filename", "Size"], media_attributes, htmlize=cmdLineOpts.htmlize)
                         print
                 elif (section.type == "show") and ((section.title == cmdLineOpts.section_name) or (section.type == cmdLineOpts.section_type)):
                     for pms_tv_show in section.all():
@@ -1080,8 +1087,12 @@ if __name__ == "__main__":
                             # Allow for multiple tv shows with same name. For
                             # example BSG.org and BGS.2003. I assume that
                             # metadata is for the correct show. Running analyze
-                            # should show if not.
-                            __print_tv_show(pms_tv_show, cmdLineOpts.container, cmdLineOpts.show_missing_details)
+                            # should show if not
+
+
+
+                            # NEED HEADER !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+                            __print_tv_show([], pms_tv_show, cmdLineOpts.container, cmdLineOpts.show_missing_details)
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

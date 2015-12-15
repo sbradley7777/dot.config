@@ -97,7 +97,35 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Change diff mode colors
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(eval-after-load 'diff-mode
-  '(progn
-     (set-face-foreground 'diff-added "green4")
-     (set-face-foreground 'diff-removed "red3")))
+;;(eval-after-load 'diff-mode
+;;  '(progn
+;;     (set-face-foreground 'diff-added "green5")
+;;     (set-face-foreground 'diff-removed "red5")))
+
+;; Customizing colors used in diff mode
+;;(defun custom-diff-colors ()
+;;  "update the colors for diff faces"
+;;  (set-face-attribute
+;;   'diff-added nil :foreground "blue")
+;;  (set-face-attribute
+;;   'diff-removed nil :foreground "red5")
+;;  (set-face-attribute
+;;   'diff-changed nil :foreground "purple")
+;;  (message "Setting diff mode colors." emacs-version))
+;;(eval-after-load "diff-mode" '(custom-diff-colors))
+
+(defun custom-diff-colors ()
+  "update the colors for diff faces"
+  (set-face-foreground 'diff-header "purple")
+  (set-face-background 'diff-header "blue")
+  (set-face-foreground 'diff-file-header "purple")
+  (set-face-background 'diff-file-header "blue")
+  (set-face-foreground 'diff-index "green2")
+  (set-face-background 'diff-index "blue")
+  (set-face-foreground 'diff-added "green2")
+  (set-face-background 'diff-added "blue")
+  (set-face-foreground 'diff-removed "red2")
+  (set-face-background 'diff-removed "blue")
+  (set-face-foreground 'diff-changed "purple")
+  (message "Setting diff mode colors." emacs-version))
+(eval-after-load "diff-mode" '(custom-diff-colors))

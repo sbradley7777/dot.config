@@ -81,7 +81,7 @@ if [[ `type bugzilla &> /dev/null` -eq "0" ]] ; then
 
     # Query that includes flags to see what acks they have.
     alias sosbzq_six_acks='bugzilla query --product "Red Hat Enterprise Linux 6" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV --outputformat "%{id} | %{bug_status} | %{assigned_to} | %{short_desc} | %{flags}"'
-    alias sosbzq_six_acks='bugzilla query --product "Red Hat Enterprise Linux 7" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV --outputformat "%{id} | %{bug_status} | %{assigned_to} | %{short_desc} | %{flags}"'
+    alias sosbzq_seven_acks='bugzilla query --product "Red Hat Enterprise Linux 7" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV --outputformat "%{id} | %{bug_status} | %{assigned_to} | %{short_desc} | %{flags}"'
 
     # Markdown formatted
     alias sosbzq_six_md='bugzilla query --product "Red Hat Enterprise Linux 6" --component sos -t NEW,ASSIGNED,POST,MODIFIED,ON_DEV --outputformat "* [%{id} - %{short_desc}](https://bugzilla.redhat.com/show_bug.cgi?id=%{id})"';

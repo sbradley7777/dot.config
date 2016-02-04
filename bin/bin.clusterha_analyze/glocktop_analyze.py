@@ -10,7 +10,8 @@
 TODO:
 
 * Need to catch DLM on the filesystem line.
-* Move the filesystem line parser to its own function.
+* Need table formatter
+* warning on high demote_seconds, high waiter count, high DLM traffic.
 
 """
 import sys
@@ -61,6 +62,17 @@ class GFS2FilesystemSnapshot():
 
     def get_glocks(self):
         return self.__glocks
+
+    def find_glock(self, glock_type, glock_inode):
+        glocks = []
+        for glock in self.get_glocks():
+            if (glock_inode == glock.get_inode()):
+                if (0 < cmdline_opts.glock_type < 10):
+                    if (glock_type == glock.get_type()):
+                        glocks.append(glock)
+                else:
+                    glocks.append(glock)
+        return glocks
 
 class Glock():
     def __init__(self, gtype, inode, state, demote_time):
@@ -227,20 +239,15 @@ def __get_options(version) :
                           help="the minimum number of waiters for a glock",
                           type="int",
                           metavar="<minimum waiter count>",
-                          default=2)
-    cmd_parser.add_option("-S", "--no_glock_summary",
+                          default=1)
+    cmd_parser.add_option("-W", "--disable_show_waiters",
                           action="store_true",
-                          dest="no_glock_summary",
-                          help="the glock summary is not displayed",
-                          default=False)
-    cmd_parser.add_option("-w", "--show_waiters",
-                          action="store_true",
-                          dest="show waiters",
-                          help="the waiters are displayed",
+                          dest="disable_show_waiters",
+                          help="the waiters for the glocks are not displayed in the output",
                           default=False)
     cmd_parser.add_option("-g", "--find_glock",
                           action="store",
-                          dest="glock_number",
+                          dest="glock_inode",
                           help="a glock hexadecimal number to search for",
                           type="string",
                           metavar="0x<glock number>",
@@ -248,7 +255,7 @@ def __get_options(version) :
     cmd_parser.add_option("-G", "--find_glock_type",
                           action="store",
                           dest="glock_type",
-                          help="a glock type to search for",
+                          help="a glock type to search for (requires glock number (-g))",
                           type="int",
                           metavar="<glock type>",
                           default=None)
@@ -356,14 +363,17 @@ if __name__ == "__main__":
             if (not (0 < cmdline_opts.glock_type < 10)):
                 logging.getLogger(MAIN_LOGGER_NAME).error("The glock type (-G) must be an integer between 1 - 9.")
                 sys.exit(1)
+        if (not cmdline_opts.minimum_waiter_count > 0):
+            logging.getLogger(MAIN_LOGGER_NAME).error("The minimum holder count for a glock (-m) must be a positive integer.")
+            sys.exit(1)
 
-        glock_number = ""
-        if (cmdline_opts.glock_number):
+        glock_inode = ""
+        if (cmdline_opts.glock_inode):
             try:
-                if (cmdline_opts.glock_number.startswith("0x")):
-                    glock_number = int("%s" %(cmdline_opts.glock_number), 16)
+                if (cmdline_opts.glock_inode.startswith("0x")):
+                    int("%s" %(cmdline_opts.glock_inode), 16)
                 else:
-                    glock_number = int("0x%s" %(cmdline_opts.glock_number), 16)
+                    int("0x%s" %(cmdline_opts.glock_inode), 16)
             except ValueError:
                 logging.getLogger(MAIN_LOGGER_NAME).error("The glock number (-g) must be a hexadecimal number.")
                 sys.exit(1)
@@ -375,7 +385,7 @@ if __name__ == "__main__":
         # Run main
         # #######################################################################
         message ="The file will be analyzed: %s" %(cmdline_opts.path_to_src_file)
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
+        logging.getLogger(MAIN_LOGGER_NAME).debug(message)
         # Get the data as a list of lines
         lines = get_data_from_file(cmdline_opts.path_to_src_file)
 
@@ -424,16 +434,65 @@ if __name__ == "__main__":
                     glock.add_holder(sline)
                 # Add the rest of the ones like I/R/* and any other ones.
             snapshots.append(gfs2_snapshot)
-
         # The data has been processed and now will be analyzed.
+
+        # #######################################################################
+        # Analyze the data
+        # #######################################################################
+
+        summary = ""
         for snapshot in snapshots:
-            print snapshot
+            current_summary = ""
+            glocks = []
+            if (cmdline_opts.glock_inode):
+                # Find particular glocks.
+                glocks = snapshot.find_glock(cmdline_opts.glock_type, cmdline_opts.glock_inode.replace("0x", ""))
+            else:
+                glocks = snapshot.get_glocks()
+            for glock in glocks:
+                glock_holders = glock.get_holders()
+                if (len(glock_holders) >= cmdline_opts.minimum_waiter_count):
+                    current_summary += "  %s\n" %(glock)
+                    if (not cmdline_opts.disable_show_waiters):
+                        for holder in glock_holders:
+                            current_summary +="    %s\n" %(holder)
+            if (current_summary):
+                summary += "%s\n%s\n" %(snapshot, current_summary)
+        print summary
+
+
+
+
+        # Print stats, like the number of times that glock showed up, number of iterations of the filesystem, number of times a pid shows up
+        filesystem_count = {}
+        glock_count = {}
+        for snapshot in snapshots:
+            filesystem_name = snapshot.get_filesystem_name()
+            if (filesystem_count.has_key(filesystem_name)):
+                filesystem_count[filesystem_name] = filesystem_count.get(filesystem_name) + 1
+            else:
+                filesystem_count[filesystem_name] = 1
             for glock in snapshot.get_glocks():
-                print "  %s" %(glock)
-                for holder in glock.get_holders():
-                    print "    %s" %(holder)
-            print
-    except KeyboardInterrupt:
+                glock_type_inode = "%s/%s" %(glock.get_type(), glock.get_inode())
+                if (glock_count.has_key(glock_type_inode)):
+                    glock_count[glock_type_inode] = glock_count.get(glock_type_inode) + 1
+                else:
+                    glock_count[glock_type_inode] = 1
+
+        # Need my table formatter.
+        print "Filesystems"
+        for key in filesystem_count.keys():
+            print "%s: %s" %(key, filesystem_count.get(key))
+        print
+
+        print "Glocks"
+        from operator import itemgetter
+        for pair in sorted(glock_count.items(), key=itemgetter(1), reverse=True):
+            if (pair[1] > 1):
+                print "(%s): %s" %(pair[0], pair[1])
+        print "** ignoring glocks that occurred once"
+ 
+   except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."
         logging.getLogger(MAIN_LOGGER_NAME).error(message)

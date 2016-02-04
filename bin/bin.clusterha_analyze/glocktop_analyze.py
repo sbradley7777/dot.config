@@ -5,6 +5,13 @@
 @contact   : sbradley@redhat.com
 @version   : 0.1
 @copyright : GPLv2
+
+
+TODO:
+
+* Need to catch DLM on the filesystem line.
+* Move the filesystem line parser to its own function.
+
 """
 import sys
 import logging
@@ -35,6 +42,8 @@ class GFS2FilesystemSnapshot():
         self.__hostname = hostname
         self.__date_time = date_time
 
+        self.__glocks = []
+
     def __str__(self):
         return "%s - %s %s" %(self.get_filesystem_name(), str(self.get_date_time()), self.get_hostname())
 
@@ -47,24 +56,85 @@ class GFS2FilesystemSnapshot():
     def get_date_time(self):
         return self.__date_time
 
+    def add_glock(self, glock):
+        self.__glocks.append(glock)
+
+    def get_glocks(self):
+        return self.__glocks
+
 class Glock():
-    def __init__(self):
-        pass
+    def __init__(self, gtype, inode, state, demote_time):
+        self.__type = gtype
+        self.__inode = inode
+        self.__state = state
+        self.__demote_time = demote_time
+
+        # This list contains the holder and other waiting to be holders(waiters)
+        self.__holders = []
+
+    def __str__(self):
+        return "(%s/%s) state: %s | demote_time: %sms | hw count: %d" %(self.get_type(),
+                                                                        self.get_inode(),
+                                                                        self.get_state(),
+                                                                        self.get_demote_time(),
+                                                                        len(self.get_holders()))
+
+    def get_type(self):
+        return self.__type
+
+    def get_inode(self):
+        return self.__inode
+
+    def get_state(self):
+        return self.__state
+
+    def get_demote_time(self):
+        return self.__demote_time
+
+    def add_holder(self, holder):
+        self.__holders.append(holder)
+
+    def get_holders(self):
+        return self.__holders
+
+    def get_current_holder(self):
+        # Return None or empty string if none have flag "h" and all are waiters
+        # with "w" flag.
+        return
+
 
 # #####################################################################
 # Parsers
 # #####################################################################
+def parse_header(line):
+    # @ nate_bob1       Mon Feb  1 15:04:11 2016  @host-050.virt.lab.msp.redhat.com
+
+    days = "(?P<day>%s)" % '|'.join(calendar.day_abbr[0:])
+    months = "(?P<month>%s)" % '|'.join(calendar.month_abbr[1:])
+    dow = "(?P<dow>\d{1,2})"
+    time = "(?P<time>\d{1,2}:\d\d:\d\d)"
+    year = "(?P<year>\d{4})"
+    hostname = "@(?P<hostname>.*)"
+    regex = "^@ (?P<filesystem>\w+)\s+%s\s%s\s*%s\s%s\s%s\s\s%s" %(days, months, dow, time, year, hostname)
+
+    rem = re.compile(regex)
+    mo = rem.match(line)
+    if mo:
+        date_time = datetime.strptime("%s %s %s %s" %(mo.group("month"), mo.group("dow"), mo.group("year"), mo.group("time")), "%b %d %Y %H:%M:%S")
+        return GFS2FilesystemSnapshot(mo.group("filesystem"),  mo.group("hostname"), date_time)
+    return None
+
 def parse_glock(line):
-    #G:  s:EX n:2/181ec f:yIqob t:EX d:EX/0 a:1 v:0 r:3 m:200 (unknowninode)
-    regex = re.compile("^G:  s:(?P<state>\S+) n:(?P<type>\d)/(?P<inodeNumber>\S+) f:(?P<flags>\S*) t:(?P<target>\S+) d:(?P<demote_state>\S+)/(?P<demote_time>\d+)( l:(?P<lvbs>\d+))? a:(?P<ails>\d+)( v:(?P<v>\d+))? r:(?P<refs>\d+)( m:(?P<hold>\d+)) \((?P<glock_type>.*)\)")
+    # G:  s:EX n:2/6fd40 f:lDpfiIqo t:UN d:UN/71000 a:0 v:4 r:5 m:10 (unknowninode)
+    regex = re.compile("^G:  s:(?P<state>\S+) n:(?P<type>\d)/(?P<inodeNumber>\S+)\s" + \
+                        "f:(?P<flags>\S*)\st:(?P<target>\S+)\sd:(?P<demote_state>\S+)/" + \
+                       "(?P<demote_time>\d+)( l:(?P<lvbs>\d+))?\sa:(?P<ails>\d+)" +\
+                       "( v:(?P<v>\d+))?\sr:(?P<refs>\d+)( m:(?P<hold>\d+))\s" + \
+                       "\((?P<glock_type>.*)\)")
     mo = regex.match(line)
     if mo:
-        # inodeNumber is hexadecimal.
-        return line
-        #return GFS2Glock(line, mo.group("state"), int(mo.group("type")),
-        #                 int(mo.group("inodeNumber"), 16), mo.group("flags"),
-        #                 mo.group("target"), mo.group("demote_state"),
-        #                 mo.group("demote_time"), mo.group("ails"), mo.group("refs"))
+        #return Glock(int(mo.group("type")), int(mo.group("inodeNumber"), 16), mo.group("state"), mo.group("demote_time"))
+        return Glock(int(mo.group("type")), mo.group("inodeNumber"), mo.group("state"), mo.group("demote_time"))
     return None
     parse_glock = staticmethod(parse_glock)
 
@@ -304,40 +374,65 @@ if __name__ == "__main__":
         # #######################################################################
         # Run main
         # #######################################################################
-
-
-
-
         message ="The file will be analyzed: %s" %(cmdline_opts.path_to_src_file)
         logging.getLogger(MAIN_LOGGER_NAME).info(message)
         # Get the data as a list of lines
         lines = get_data_from_file(cmdline_opts.path_to_src_file)
 
-        # @ nate_bob1       Mon Feb  1 15:04:11 2016  @host-050.virt.lab.msp.redhat.com
-
-        #date_expr = r"\d{2} (?:%s) \d{4}" % '|'.join(calendar.month_abbr[1:])
-        days = "(?P<day>%s)" % '|'.join(calendar.day_abbr[0:])
-        months = "(?P<month>%s)" % '|'.join(calendar.month_abbr[1:])
-        dow = "(?P<dow>\d{1,2})"
-        time = "(?P<time>\d{1,2}:\d\d:\d\d)"
-        year = "(?P<year>\d{4})"
-        hostname = "@(?P<hostname>.*)"
-        regex = "^@ (?P<filesystem>\w+)\s+%s\s%s\s*%s\s%s\s%s\s\s%s" %(days, months, dow, time, year, hostname)
-
-        glocks = []
+        #All the snapshots for all the filesystems.
+        snapshots = []
+        # The glock that will have a container for all the lines associated with
+        # the glock.
+        gfs2_snapshot = None
+        # The lines that are related to this snapshot of the
+        # filesystem. Including glocks, waiters, etc.
+        snapshot_lines = []
         for line in lines:
-            if (line.startswith("@")):
-                rem = re.compile(regex)
-                mo = rem.match(line)
-                if mo:
-                    date_time = datetime.strptime("%s %s %s %s" %(mo.group("month"), mo.group("dow"), mo.group("year"), mo.group("time")), "%b %d %Y %H:%M:%S")
-                    gfs2_snapshot = GFS2FilesystemSnapshot(mo.group("filesystem"),  mo.group("hostname"), date_time)
-                    print gfs2_snapshot
-            if (line.startswith("G")):
-                print parse_glock(line)
-        # I could split these sections up into time slices + filesystem. Kind of group them together.
-        # Then take each section and analyze that section
+            if ((line.startswith("@")) or (not len(line) > 0)):
+                if (not gfs2_snapshot == None):
+                    # Process any previous snapshot lines before starting a
+                    # new one. All the glocks, holder/waiters, etc.
+                    glock = None
+                    for sline in snapshot_lines:
+                        if (sline.startswith("G")):
+                            glock = parse_glock(sline)
+                            gfs2_snapshot.add_glock(glock)
+                        if ((not glock == None) and sline.startswith("H")):
+                            glock.add_holder(sline)
+                        # Add the rest of the ones like I/R/* and any other ones.
+                    snapshots.append(gfs2_snapshot)
+                # Process the new snapshot
+                gfs2_snapshot = parse_header(line)
+                snapshot_lines = []
+            elif (line.startswith("S")):
+                # Skip summary lines for now.
+                continue
+            elif (line.startswith("U")):
+                # Skip friendly lines for now.
+                continue
+            else:
+                snapshot_lines.append(line)
 
+        # Process any remaining items
+        if (not gfs2_snapshot == None):
+            glock = None
+            for sline in snapshot_lines:
+                if (sline.startswith("G")):
+                    glock = parse_glock(sline)
+                    gfs2_snapshot.add_glock(glock)
+                if ((not glock == None) and sline.startswith("H")):
+                    glock.add_holder(sline)
+                # Add the rest of the ones like I/R/* and any other ones.
+            snapshots.append(gfs2_snapshot)
+
+        # The data has been processed and now will be analyzed.
+        for snapshot in snapshots:
+            print snapshot
+            for glock in snapshot.get_glocks():
+                print "  %s" %(glock)
+                for holder in glock.get_holders():
+                    print "    %s" %(holder)
+            print
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

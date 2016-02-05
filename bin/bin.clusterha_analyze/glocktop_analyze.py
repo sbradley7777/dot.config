@@ -25,6 +25,9 @@ from datetime import datetime
 import re
 import calendar
 
+# For tableize()
+import locale
+locale.setlocale(locale.LC_NUMERIC, "")
 
 # #####################################################################
 # Global vars:
@@ -35,7 +38,6 @@ MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 # #####################################################################
 # Classes
 # #####################################################################
-
 class GFS2FilesystemSnapshot():
     # A collection of glocks for a filesystem at a specific time.
     def __init__(self, filesystem_name, hostname, date_time):
@@ -83,6 +85,7 @@ class Glock():
 
         # This list contains the holder and other waiting to be holders(waiters)
         self.__holders = []
+        self.__glock_object = None
 
     def __str__(self):
         return "(%s/%s) state: %s | demote_time: %sms | hw count: %d" %(self.get_type(),
@@ -114,6 +117,113 @@ class Glock():
         # with "w" flag.
         return
 
+    def add_glock_object(self, glock_object):
+        self.__glock_object = glock_object
+
+    def get_glock_object(self):
+        return self.__glock_object
+
+class GlockWaiter():
+    # The GlockWaiter can be the holder of glock or waiter of glocks
+    def __init__(self, line):
+        self.__line = line
+
+    def __str__(self):
+        return self.__line
+
+class GlockObject():
+    # The "I:" describes an inode associated with the lock, "R:" describes an
+    # resource group associated with the glock, and "B:" describes a reservation
+    # associated with a resource group.
+    def __init__(self, line):
+        self.__line = line
+
+    def __str__(self):
+        return self.__line
+
+
+# #####################################################################
+# Helper classes
+# #####################################################################
+class ColorizeConsoleText(object):
+    """
+    References from:
+    - https://gist.github.com/Jossef/0ee20314577925b4027f and modified bit.
+    - https://gist.github.com/arulrajnet/47ff2674ad9da6dcac00
+    - http://misc.flogisoft.com/bash/tip_colors_and_formatting (colors)
+    """
+
+    def __init__(self, text, **user_styles):
+
+        styles = {
+            # styles
+            'reset': '\033[0m',
+            'bold': '\033[01m',
+            'disabled': '\033[02m',
+            'underline': '\033[04m',
+            'reverse': '\033[07m',
+            'strike_through': '\033[09m',
+            'invisible': '\033[08m',
+            # text colors
+            'fg_black': '\033[30m',
+            'fg_red': '\033[31m',
+            'fg_green': '\033[32m',
+            'fg_orange': '\033[33m',
+            'fg_blue': '\033[34m',
+            'fg_purple': '\033[35m',
+            'fg_cyan': '\033[36m',
+            'fg_light_grey': '\033[37m',
+            'fg_dark_grey': '\033[90m',
+            'fg_light_red': '\033[91m',
+            'fg_light_green': '\033[92m',
+            'fg_yellow': '\033[93m',
+            'fg_light_blue': '\033[94m',
+            'fg_pink': '\033[95m',
+            'fg_light_cyan': '\033[96m',
+            'fg_white': '\033[97m',
+            'fg_default': '\033[99m',
+            # background colors
+            'bg_black': '\033[40m',
+            'bg_red': '\033[41m',
+            'bg_green': '\033[42m',
+            'bg_orange': '\033[43m',
+            'bg_blue': '\033[44m',
+            'bg_purple': '\033[45m',
+            'bg_cyan': '\033[46m',
+            'bg_light_grey': '\033[47m'
+        }
+
+        self.color_text = ''
+        for style in user_styles:
+            try:
+                self.color_text += styles[style]
+            except KeyError:
+                raise KeyError("ERROR: def color: parameter `{}` does not exist".format(style))
+
+        self.color_text += text
+
+    def __format__(self):
+        return '\033[0m{}\033[0m'.format(self.color_text)
+
+    @classmethod
+    def red(clazz, text):
+        cls = clazz(text, bold=True, fg_red=True)
+        return cls.__format__()
+
+    @classmethod
+    def orange(clazz, text):
+        cls = clazz(text, bold=True, fg_orange=True)
+        return cls.__format__()
+
+    @classmethod
+    def green(clazz, text):
+        cls = clazz(text, bold=True, fg_green=True)
+        return cls.__format__()
+
+    @classmethod
+    def custom(clazz, text, **custom_styles):
+        cls = clazz(text, **custom_styles)
+        return cls.__format__()
 
 # #####################################################################
 # Parsers
@@ -153,6 +263,35 @@ def parse_glock(line):
 # #####################################################################
 # Helper File Functions
 # ####################################################################
+def tableize(table, header):
+    if (not len(table) > 0):
+        return ""
+
+    table.insert(0, header)
+    def format_num(num):
+        try:
+            inum = int(num)
+            return locale.format("%.*f", (0, inum), True)
+        except (ValueError, TypeError):
+            return str(num)
+
+    def get_max_width(table, index):
+        return max([len(format_num(row[index])) for row in table])
+    col_paddings = []
+
+    for i in range(len(table[0])):
+        col_paddings.append(get_max_width(table, i))
+
+    ftable = ""
+    for row in table:
+        # left col
+        ftable += str(row[0].ljust(col_paddings[0] + 1))
+        # rest of the cols
+        for i in range(1, len(row)):
+            col = format_num(row[i]).rjust(col_paddings[i] + 2)
+            ftable += str(col)
+        ftable += "\n"
+    return ftable
 
 def write_to_file(path_to_filename, data, append_to_file=True, create_file=False):
     [parent_dir, filename] = os.path.split(path_to_filename)
@@ -407,8 +546,13 @@ if __name__ == "__main__":
                         if (sline.startswith("G")):
                             glock = parse_glock(sline)
                             gfs2_snapshot.add_glock(glock)
-                        if ((not glock == None) and sline.startswith("H")):
-                            glock.add_holder(sline)
+                        elif (not glock == None and sline.startswith("H")):
+                            glock.add_holder(GlockWaiter(sline))
+                        elif ((not glock == None) and
+                              (sline.startswith("I") or
+                               sline.startswith("R") or
+                               sline.startswith("B"))):
+                            glock.add_glock_object(GlockObject(sline))
                         # Add the rest of the ones like I/R/* and any other ones.
                     snapshots.append(gfs2_snapshot)
                 # Process the new snapshot
@@ -440,6 +584,7 @@ if __name__ == "__main__":
         # Analyze the data
         # #######################################################################
 
+        # Print summary of data analyzed
         summary = ""
         for snapshot in snapshots:
             current_summary = ""
@@ -455,17 +600,24 @@ if __name__ == "__main__":
                     current_summary += "  %s\n" %(glock)
                     if (not cmdline_opts.disable_show_waiters):
                         for holder in glock_holders:
-                            current_summary +="    %s\n" %(holder)
+                            current_summary += "    %s\n" %(holder)
+                        if (not glock.get_glock_object() == None):
+                            current_summary += "    %s\n" %(glock.get_glock_object())
             if (current_summary):
-                summary += "%s\n%s\n" %(snapshot, current_summary)
+                summary += "%s\n%s\n" %(ColorizeConsoleText.red(str(snapshot)), current_summary)
         print summary
 
+        # Print stats
+        # * like the number of times that glock showed up, number of iterations of the filesystem, number of times a pid shows up
+        # * peak for highest number of holder/waiters for each glock
+        # * glock with higher than zero demote_seconds
+        # * Need my table formatter.
 
 
-
-        # Print stats, like the number of times that glock showed up, number of iterations of the filesystem, number of times a pid shows up
+        # Build structure so that filesystem, glocks stats can be analyzed
         filesystem_count = {}
         glock_count = {}
+        glock_high_demote_seconds = {}
         for snapshot in snapshots:
             filesystem_name = snapshot.get_filesystem_name()
             if (filesystem_count.has_key(filesystem_name)):
@@ -478,21 +630,43 @@ if __name__ == "__main__":
                     glock_count[glock_type_inode] = glock_count.get(glock_type_inode) + 1
                 else:
                     glock_count[glock_type_inode] = 1
+                demote_time = int(glock.get_demote_time())
+                if (demote_time > 0):
+                    if (glock_high_demote_seconds.has_key(glock_type_inode)):
+                        c_demote_time = glock_high_demote_seconds.get(glock_type_inode)
+                        c_demote_time += " %ds" %(demote_time)
+                        glock_high_demote_seconds[glock_type_inode] = c_demote_time
+                    else:
+                        glock_high_demote_seconds[glock_type_inode] = "%ss" %(demote_time)
 
-        # Need my table formatter.
-        print "Filesystems"
+
+        # Print filesystem stats
+        table = []
         for key in filesystem_count.keys():
-            print "%s: %s" %(key, filesystem_count.get(key))
-        print
+            table.append([key, filesystem_count.get(key)])
+        ftable = tableize(table, ["Filesystem", "Snapshots"])
+        if (len(ftable) > 0):
+            print ftable
 
-        print "Glocks"
+        # Print glock stats
+        table = []
         from operator import itemgetter
         for pair in sorted(glock_count.items(), key=itemgetter(1), reverse=True):
             if (pair[1] > 1):
-                print "(%s): %s" %(pair[0], pair[1])
-        print "** ignoring glocks that occurred once"
- 
-   except KeyboardInterrupt:
+                table.append([pair[0], pair[1]])
+        ftable = tableize(table, ["Glock Type/Glocks Inode", "Holder/Waiter Count"])
+        if (len(ftable) > 0):
+            print ftable
+
+        # Glock + filesystem with high demote seconds.
+        table = []
+        for key in glock_high_demote_seconds.keys():
+            table.append([key, glock_high_demote_seconds.get(key)])
+        ftable = tableize(table, ["Glock Type/Glocks Inode", "High Demote Seconds that occurred"])
+        if (len(ftable) > 0):
+            print ftable
+
+    except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."
         logging.getLogger(MAIN_LOGGER_NAME).error(message)

@@ -1,7 +1,5 @@
 #!/usr/bin/python
-"""
-
-@author    : Shane Bradley
+"""@author    : Shane Bradley
 @contact   : sbradley@redhat.com
 @version   : 0.1
 @copyright : GPLv2
@@ -9,10 +7,20 @@
 
 TODO:
 
+* Need to create function for the duplicate code when i reading the lines for G
+  H R B I stuff.
+
+* Could i combine the data into 1 file. Take 8 glocktops, then write to 1 file
+  with everything sorted by date to see what is happenign on all nodes at around
+  same time. Do not think a way to group cause started at different times and
+  takes different times to print data.
+
 * Need to catch DLM on the filesystem line.
 * Need table formatter
 * warning on high demote_seconds, high waiter count, high DLM traffic.
-
+* Need to colorize tables in stats for ever other line.
+* Finish remaining stat lines
+* Include DLM as one of the stat ones.
 """
 import sys
 import logging
@@ -112,35 +120,104 @@ class Glock():
     def get_holders(self):
         return self.__holders
 
-    def get_current_holder(self):
-        # Return None or empty string if none have flag "h" and all are waiters
-        # with "w" flag.
-        return
-
     def add_glock_object(self, glock_object):
         self.__glock_object = glock_object
 
     def get_glock_object(self):
         return self.__glock_object
 
-class GlockWaiter():
-    # The GlockWaiter can be the holder of glock or waiter of glocks
-    def __init__(self, line):
-        self.__line = line
+class GlockHolder:
+    # The GlockHolder can be the holder of glock or waiter of glocks
+    def __init__(self, text, state, flags, error, pid, comm):
+        self.__text = text
+        self.__state = state
+        self.__flags = flags
+        self.__error = error
+        self.__pid = pid
+        self.__comm = comm
 
     def __str__(self):
-        return self.__line
+        return self.get_text()
+
+    def get_text(self):
+        return self.__text
+
+    def get_state(self):
+        return self.__state
+
+    def get_flags(self):
+        return self.__flags
+
+    def get_error(self):
+        return self.__error
+
+    def get_pid(self):
+        return self.__pid
+
+    def get_command(self):
+        return self.__command
 
 class GlockObject():
     # The "I:" describes an inode associated with the lock, "R:" describes an
     # resource group associated with the glock, and "B:" describes a reservation
     # associated with a resource group.
-    def __init__(self, line):
-        self.__line = line
+    def __init__(self, text):
+        self.__text = text
 
     def __str__(self):
-        return self.__line
+        return self.get_text()
 
+    def get_text(self):
+        return self.__text
+
+# #####################################################################
+# Parsers
+# #####################################################################
+def parse_header(line):
+    # @ nate_bob1       Mon Feb  1 15:04:11 2016  @host-050.virt.lab.msp.redhat.com
+
+    days = "(?P<day>%s)" % '|'.join(calendar.day_abbr[0:])
+    months = "(?P<month>%s)" % '|'.join(calendar.month_abbr[1:])
+    dow = "(?P<dow>\d{1,2})"
+    time = "(?P<time>\d{1,2}:\d\d:\d\d)"
+    year = "(?P<year>\d{4})"
+    hostname = "@(?P<hostname>.*)"
+    regex = "^@ (?P<filesystem>\w+)\s+%s\s%s\s*%s\s%s\s%s\s\s%s" %(days, months, dow, time, year, hostname)
+
+    rem = re.compile(regex)
+    mo = rem.match(line)
+    if mo:
+        date_time = datetime.strptime("%s %s %s %s" %(mo.group("month"), mo.group("dow"), mo.group("year"), mo.group("time")), "%b %d %Y %H:%M:%S")
+        return GFS2FilesystemSnapshot(mo.group("filesystem"),  mo.group("hostname"), date_time)
+    return None
+
+def parse_glock(line):
+    # G:  s:EX n:2/6fd40 f:lDpfiIqo t:UN d:UN/71000 a:0 v:4 r:5 m:10 (unknowninode)
+    regex = re.compile("^G:  s:(?P<state>\S+) n:(?P<type>\d)/(?P<inodeNumber>\S+)\s" + \
+                        "f:(?P<flags>\S*)\st:(?P<target>\S+)\sd:(?P<demote_state>\S+)/" + \
+                       "(?P<demote_time>\d+)( l:(?P<lvbs>\d+))?\sa:(?P<ails>\d+)" +\
+                       "( v:(?P<v>\d+))?\sr:(?P<refs>\d+)( m:(?P<hold>\d+))\s" + \
+                       "\((?P<glock_type>.*)\)")
+    mo = regex.match(line)
+    if mo:
+        #return Glock(int(mo.group("type")), int(mo.group("inodeNumber"), 16), mo.group("state"), mo.group("demote_time"))
+        return Glock(int(mo.group("type")), mo.group("inodeNumber"), mo.group("state"), mo.group("demote_time"))
+    return None
+    parse_glock = staticmethod(parse_glock)
+
+def parse_glock_holder(line):
+    regex = re.compile("^H: s:(\S+) f:(\S+) e:(\d+) p:(\d+) \[(\S+)\] (.+)")
+    mo = regex.match(line)
+    if mo:
+        #     def __init__(self, text, state, flags, error, pid, comm):
+        return GlockHolder(line, mo.group(1), mo.group(2), mo.group(3),
+                           mo.group(4), mo.group(5))
+        #return GFS2GlockHolder(line.strip().rstrip(),mo.group(1), mo.group(2),
+        #                       mo.group(3), mo.group(4), mo.group(5), mo.group(6))
+    message = "There was an error parsing this line: %s" %(line)
+    logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+    return None
+    parse_glock_holder = staticmethod(parse_glock_holder)
 
 # #####################################################################
 # Helper classes
@@ -224,41 +301,6 @@ class ColorizeConsoleText(object):
     def custom(clazz, text, **custom_styles):
         cls = clazz(text, **custom_styles)
         return cls.__format__()
-
-# #####################################################################
-# Parsers
-# #####################################################################
-def parse_header(line):
-    # @ nate_bob1       Mon Feb  1 15:04:11 2016  @host-050.virt.lab.msp.redhat.com
-
-    days = "(?P<day>%s)" % '|'.join(calendar.day_abbr[0:])
-    months = "(?P<month>%s)" % '|'.join(calendar.month_abbr[1:])
-    dow = "(?P<dow>\d{1,2})"
-    time = "(?P<time>\d{1,2}:\d\d:\d\d)"
-    year = "(?P<year>\d{4})"
-    hostname = "@(?P<hostname>.*)"
-    regex = "^@ (?P<filesystem>\w+)\s+%s\s%s\s*%s\s%s\s%s\s\s%s" %(days, months, dow, time, year, hostname)
-
-    rem = re.compile(regex)
-    mo = rem.match(line)
-    if mo:
-        date_time = datetime.strptime("%s %s %s %s" %(mo.group("month"), mo.group("dow"), mo.group("year"), mo.group("time")), "%b %d %Y %H:%M:%S")
-        return GFS2FilesystemSnapshot(mo.group("filesystem"),  mo.group("hostname"), date_time)
-    return None
-
-def parse_glock(line):
-    # G:  s:EX n:2/6fd40 f:lDpfiIqo t:UN d:UN/71000 a:0 v:4 r:5 m:10 (unknowninode)
-    regex = re.compile("^G:  s:(?P<state>\S+) n:(?P<type>\d)/(?P<inodeNumber>\S+)\s" + \
-                        "f:(?P<flags>\S*)\st:(?P<target>\S+)\sd:(?P<demote_state>\S+)/" + \
-                       "(?P<demote_time>\d+)( l:(?P<lvbs>\d+))?\sa:(?P<ails>\d+)" +\
-                       "( v:(?P<v>\d+))?\sr:(?P<refs>\d+)( m:(?P<hold>\d+))\s" + \
-                       "\((?P<glock_type>.*)\)")
-    mo = regex.match(line)
-    if mo:
-        #return Glock(int(mo.group("type")), int(mo.group("inodeNumber"), 16), mo.group("state"), mo.group("demote_time"))
-        return Glock(int(mo.group("type")), mo.group("inodeNumber"), mo.group("state"), mo.group("demote_time"))
-    return None
-    parse_glock = staticmethod(parse_glock)
 
 # #####################################################################
 # Helper File Functions
@@ -383,6 +425,11 @@ def __get_options(version) :
                           action="store_true",
                           dest="disable_show_waiters",
                           help="the waiters for the glocks are not displayed in the output",
+                          default=False)
+    cmd_parser.add_option("-S", "--disable_stats",
+                          action="store_true",
+                          dest="disable_stats",
+                          help="do not print stats",
                           default=False)
     cmd_parser.add_option("-g", "--find_glock",
                           action="store",
@@ -547,7 +594,9 @@ if __name__ == "__main__":
                             glock = parse_glock(sline)
                             gfs2_snapshot.add_glock(glock)
                         elif (not glock == None and sline.startswith("H")):
-                            glock.add_holder(GlockWaiter(sline))
+                            glock_holder = parse_glock_holder(sline)
+                            if (not glock_holder == None):
+                                glock.add_holder(glock_holder)
                         elif ((not glock == None) and
                               (sline.startswith("I") or
                                sline.startswith("R") or
@@ -574,9 +623,15 @@ if __name__ == "__main__":
                 if (sline.startswith("G")):
                     glock = parse_glock(sline)
                     gfs2_snapshot.add_glock(glock)
-                if ((not glock == None) and sline.startswith("H")):
-                    glock.add_holder(sline)
-                # Add the rest of the ones like I/R/* and any other ones.
+                elif (not glock == None and sline.startswith("H")):
+                    glock_holder = parse_glock_holder(sline)
+                    if (not glock_holder == None):
+                        glock.add_holder(glock_holder)
+                elif ((not glock == None) and
+                      (sline.startswith("I") or
+                       sline.startswith("R") or
+                       sline.startswith("B"))):
+                    glock.add_glock_object(GlockObject(sline))
             snapshots.append(gfs2_snapshot)
         # The data has been processed and now will be analyzed.
 
@@ -608,63 +663,65 @@ if __name__ == "__main__":
         print summary
 
         # Print stats
-        # * like the number of times that glock showed up, number of iterations of the filesystem, number of times a pid shows up
-        # * peak for highest number of holder/waiters for each glock
-        # * glock with higher than zero demote_seconds
-        # * Need my table formatter.
+        if (not cmdline_opts.disable_stats):
+            # * pid -> glocks with that pid | count
+            # * glock -> pids
+            # * peak for highest number of holder/waiters for each glock
 
-
-        # Build structure so that filesystem, glocks stats can be analyzed
-        filesystem_count = {}
-        glock_count = {}
-        glock_high_demote_seconds = {}
-        for snapshot in snapshots:
-            filesystem_name = snapshot.get_filesystem_name()
-            if (filesystem_count.has_key(filesystem_name)):
-                filesystem_count[filesystem_name] = filesystem_count.get(filesystem_name) + 1
-            else:
-                filesystem_count[filesystem_name] = 1
-            for glock in snapshot.get_glocks():
-                glock_type_inode = "%s/%s" %(glock.get_type(), glock.get_inode())
-                if (glock_count.has_key(glock_type_inode)):
-                    glock_count[glock_type_inode] = glock_count.get(glock_type_inode) + 1
+            # Build structure so that filesystem, glocks stats can be analyzed
+            filesystem_count = {}
+            glock_count = {}
+            glock_high_demote_seconds = {}
+            # In some instances the unique key will be
+            # "filesystem_name-glock_type/glock_inode". For example:
+            # gfs2payroll-4/42ff2. Then for printing the filesystem and glock
+            # info could be parsed out.
+            for snapshot in snapshots:
+                filesystem_name = snapshot.get_filesystem_name()
+                if (filesystem_count.has_key(filesystem_name)):
+                    filesystem_count[filesystem_name] = filesystem_count.get(filesystem_name) + 1
                 else:
-                    glock_count[glock_type_inode] = 1
-                demote_time = int(glock.get_demote_time())
-                if (demote_time > 0):
-                    if (glock_high_demote_seconds.has_key(glock_type_inode)):
-                        c_demote_time = glock_high_demote_seconds.get(glock_type_inode)
-                        c_demote_time += " %ds" %(demote_time)
-                        glock_high_demote_seconds[glock_type_inode] = c_demote_time
+                    filesystem_count[filesystem_name] = 1
+                for glock in snapshot.get_glocks():
+                    glock_type_inode = "%s-%s/%s" %(filesystem_name, glock.get_type(), glock.get_inode())
+                    if (glock_count.has_key(glock_type_inode)):
+                        glock_count[glock_type_inode] = glock_count.get(glock_type_inode) + 1
                     else:
-                        glock_high_demote_seconds[glock_type_inode] = "%ss" %(demote_time)
+                        glock_count[glock_type_inode] = 1
+                    demote_time = int(glock.get_demote_time())
+                    if (demote_time > 0):
+                        if (glock_high_demote_seconds.has_key(glock_type_inode)):
+                            c_demote_time = glock_high_demote_seconds.get(glock_type_inode)
+                            c_demote_time += " %ds" %(demote_time)
+                            glock_high_demote_seconds[glock_type_inode] = c_demote_time
+                        else:
+                            glock_high_demote_seconds[glock_type_inode] = "%ss" %(demote_time)
 
+            # Print filesystem stats
+            table = []
+            for key in filesystem_count.keys():
+                table.append([key, filesystem_count.get(key)])
+            ftable = tableize(table, ["Filesystem", "Snapshots"])
+            if (len(ftable) > 0):
+                print ftable
 
-        # Print filesystem stats
-        table = []
-        for key in filesystem_count.keys():
-            table.append([key, filesystem_count.get(key)])
-        ftable = tableize(table, ["Filesystem", "Snapshots"])
-        if (len(ftable) > 0):
-            print ftable
+            # Print glock stats
+            table = []
+            from operator import itemgetter
+            for pair in sorted(glock_count.items(), key=itemgetter(1), reverse=True):
+                if (pair[1] > 1):
+                    table.append([pair[0].rsplit("-")[0], pair[0].rsplit("-")[1], pair[1]])
+            ftable = tableize(table, ["Filesystem Name", "Glock Type/Glocks Inode", "Total Holder/Waiter Count"])
+            if (len(ftable) > 0):
+                print ftable
 
-        # Print glock stats
-        table = []
-        from operator import itemgetter
-        for pair in sorted(glock_count.items(), key=itemgetter(1), reverse=True):
-            if (pair[1] > 1):
-                table.append([pair[0], pair[1]])
-        ftable = tableize(table, ["Glock Type/Glocks Inode", "Holder/Waiter Count"])
-        if (len(ftable) > 0):
-            print ftable
-
-        # Glock + filesystem with high demote seconds.
-        table = []
-        for key in glock_high_demote_seconds.keys():
-            table.append([key, glock_high_demote_seconds.get(key)])
-        ftable = tableize(table, ["Glock Type/Glocks Inode", "High Demote Seconds that occurred"])
-        if (len(ftable) > 0):
-            print ftable
+            # Glock + filesystem with high demote seconds.
+            table = []
+            for key in glock_high_demote_seconds.keys():
+                table.append([key.rsplit("-")[0], key.rsplit("-")[1], glock_high_demote_seconds.get(key)])
+            ftable = tableize(table, ["Filesystem Name","Glock Type/Glocks Inode", "High Demote Seconds That Occurred"])
+            if (len(ftable) > 0):
+                print ftable
 
     except KeyboardInterrupt:
         print ""

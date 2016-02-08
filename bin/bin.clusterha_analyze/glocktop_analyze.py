@@ -1,26 +1,32 @@
 #!/usr/bin/python
-"""@author    : Shane Bradley
+# -*- coding: utf-8 -*-
+"""
+@author    : Shane Bradley
 @contact   : sbradley@redhat.com
 @version   : 0.1
 @copyright : GPLv2
 
 
+NEXT Features:
+* Need to catch DLM on the filesystem line.
+* Include DLM as one of the stat ones.
+* Need to colorize tables in stats for ever other line.
+* Finish remaining stat lines
+
 TODO:
 
-* Need to create function for the duplicate code when i reading the lines for G
-  H R B I stuff.
-
+* Warning on high demote_seconds, high waiter count, high DLM traffic.
+* NEED OPTION: only_filesystems: -o To allow only showing results for certain filesystems instead of all of them
+* NEED OPTION: Add ignore list items like ENDED, N/A from U lines see man page.
+* NEED OPTION: To disable_call_trace so call trace not printed.
+* Try creating charts for plotting like pygal to embed into web pages:
+  http://www.pygal.org/en/latest/index.html or ggplot: http://ggplot.yhathq.com/
 * Could i combine the data into 1 file. Take 8 glocktops, then write to 1 file
   with everything sorted by date to see what is happenign on all nodes at around
   same time. Do not think a way to group cause started at different times and
   takes different times to print data.
 
-* Need to catch DLM on the filesystem line.
-* Need table formatter
-* warning on high demote_seconds, high waiter count, high DLM traffic.
-* Need to colorize tables in stats for ever other line.
-* Finish remaining stat lines
-* Include DLM as one of the stat ones.
+
 """
 import sys
 import logging
@@ -40,7 +46,7 @@ locale.setlocale(locale.LC_NUMERIC, "")
 # #####################################################################
 # Global vars:
 # #####################################################################
-VERSION_NUMBER = "0.1-1"
+VERSION_NUMBER = "0.1-2"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
 # #####################################################################
@@ -173,6 +179,39 @@ class GlockObject():
 # #####################################################################
 # Parsers
 # #####################################################################
+def process_snapshot(gfs2_snapshot, snapshot_lines):
+    # Process any remaining items
+    if (not gfs2_snapshot == None):
+        glock = None
+        for sline in snapshot_lines:
+            if (sline.startswith("G")):
+                glock = parse_glock(sline)
+                gfs2_snapshot.add_glock(glock)
+            elif (not glock == None and sline.startswith("H")):
+                glock_holder = parse_glock_holder(sline)
+                if (not glock_holder == None):
+                    glock.add_holder(glock_holder)
+            elif ((not glock == None) and
+                  (sline.startswith("I") or
+                   sline.startswith("R") or
+                   sline.startswith("B"))):
+                glock_object = GlockObject(sline)
+                if (not glock_object == None):
+                    glock.add_glock_object(glock_object)
+            elif (line.startswith("U")):
+                # These lines represent glocktop's user interpretation of the
+                # data, both glock and holder.  Lines that begin with (N/A:...)
+                # can probably be ignored because they ought to be unimportant:
+                # system files such as journals, etc.
+
+                # Add certain lines to ignore list.
+                continue
+            elif (line.startswith("C")):
+                # These lines give you the call trace (call stack) of the process
+                # that's either hold‐ing or waiting to hold the glock.
+                continue
+
+
 def parse_header(line):
     # @ nate_bob1       Mon Feb  1 15:04:11 2016  @host-050.virt.lab.msp.redhat.com
 
@@ -431,6 +470,11 @@ def __get_options(version) :
                           dest="disable_stats",
                           help="do not print stats",
                           default=False)
+    #cmd_parser.add_option("-C", "--disable_call_trace",
+    #                      action="store_true",
+    #                      dest="disable_call_trace",
+    #                      help="do not print call traces for holder/waiters",
+    #                      default=False)
     cmd_parser.add_option("-g", "--find_glock",
                           action="store",
                           dest="glock_inode",
@@ -584,56 +628,31 @@ if __name__ == "__main__":
         # filesystem. Including glocks, waiters, etc.
         snapshot_lines = []
         for line in lines:
+            # @, G, H, I, R, B, U, C, S
             if ((line.startswith("@")) or (not len(line) > 0)):
                 if (not gfs2_snapshot == None):
                     # Process any previous snapshot lines before starting a
                     # new one. All the glocks, holder/waiters, etc.
-                    glock = None
-                    for sline in snapshot_lines:
-                        if (sline.startswith("G")):
-                            glock = parse_glock(sline)
-                            gfs2_snapshot.add_glock(glock)
-                        elif (not glock == None and sline.startswith("H")):
-                            glock_holder = parse_glock_holder(sline)
-                            if (not glock_holder == None):
-                                glock.add_holder(glock_holder)
-                        elif ((not glock == None) and
-                              (sline.startswith("I") or
-                               sline.startswith("R") or
-                               sline.startswith("B"))):
-                            glock.add_glock_object(GlockObject(sline))
-                        # Add the rest of the ones like I/R/* and any other ones.
+                    process_snapshot(gfs2_snapshot, snapshot_lines)
                     snapshots.append(gfs2_snapshot)
                 # Process the new snapshot
                 gfs2_snapshot = parse_header(line)
                 snapshot_lines = []
             elif (line.startswith("S")):
-                # Skip summary lines for now.
-                continue
-            elif (line.startswith("U")):
-                # Skip friendly lines for now.
+                # These lines give you the summary of all glocks for this file
+                # system: How many of each category are unlocked, locked, how
+                # many are held in EX, SH, and DF, and how many are waiting. G
+                # Waiting is how many glocks have waiters. P Waiting is how many
+                # processes are waiting. Thus, you could have one glock that's
+                # got ten processes waiting, or ten glocks that have ten
+                # processes waiting.
                 continue
             else:
                 snapshot_lines.append(line)
-
         # Process any remaining items
         if (not gfs2_snapshot == None):
-            glock = None
-            for sline in snapshot_lines:
-                if (sline.startswith("G")):
-                    glock = parse_glock(sline)
-                    gfs2_snapshot.add_glock(glock)
-                elif (not glock == None and sline.startswith("H")):
-                    glock_holder = parse_glock_holder(sline)
-                    if (not glock_holder == None):
-                        glock.add_holder(glock_holder)
-                elif ((not glock == None) and
-                      (sline.startswith("I") or
-                       sline.startswith("R") or
-                       sline.startswith("B"))):
-                    glock.add_glock_object(GlockObject(sline))
+            process_snapshot(gfs2_snapshot, snapshot_lines)
             snapshots.append(gfs2_snapshot)
-        # The data has been processed and now will be analyzed.
 
         # #######################################################################
         # Analyze the data
@@ -664,6 +683,10 @@ if __name__ == "__main__":
 
         # Print stats
         if (not cmdline_opts.disable_stats):
+            #
+            # MAYBE NEED a GLOCK STAT OBEJECT to hold: hostname, filesname, date, glock, holder/waiter count, pids, demote_time.
+            # Stuff like keeping up with glock-filesystem might get tricky and eventually parsing of multiple glocktop on multiple nodes.
+
             # * pid -> glocks with that pid | count
             # * glock -> pids
             # * peak for highest number of holder/waiters for each glock
@@ -672,6 +695,7 @@ if __name__ == "__main__":
             filesystem_count = {}
             glock_count = {}
             glock_high_demote_seconds = {}
+
             # In some instances the unique key will be
             # "filesystem_name-glock_type/glock_inode". For example:
             # gfs2payroll-4/42ff2. Then for printing the filesystem and glock

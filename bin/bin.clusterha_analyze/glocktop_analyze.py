@@ -8,10 +8,10 @@
 
 
 NEXT Features:
-* Need to catch DLM on the filesystem line.
 * Include DLM as one of the stat ones.
 * Need to colorize tables in stats for ever other line.
-* Finish remaining stat lines
+* Finish remaining stat queries and stat tables like for pids.
+* Finish glockstats and tableize() the output.
 
 TODO:
 
@@ -54,15 +54,20 @@ MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 # #####################################################################
 class GFS2FilesystemSnapshot():
     # A collection of glocks for a filesystem at a specific time.
-    def __init__(self, filesystem_name, hostname, date_time):
+    def __init__(self, filesystem_name, hostname, date_time, dlm_activity = None):
         self.__filesystem_name = filesystem_name
         self.__hostname = hostname
         self.__date_time = date_time
+        self.__dlm_activity = dlm_activity
 
         self.__glocks = []
+        self.__glocks_stats = None
 
     def __str__(self):
-        return "%s - %s %s" %(self.get_filesystem_name(), str(self.get_date_time()), self.get_hostname())
+        dlm_activity = ""
+        if (not self.get_dlm_activity() == None):
+            dlm_activity = "(%s)" %(str(self.get_dlm_activity()))
+        return "%s - %s %s %s" %(self.get_filesystem_name(), str(self.get_date_time()), self.get_hostname(), dlm_activity)
 
     def get_filesystem_name(self):
         return self.__filesystem_name
@@ -89,6 +94,40 @@ class GFS2FilesystemSnapshot():
                 else:
                     glocks.append(glock)
         return glocks
+
+    def get_glocks_stats(self):
+        return self.__glocks_stats
+
+    def add_glocks_stats(self, glocks_stats):
+        self.__glocks_stats = glocks_stats
+
+    def get_dlm_activity(self):
+        return self.__dlm_activity
+
+class DLM_Activity():
+    def __init__(self, dlm_dirtbl_size, dlm_rsbtbl_size, dlm_lkbtbl_size, activity_count):
+        self.__dlm_dirtbl_size = dlm_dirtbl_size
+        self.__dlm_rsbtbl_size = dlm_rsbtbl_size
+        self.__dlm_lkbtbl_size = dlm_lkbtbl_size
+        self.__activity_count = activity_count
+
+    def __str__(self):
+        return "DLM: %d waiters with hash table sizes: %d/%d/%d" %(self.get_activity_count(),
+                                                                   self.get_dlm_dirtbl_size(),
+                                                                   self.get_dlm_rsbtbl_size(),
+                                                                   self.get_dlm_lkbtbl_size())
+
+    def get_dlm_dirtbl_size(self):
+        return self.__dlm_dirtbl_size
+
+    def get_dlm_rsbtbl_size(self):
+        return self.__dlm_rsbtbl_size
+
+    def get_dlm_lkbtbl_size(self):
+        return self.__dlm_lkbtbl_size
+
+    def get_activity_count(self):
+        return self.__activity_count
 
 class Glock():
     def __init__(self, gtype, inode, state, demote_time):
@@ -176,6 +215,78 @@ class GlockObject():
     def get_text(self):
         return self.__text
 
+class GlocksStats():
+    def __init__(self):
+        # glocks    nondisk  inode    rgrp   iopen    flock  quota jrnl
+        # S  Unlocked:       1        6       4       0       0     0    0       11
+        # S    Locked:       2      370       6     124       0     0    1      504
+        # S   Held EX:       0        2       0       0       0     0    1        3
+        # S   Held SH:       1        1       0     123       0     0    0      125
+        # S   Held DF:       0        0       0       0       0     0    0        0
+        # S G Waiting:       0        1       0       0       0     0    0        1
+        # S P Waiting:       0        1       0       0       0     0    0        1
+        # S  DLM wait:       0        self.__glock_stats_category_order = ""
+        self.__glocks_stats = []
+        self.__glocks_stats_category_order = ["Unlocked","Locked", "Held EX", "Held SH", "Held DF", "G Waiting", "P Waiting", "DLM wait"]
+    def __str__(self):
+        rstring = ""
+        for glock_stats in self.get_glocks_stats():
+            rstring += "%s\n" %(str(glock_stats))
+        return rstring.rstrip()
+
+    def add_glock_stats(self, glock_stats):
+        self.__glocks_stats.append(glock_stats)
+
+    def get_glocks_stats(self):
+        return self.__glocks_stats
+
+class GlockStats():
+    def __init__(self, glock_category, nondisk, inode, rgrp, iopen,
+                 flock, quota, journal, total):
+        self.__glock_category = glock_category
+        self.__nondisk = nondisk
+        self.__inode = inode
+        self.__rgrp = rgrp
+        self.__iopen = iopen
+        self.__flock = flock
+        self.__quota = quota
+        self.__journal = journal
+        self.__total = total
+
+    def __str__(self):
+        rstring =  "%s %s %s " %(self.get_glock_category(), self.get_nondisk(), self.get_inode())
+        rstring += "%s %s %s " %(self.get_rgrp(), self.get_iopen(), self.get_flock())
+        rstring += "%s %s %s " %(self.get_quota(), self.get_journal(), self.get_total())
+        return rstring
+
+    def get_glock_category(self):
+        return self.__glock_category
+
+    def get_nondisk(self):
+        return self.__nondisk
+
+    def get_inode(self):
+        return self.__inode
+
+    def get_rgrp(self):
+        return self.__rgrp
+
+    def get_iopen(self):
+        return self.__iopen
+
+    def get_flock(self):
+        return self.__flock
+
+    def get_quota(self):
+        return self.__quota
+
+    def get_journal(self):
+        return self.__journal
+
+    def get_total(self):
+        return self.__total
+
+
 # #####################################################################
 # Parsers
 # #####################################################################
@@ -183,6 +294,7 @@ def process_snapshot(gfs2_snapshot, snapshot_lines):
     # Process any remaining items
     if (not gfs2_snapshot == None):
         glock = None
+        glocks_stats_lines = []
         for sline in snapshot_lines:
             if (sline.startswith("G")):
                 glock = parse_glock(sline)
@@ -198,7 +310,7 @@ def process_snapshot(gfs2_snapshot, snapshot_lines):
                 glock_object = GlockObject(sline)
                 if (not glock_object == None):
                     glock.add_glock_object(glock_object)
-            elif (line.startswith("U")):
+            elif (sline.startswith("U")):
                 # These lines represent glocktop's user interpretation of the
                 # data, both glock and holder.  Lines that begin with (N/A:...)
                 # can probably be ignored because they ought to be unimportant:
@@ -206,28 +318,88 @@ def process_snapshot(gfs2_snapshot, snapshot_lines):
 
                 # Add certain lines to ignore list.
                 continue
-            elif (line.startswith("C")):
+            elif (sline.startswith("C")):
                 # These lines give you the call trace (call stack) of the process
                 # that's either hold‐ing or waiting to hold the glock.
                 continue
+            elif (sline.startswith("S")):
+                # These are not captured each time a filesystem is sampled.
 
+                # These lines give you the summary of all glocks for this file
+                # system: How many of each category are unlocked, locked, how
+                # many are held in EX, SH, and DF, and how many are waiting. G
+                # Waiting is how many glocks have waiters. P Waiting is how many
+                # processes are waiting. Thus, you could have one glock that's
+                # got ten processes waiting, or ten glocks that have ten
+                # processes waiting.
+                glocks_stats_lines.append(sline)
+        glocks_stats = GlocksStats()
+        for line in glocks_stats_lines:
+            stat_map = parse_glock_stats(line)
+            if (stat_map):
+                glock_stats = GlockStats(stat_map.get("glock_category"),
+                                         stat_map.get("nondisk"), stat_map.get("inode"),
+                                         stat_map.get("rgrp"), stat_map.get("iopen"),
+                                         stat_map.get("flock"), stat_map.get("quota"),
+                                         stat_map.get("journal"), stat_map.get("total"))
+                glocks_stats.add_glock_stats(glock_stats)
+        if (glocks_stats.get_glocks_stats()):
+            gfs2_snapshot.add_glocks_stats(glocks_stats)
+
+def parse_glock_stats(line):
+    try:
+        stat_line = line.split("S ")[1].strip()
+    except IndexError:
+        return {}
+    if ((stat_line.find("--") > 0) or (stat_line.find("Total") > 0)):
+        return {}
+    stats_map = {"glock_category":"", "nondisk":0, "inode":0, "rgrp":0, "iopen":0, "flock":0, "quota":0, "journal":0, "total":0}
+    regex = "(?P<glock_category>Unlocked|Locked|Held EX|Held SH|Held DF|G Waiting|P Waiting):.*(?P<nondisk>\d+).*(?P<inode>\d+).*(?P<rgrp>\d+).*(?P<iopen>\d+).*(?P<flock>\d+).*(?P<quota>\d+).*(?P<journal>\d+).*(?P<total>\d+).*"
+    rem = re.compile(regex)
+    mo = rem.match(stat_line)
+    if mo:
+        return mo.groupdict()
+    elif (stat_line.startswith("DLM wait")):
+        split_stat_line = stat_line.split(":")
+        return {"glock_category":split_stat_line[0].strip(), "nondisk":split_stat_line[1].strip(), "inode":0, "rgrp":0, "iopen":0, "flock":0, "quota":0, "journal":0, "total":split_stat_line[1].strip()}
+    return {}
 
 def parse_header(line):
     # @ nate_bob1       Mon Feb  1 15:04:11 2016  @host-050.virt.lab.msp.redhat.com
 
-    days = "(?P<day>%s)" % '|'.join(calendar.day_abbr[0:])
-    months = "(?P<month>%s)" % '|'.join(calendar.month_abbr[1:])
-    dow = "(?P<dow>\d{1,2})"
-    time = "(?P<time>\d{1,2}:\d\d:\d\d)"
-    year = "(?P<year>\d{4})"
-    hostname = "@(?P<hostname>.*)"
-    regex = "^@ (?P<filesystem>\w+)\s+%s\s%s\s*%s\s%s\s%s\s\s%s" %(days, months, dow, time, year, hostname)
+    days_regex = "(?P<day>%s)" % '|'.join(calendar.day_abbr[0:])
+    months_regex = "(?P<month>%s)" % '|'.join(calendar.month_abbr[1:])
+    dow_regex = "(?P<dow>\d{1,2})"
+    time_regex = "(?P<time>\d{1,2}:\d\d:\d\d)"
+    year_regex = "(?P<year>\d{4})"
+    hostname_regex = "@(?P<hostname>.*)"
+    regex = "^@ (?P<filesystem>\w+)\s+%s\s%s\s*%s\s%s\s%s\s\s%s" %(days_regex, months_regex, dow_regex, time_regex, year_regex, hostname_regex)
 
     rem = re.compile(regex)
     mo = rem.match(line)
     if mo:
         date_time = datetime.strptime("%s %s %s %s" %(mo.group("month"), mo.group("dow"), mo.group("year"), mo.group("time")), "%b %d %Y %H:%M:%S")
-        return GFS2FilesystemSnapshot(mo.group("filesystem"),  mo.group("hostname"), date_time)
+        split_line = mo.group("hostname").strip().split("dlm:")
+        hostname = split_line[0]
+        # Check to see if DLM data is at end of string contained in hostname
+        # group.
+
+        # The [*  ] increasing * means increasing dlm activity. Each * represents a line in the dlm's *_waiters file
+        # $ cat /sys/kernel/debug/dlm/<fs>_waiters
+        # 100b0 1 5        1               1
+        # It's basically a list of dlm resources that are hung up waiting for a comm response over the network.
+        # - So no max ceiling, just a line count in the file.
+        # - 1 lock could have multiple waiters(or lines).
+        dlm_activity = None
+        if (len(split_line) == 2):
+            dlm_regex = "(?P<dlm_dirtbl_size>\d+)/(?P<dlm_rsbtbl_size>\d+)/(?P<dlm_lkbtbl_size>\d+)\s\[(?P<dlm_activity>\*+).*"
+            rem_dlm = re.compile(dlm_regex)
+            mo_dlm = rem_dlm.match(split_line[1].strip())
+            if mo_dlm:
+                dlm_activity = DLM_Activity(int(mo_dlm.group("dlm_dirtbl_size")), int(mo_dlm.group("dlm_rsbtbl_size")),
+                                            int(mo_dlm.group("dlm_lkbtbl_size")), len(mo_dlm.group("dlm_activity")))
+
+        return GFS2FilesystemSnapshot(mo.group("filesystem"), hostname, date_time, dlm_activity)
     return None
 
 def parse_glock(line):
@@ -270,6 +442,8 @@ class ColorizeConsoleText(object):
     """
 
     def __init__(self, text, **user_styles):
+        # Prevent int and string concat error.
+        text = str(text)
 
         styles = {
             # styles
@@ -348,7 +522,11 @@ def tableize(table, header):
     if (not len(table) > 0):
         return ""
 
+    colorize_header = []
+    for item in header:
+        colorize_header.append(ColorizeConsoleText.red(item))
     table.insert(0, header)
+
     def format_num(num):
         try:
             inum = int(num)
@@ -372,6 +550,7 @@ def tableize(table, header):
             col = format_num(row[i]).rjust(col_paddings[i] + 2)
             ftable += str(col)
         ftable += "\n"
+
     return ftable
 
 def write_to_file(path_to_filename, data, append_to_file=True, create_file=False):
@@ -638,15 +817,6 @@ if __name__ == "__main__":
                 # Process the new snapshot
                 gfs2_snapshot = parse_header(line)
                 snapshot_lines = []
-            elif (line.startswith("S")):
-                # These lines give you the summary of all glocks for this file
-                # system: How many of each category are unlocked, locked, how
-                # many are held in EX, SH, and DF, and how many are waiting. G
-                # Waiting is how many glocks have waiters. P Waiting is how many
-                # processes are waiting. Thus, you could have one glock that's
-                # got ten processes waiting, or ten glocks that have ten
-                # processes waiting.
-                continue
             else:
                 snapshot_lines.append(line)
         # Process any remaining items
@@ -716,10 +886,10 @@ if __name__ == "__main__":
                     if (demote_time > 0):
                         if (glock_high_demote_seconds.has_key(glock_type_inode)):
                             c_demote_time = glock_high_demote_seconds.get(glock_type_inode)
-                            c_demote_time += " %ds" %(demote_time)
+                            c_demote_time += " %d" %(demote_time)
                             glock_high_demote_seconds[glock_type_inode] = c_demote_time
                         else:
-                            glock_high_demote_seconds[glock_type_inode] = "%ss" %(demote_time)
+                            glock_high_demote_seconds[glock_type_inode] = "%s" %(demote_time)
 
             # Print filesystem stats
             table = []
@@ -742,10 +912,32 @@ if __name__ == "__main__":
             # Glock + filesystem with high demote seconds.
             table = []
             for key in glock_high_demote_seconds.keys():
-                table.append([key.rsplit("-")[0], key.rsplit("-")[1], glock_high_demote_seconds.get(key)])
-            ftable = tableize(table, ["Filesystem Name","Glock Type/Glocks Inode", "High Demote Seconds That Occurred"])
+                demote_seconds = glock_high_demote_seconds.get(key).split()
+                index = 0
+                current_fs_name = key.rsplit("-")[0]
+                current_glock =  key.rsplit("-")[1]
+                current_demo_seconds = ""
+                for index in range(0, len(demote_seconds)):
+                    if (((index % 7) == 0) and (not index == 0)):
+                        table.append([current_fs_name, current_glock, current_demo_seconds])
+                        current_fs_name = "-"
+                        current_glock = "-"
+                        current_demo_seconds = demote_seconds[index]
+                    else:
+                        current_demo_seconds += " %s" %(demote_seconds[index])
+
+            ftable = tableize(table, ["Filesystem Name","Glock Type/Glocks Inode", "High Demote Seconds That Occurred (in ms)"])
             if (len(ftable) > 0):
                 print ftable
+
+            # DEBUGGING PRINT STATS
+            #for snapshot in snapshots:
+            #    glocks_stats = snapshot.get_glocks_stats()
+            #    if (not glocks_stats == None):
+            #        print snapshot.get_filesystem_name()
+            #        print glocks_stats
+            #        print
+            print "GLOCKS STATS PRINT COMMENTED OUT FOR NOW."
 
     except KeyboardInterrupt:
         print ""

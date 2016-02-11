@@ -1,7 +1,26 @@
 # List of all the files that will be ignored by git.
-# Compiled Python files
-*.pyc
-*.pyo
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# C extensions
+*.so
+
+# Distribution / packaging
+bin/
+build/
+develop-eggs/
+dist/
+eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
 # Folder view configuration files.
 .DS*

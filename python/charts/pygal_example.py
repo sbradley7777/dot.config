@@ -10,8 +10,15 @@ Based on this function: http://ginstrom.com/scribbles/2007/09/04/pretty-printing
 """
 import sys
 import locale
-import pygal
 locale.setlocale(locale.LC_NUMERIC, "")
+
+
+import pygal
+from datetime import datetime
+from datetime import datetime,timedelta
+
+def jour(n) :
+    return datetime(year=2014,month=1,day=1)+timedelta(days=n)
 
 ################################################################################
 #Run script
@@ -40,4 +47,12 @@ if __name__ == "__main__":
     line_chart.add('IE',      [85.8, 84.6, 84.7, 74.5,   66, 58.6, 54.7, 44.8, 36.2, 26.6, 20.1])
     line_chart.add('Others',  [14.2, 15.4, 15.3,  8.9,    9, 10.4,  8.9,  5.8,  6.7,  6.8,  7.5])
     line_chart.render_to_file("/redhat/html/misc/pygal/line_chart.svg")
+
+    x=(1,20,35,54,345,898)
+    x=tuple(map(jour,x))
+    y=(1,3,4,2,3,1)
+    graph=pygal.DateY(x_label_rotation=20)
+    graph.add("graph1",list(zip(x,y))+[None,None])
+    graph.render_to_file("/redhat/html/misc/pygal/datey-time.svg")
+
     sys.exit()

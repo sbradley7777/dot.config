@@ -11,14 +11,14 @@ Based on this function: http://ginstrom.com/scribbles/2007/09/04/pretty-printing
 import sys
 import locale
 locale.setlocale(locale.LC_NUMERIC, "")
-
-
-import pygal
-from datetime import datetime
 from datetime import datetime,timedelta
 
-def jour(n) :
-    return datetime(year=2014,month=1,day=1)+timedelta(days=n)
+
+try:
+    import pygal
+    from pygal.style import Style
+except (ImportError, NameError):
+    print "Error loading pygal."
 
 ################################################################################
 #Run script
@@ -48,11 +48,31 @@ if __name__ == "__main__":
     line_chart.add('Others',  [14.2, 15.4, 15.3,  8.9,    9, 10.4,  8.9,  5.8,  6.7,  6.8,  7.5])
     line_chart.render_to_file("/redhat/html/misc/pygal/line_chart.svg")
 
-    x=(1,20,35,54,345,898)
-    x=tuple(map(jour,x))
-    y=(1,3,4,2,3,1)
-    graph=pygal.DateY(x_label_rotation=20)
-    graph.add("graph1",list(zip(x,y))+[None,None])
+    # DateY
+    tuples = [(datetime(2016, 2, 9, 8, 10, 58), 3),
+              (datetime(2016, 2, 9, 8, 11, 29), 1),
+              (datetime(2016, 2, 9, 8, 11, 59), 10),
+              (datetime(2016, 2, 9, 8, 12, 29), 1),
+              (datetime(2016, 2, 9, 8, 12, 59), 3)]
+
+    gstyle = Style(
+        # http://www.pygal.org/en/latest/documentation/custom_styles.html
+        background='white',
+        plot_background='rgba(0, 0, 255, 0.03)',
+        foreground='rgba(0, 0, 0, 0.8)',
+        foreground_light='rgba(0, 0, 0, 0.9)',
+        foreground_dark='rgba(0, 0, 0, 0.7)',
+        colors=('#5DA5DA', '#FAA43A','#60BD68', '#F17CB0', '#4D4D4D', '#B2912F','#B276B2', '#DECF3F', '#F15854')
+    )
+    # human_readable is what introduce the strange Y data labels.
+    graph = pygal.DateY(x_label_rotation=20, title="Test",
+                        x_title="Time", y_title="Water Volume",
+                        legend_at_bottom=True, human_readable=False,
+                        style=gstyle, x_labels_major_every=5)
+    # include_x_axis=True)
+    graph.x_label_format = "%Y-%m-%d %I:%M:%S"
+    #graph.add("graph1",list(zip(x,y))+[None,None])
+    graph.add("graph1", tuples+[None,None])
     graph.render_to_file("/redhat/html/misc/pygal/datey-time.svg")
 
     sys.exit()

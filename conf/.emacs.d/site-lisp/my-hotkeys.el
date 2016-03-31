@@ -12,10 +12,16 @@
 (global-set-key [kp-delete] 'delete-char)
 (setq delete-key-deletes-forward t)
 
+
+;; Spell check.
+(global-set-key [f1] 'ispell-word)
+;; Spell check the buffer.
+(global-set-key [f2] 'ispell-buffer)
+
 ;; Kill the buffer
-(global-set-key [f3] 'kill-this-buffer)
+(global-set-key [f4] 'kill-this-buffer)
 ;; Copy what is highlighted
-(global-set-key [f4] 'clipboard-kill-ring-save)
+(global-set-key [f5] 'clipboard-kill-ring-save)
 ;; Delete all the extra whitespaces at end of line
 (global-set-key [f6] 'delete-trailing-whitespace)
 

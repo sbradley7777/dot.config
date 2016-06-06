@@ -27,8 +27,8 @@ echo "The files will be archived to directory: $ARCHIVE_DIR";
 while read -r line
 do
     # Only hostnames with starting with "rh" and does not include "alt" will
-    # have files uploaded to them.
-    hosti=`echo $line | grep " rh" | grep -v "alt" | grep -v "#" | awk '{print $3}'`;
+    # have files uploaded to them and skip lines that start with #.
+    hosti=`echo $line | grep " rh" | grep -v "alt" | grep -v -ie "^#" | awk '{print $3}'`;
     if [ ! -z $hosti ]; then
         ping -q -c 1 $hosti &>/dev/null
         if [ $? -eq 0 ] ; then

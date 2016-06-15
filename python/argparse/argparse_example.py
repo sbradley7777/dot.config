@@ -60,7 +60,17 @@ class ActionAppend(argparse._AppendAction):
 # Get user selected options
 # ##############################################################################
 def __get_args() :
-    parser = argparse.ArgumentParser(description='Description of script.')
+    description = "My description"
+    command_name = "glocktop_analyze.py"
+    epilog =  "Usage examples:\n"
+    epilog += " show example and description of example."
+
+    # Passing RawDescriptionHelpFormatter as formatter_class= indicates that
+    # description and epilog are already correctly formatted and should not be
+    # line-wrapped:.
+    parser = argparse.ArgumentParser(description=description,
+                                     epilog=epilog,
+                                     formatter_class=argparse.RawDescriptionHelpFormatter)
     # Do not need to declare `type` for strings. All input is assumed to be
     # string unless attribute `type` set.
     parser.add_argument("-d", "--debug",

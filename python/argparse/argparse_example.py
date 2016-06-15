@@ -11,7 +11,7 @@ import logging
 import logging.handlers
 import os
 import os.path
-
+import copy
 import argparse
 
 # #####################################################################
@@ -24,23 +24,37 @@ MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]).split(".")[1])
 # ##############################################################################
 # parseargs helpers
 # ##############################################################################
-class FullPathAction(argparse.Action):
-    # Expand user- and relative-paths
+class AbsolutePathAction(argparse._AppendAction):
     def __call__(self, parser, namespace, values, option_string=None):
-        setattr(namespace, self.dest, os.path.abspath(os.path.expanduser(values)))
+        path_to_filename = os.path.abspath(os.path.expanduser(values))
+        setattr(namespace, self.dest, path_to_filename)
 
-def is_file(path_to_filename):
-    # Checks if a path given that is not empty is a file. If not then raise
-    # error.
-    path_to_filename = os.path.abspath(os.path.expanduser(path_to_filename))
-    if (not os.path.exists(path_to_filename) and path_to_filename):
-        msg = "%s does not exist." %(path_to_filename)
-        raise argparse.ArgumentTypeError(msg)
-    elif (not os.path.isfile(path_to_filename) and path_to_filename):
-        msg = "%s is not a file." %(path_to_filename)
-        raise argparse.ArgumentTypeError(msg)
-    else:
-        return path_to_filename
+class AbsolutePathActionAppend(argparse._AppendAction):
+    # Append path to files that exists to single list.
+    def __call__(self, parser, namespace, values, option_string=None):
+        print type(values)
+        items = copy.copy(argparse._ensure_value(namespace, self.dest, []))
+        items = [os.path.abspath(os.path.expanduser(item)) for item in items]
+        valid_filenames = []
+        # Split commas and do not paths that are not valid.
+        for value in values.split(","):
+            # Do validation.
+            path_to_filename = os.path.abspath(os.path.expanduser(value))
+            if (os.path.exists(path_to_filename) and os.path.isfile(path_to_filename)):
+                valid_filenames.append(path_to_filename)
+        items += valid_filenames
+        setattr(namespace, self.dest, items)
+
+class ActionAppend(argparse._AppendAction):
+    # Append items to a single list.
+    def __call__(self, parser, namespace, values, option_string=None):
+        items = copy.copy(argparse._ensure_value(namespace, self.dest, []))
+        valid_items = []
+        for value in values.split(","):
+            # Do validation.
+            valid_items.append(value)
+        items += valid_items
+        setattr(namespace, self.dest, items)
 
 # ##############################################################################
 # Get user selected options
@@ -65,24 +79,23 @@ def __get_args() :
                         help="disables all questions and assumes yes",
                         default=False)
     parser.add_argument("-p", "--path_to_filename",
-                        action=FullPathAction,
-                        type=is_file,
+                        action=AbsolutePathActionAppend,
                         dest="path_to_src_file",
                         help="the path to the filename that will be parsed",
                         metavar="<input filename>",
                         default="")
     parser.add_argument("-o", "--path_to_output_filename",
-                        action=FullPathAction,
-                        type=is_file,
+                        action=AbsolutePathAction,
                         dest="path_to_dst",
                         help="the path to the output filename",
                         metavar="<output filename>",
                         default="")
     parser.add_argument("-e", "--enable_plugins",
-                        action="append",
+                        action=ActionAppend,
                         dest="enable_plugins",
                         help="the plugins that are enabled",
-                        metavar="<plugin name>")
+                        metavar="<plugin name>",
+                        default=[])
     parser.add_argument("-N", "--name",
                         action="store",
                         dest="name",

@@ -25,30 +25,30 @@
 ;; Delete all the extra whitespaces at end of line
 (global-set-key [f6] 'delete-trailing-whitespace)
 
-;; Cycle to previous buffer
-(global-set-key [f7] 'previous-buffer)
-;; Cycle to next buffer
-(global-set-key [f8] 'next-buffer)
-
-;; Top of buffer
-(global-set-key (kbd "ESC <up>") 'beginning-of-buffer)
-;; Bottom of buffer
-(global-set-key (kbd "ESC <down>") 'end-of-buffer)
-
-;; Top of buffer
+;; Keyboard commands for controlling the buffer.
+;;
+;; Scroll buffer down.
 (global-set-key (kbd "ESC <left>") 'scroll-down)
-;; Bottom of buffer
+;; Scroll buffer up
 (global-set-key (kbd "ESC <right>") 'scroll-up)
+;; Cycle to previous buffer.
+(global-set-key [f7] 'previous-buffer)
+;; Cycle to next buffer.
+(global-set-key [f8] 'next-buffer)
+;; Goto top of buffer.
+(global-set-key [f9] 'beginning-of-buffer)
+;; Goto end of buffer.
+(global-set-key [f10] 'end-of-buffer)
 
 ;; Page down/up move the point, not the screen.  In practice, this means that
 ;; they can move the point to the beginning or end of the buffer.
 ;; http://snarfed.org/emacs_page_up_page_down
-;; page down
+;; Page down the buffer.
 (global-set-key [f11]
   (lambda () (interactive)
     (condition-case nil (scroll-down)
       (beginning-of-buffer (goto-char (point-min))))))
-;; page up
+;; Page up the buffer.
 (global-set-key [f12]
   (lambda () (interactive)
     (condition-case nil (scroll-up)

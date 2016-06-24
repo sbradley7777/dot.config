@@ -99,11 +99,11 @@ fi
 if [[ "$unamestr" == 'Linux' ]]; then
     if [ -f /etc/bash_completion ]; then
         source /etc/bash_completion;
-	if [ -f /usr/bin/src-hilite-lesspipe.sh ]; then
-	    # yum -y install source-highlight
-	    export LESSOPEN="| /usr/bin/src-hilite-lesspipe.sh %s";
-	    export LESS=' -R ';
-	fi
+    fi
+    if [ -f /usr/bin/src-hilite-lesspipe.sh ]; then
+	# yum -y install source-highlight
+	export LESSOPEN="| /usr/bin/src-hilite-lesspipe.sh %s";
+	export LESS=' -R ';
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
     # The package bash-completion will need to be installed with brew and the
@@ -117,6 +117,12 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
             # Add `killall` tab completion for common apps
             complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes SystemUIServer Terminal Twitter" killall;
         fi
+    fi
+    if [ -f $(brew --prefix)/bin/src-hilite-lesspipe.sh ]; then
+	# yum -y install source-highlight
+	# May have to create a symlink for above.
+	export LESSOPEN="| /usr/bin/src-hilite-lesspipe.sh %s";
+	export LESS=' -R ';
     fi
 fi
 

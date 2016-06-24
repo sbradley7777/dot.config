@@ -104,6 +104,10 @@ if [[ "$unamestr" == 'Linux' ]]; then
 	# yum -y install source-highlight
 	export LESSOPEN="| /usr/bin/src-hilite-lesspipe.sh %s";
 	export LESS=' -R ';
+	alias less_nl='less -m -N -g -i -J --underline-special --SILENT'
+	alias less='less -m -g -i -J --SILENT'
+	# Use "highlight" in place of "cat"
+	alias cat="/usr/bin/src-hilite-lesspipe.sh $1";
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
     # The package bash-completion will need to be installed with brew and the
@@ -119,10 +123,13 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
         fi
     fi
     if [ -f $(brew --prefix)/bin/src-hilite-lesspipe.sh ]; then
-	# yum -y install source-highlight
-	# May have to create a symlink for above.
-	export LESSOPEN="| /usr/bin/src-hilite-lesspipe.sh %s";
+	# yum -y install source-highlight. May have to create a symlink for
+	export LESSOPEN="| $(brew --prefix)/bin/src-hilite-lesspipe.sh %s";
 	export LESS=' -R ';
+	alias less_nl='less -m -N -g -i -J --underline-special --SILENT'
+	alias less='less -m -g -i -J --SILENT'
+	# Use "highlight" in place of "cat"
+	alias cat="$(brew --prefix)/bin/src-hilite-lesspipe.sh $1";
     fi
 fi
 

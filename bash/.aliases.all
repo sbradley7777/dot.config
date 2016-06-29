@@ -4,7 +4,8 @@
 # Generic aliases
 #################################################################################
 alias today="date '+%F_%s'";
-alias historyco="history | sed 's/^ *[0-9]* *//'";
+alias historyco="history | sed 's/^ *[0-9]* *//' |  cut -d '|' -f 2";
+alias historyco_ts="history | sed 's/^ *[0-9]* *//'";
 alias historysearch='history | sed '\''s/^ *[0-9]* *//'\'' | grep';
 
 #################################################################################

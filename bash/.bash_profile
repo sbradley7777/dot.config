@@ -168,3 +168,6 @@ fi
 if [ -f $HOME/.bashrc ]; then
     source $HOME/.bashrc;
 fi
+# For iterm2
+test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
+

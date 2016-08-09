@@ -104,8 +104,9 @@ if [[ "$unamestr" == 'Linux' ]]; then
 	# yum -y install source-highlight
 	export LESSOPEN="| /usr/bin/src-hilite-lesspipe.sh %s";
 	export LESS=' -R ';
-	alias less_nl='less -m -N -g -i -J --underline-special --SILENT'
-	alias less='less -m -g -i -J --SILENT'
+	# -J adds extra line to start which is problem with copy/paste.
+	alias less_nl='less -m -N -g -i --underline-special --SILENT'
+	alias less='less -m -g -i --SILENT'
 	# Use "highlight" in place of "cat"
 	alias cat="/usr/bin/src-hilite-lesspipe.sh $1";
     fi

@@ -12,7 +12,7 @@ TODAY=`date '+%F_%s'`;
 # The path to directory that will contain archived files.
 ARCHIVE_DIR="/tmp/`date '+%F_%s'`-bin.priv";
 # The files that will be archived.
-src_files=( "~/.dot.config" "/root/.bash_profile.priv" "/root/.bashrc.priv" "/root/bin/bin.priv" "/etc/cluster/" );
+src_files=( "~/.dot.config" "/root/.bash_profile.priv" "/root/.bashrc.priv" "/root/bin/bin.priv" "/etc/cluster/" "~/recreation_scripts" );
 # Script will exit if this function is executed.
 control_c() {
   # Run if user hits control-c so clean exit.

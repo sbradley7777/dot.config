@@ -90,7 +90,6 @@ if [[ `type bugzilla &> /dev/null` -eq "0" ]] ; then
     alias bz-sos__rpl_6.8='bugzilla --ensure-logged-in query --assigned_to sbradley@redhat.com --blocked 1274384 --outputformat "%{id} | %{component} | %{bug_status} | %{assigned_to} | %{short_desc}"';
 fi
 
-
 ##############################################################################
 # git
 ##############################################################################

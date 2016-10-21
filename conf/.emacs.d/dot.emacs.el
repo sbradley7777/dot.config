@@ -52,8 +52,9 @@
 
 ;; Load VIM modeline: https://github.com/cinsk/emacs-vim-modeline
 ;;(add-to-path 'load-path "emacs-vim-modeline")
-;;(message "Loading emacs-vim-modeline.")
-;;(add-to-list 'find-file-hook 'vim-modeline/do)
+(message "Loading emacs-vim-modeline.")
+(require 'vim-modeline)
+(add-to-list 'find-file-hook 'vim-modeline/do)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Last Message before Initialization is Complete:

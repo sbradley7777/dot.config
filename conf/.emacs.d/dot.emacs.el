@@ -44,11 +44,17 @@
 ;; Load all misc preferences
 (load-library "my-theme.el")
 
+;; The htmlize lib is used for producing html pages out of buffer and only works
+;; on emacs 23 or above.
 (when (> emacs-major-version 22)
-  ;; The htmlize lib is used for producing html pages out of buffer and only
-  ;; works on emacs 23 or above.
   (require 'htmlize)
 )
+
+;; Load VIM modeline: https://github.com/cinsk/emacs-vim-modeline
+;;(add-to-path 'load-path "emacs-vim-modeline")
+(message "Loading emacs-vim-modeline.")
+(require 'vim-modeline)
+(add-to-list 'find-file-hook 'vim-modeline/do)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Last Message before Initialization is Complete:

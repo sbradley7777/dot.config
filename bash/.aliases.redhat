@@ -11,7 +11,8 @@ alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-ti
 ##############################################################################
 # Distrobution Specific
 ##############################################################################
-if [[ `command -v lsb_release >/dev/null 2>&1` -eq "0" ]] ; then
+#if [[ `command -v lsb_release > /dev/null 2>&1` ]] ; then
+if  type "lsb_release" > /dev/null 2>&1; then
     alias whichdistro='lsb_release --id --release --codename | grep "Distributor ID" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
     alias whichrelease='lsb_release --id --release --codename | grep "Release" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
     alias whichcodename='lsb_release --id --release --codename | grep "Codename" | cut -d ":" -f 2 |  sed -e "s/^[ \t]*//"';
@@ -33,7 +34,7 @@ if [[ `command -v lsb_release >/dev/null 2>&1` -eq "0" ]] ; then
 	alias ha_update="ccs_tool update /etc/cluster/cluster.conf";
     fi
 fi
-if [[ `command -v subscription-manager >/dev/null 2>&1` -eq "0" ]] ; then
+if  type "subscription-manager" > /dev/null 2>&1; then
     # Could use: `# subscription-manager repos --list-enabled` but same result from below.
     # alias subscription-manager-enabled_repos="subscription-manager repos --list | grep 'Enabled:   1' -B 3 | grep 'Repo ID' | awk '{ print $3 }'";
     alias subscription-manager-enabled_repos="subscription-manager repos --list | grep 'Enabled:   1' -B 3 | grep 'Repo ID' | cut -d ":" -f 2";

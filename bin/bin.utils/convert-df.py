@@ -170,6 +170,38 @@ def tableize(rows, header, colorize=True):
     return formatted_table
 
 
+
+# ##############################################################################
+# helpers
+# ##############################################################################
+def human_size(size_bytes):
+    """
+    format a size in bytes into a 'human' file size, e.g. bytes, KB, MB, GB, TB, PB
+    Note that bytes/KB will be reported in whole numbers but MB and above will have greater precision
+    e.g. 1 byte, 43 bytes, 443 KB, 4.3 MB, 4.43 GB, etc
+    """
+    if size_bytes == 1:
+        # because I really hate unnecessary plurals
+        return "1 byte"
+
+    suffixes_table = [('bytes',0),('KB',0),('MB',1),('GB',2),('TB',2), ('PB',2)]
+
+    num = float(size_bytes)
+    for suffix, precision in suffixes_table:
+        if num < 1024.0:
+            break
+        num /= 1024.0
+
+    if precision == 0:
+        formatted_size = "%d" % num
+    else:
+        formatted_size = str(round(num, ndigits=precision))
+
+    return "%s %s" % (formatted_size, suffix)
+
+# ##############################################################################
+# Parsers
+# ##############################################################################
 def parse_proc_mounts(proc_mount_data) :
     parsed_mounts = []
     if (proc_mount_data == None):
@@ -348,7 +380,9 @@ if __name__ == "__main__":
             if (line_zero.startswith("Filesystem")):
                 column_names = line_zero.split()
                 column_names.insert(1, "Filesystem Type")
+                column_names.insert(2, "Filesystem Size")
                 column_count = len(column_names)
+
         # Contains a list of list that will use the table string formatter i got.
         converted_lines = []
         previous_line = ""
@@ -376,6 +410,7 @@ if __name__ == "__main__":
                     if (pmount.get_mount_point().strip() == line_split[-1].strip()):
                         filesystem_type = pmount.get_type()
                   line_split.insert(1, filesystem_type)
+                  line_split.insert(2,  human_size(int(line_split[2]) * 1024))
                   converted_lines.append(line_split)
 
         wdata = tableize(converted_lines, column_names)

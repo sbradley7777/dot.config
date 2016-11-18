@@ -379,8 +379,8 @@ if __name__ == "__main__":
             line_zero = lines.pop(0).replace("Mounted on", "Mounted_on")
             if (line_zero.startswith("Filesystem")):
                 column_names = line_zero.split()
-                column_names.insert(1, "Filesystem Type")
-                column_names.insert(2, "Filesystem Size")
+                column_names.insert(1, "Type")
+                column_names.insert(2, "Size")
                 column_count = len(column_names)
 
         # Contains a list of list that will use the table string formatter i got.

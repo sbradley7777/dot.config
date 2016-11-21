@@ -418,8 +418,7 @@ if __name__ == "__main__":
             # Change some columns to location.
             line_split.insert(2, line_split.pop(4))
             df_table.append(line_split)
-        for row in df_table:
-            print row
+
         #  Below here do converting oto human size and add other other stuff ad all that jazz.
         wdata = tableize(df_table, column_names)
         if (wdata):

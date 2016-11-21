@@ -371,49 +371,57 @@ if __name__ == "__main__":
         proc_mounts = []
         if (os.path.exists(path_to_proc_mount)):
             proc_mounts = parse_proc_mounts(get_data_from_file_as_list(path_to_proc_mount))
+
         # Parse the df output.
         lines = get_data_from_file_as_list(parseargs_ns.path_to_src_file)
-        column_count = 0
-        column_names = []
+
+        # Set the column names.
+        df_column_count = 0
+        column_names = ["Filesystem", "Type", "Mounted_On", "Size", "Usage"]
         if (lines):
-            line_zero = lines.pop(0).replace("Mounted on", "Mounted_on")
+            line_zero = lines.pop(0)
             if (line_zero.startswith("Filesystem")):
-                column_names = line_zero.split()
-                column_names.insert(1, "Type")
-                column_names.insert(2, "Size")
-                column_count = len(column_names)
+                df_column_count = len(line_zero.split())
 
         # Contains a list of list that will use the table string formatter i got.
-        converted_lines = []
+        df_rows = []
         previous_line = ""
+        #  Need to sort into lists first, then  take the list and format
         for line in lines:
             line = line.strip()
-            #print len(line.split())
-            if (len(line.split()) == (column_count - 1)):
-                # These have all column values for a row on one line.
-                line_split = line.split()
-                filesystem_type = "-"
-                for pmount in proc_mounts:
-                    if (pmount.get_mount_point().strip() == line_split[-1].strip()):
-                        filesystem_type = pmount.get_type()
-                line_split.insert(1, filesystem_type)
-                converted_lines.append(line_split)
+            # Need the case where mount point on seperate line and one when
+            # device is on seperate line.
+            if (((len(line.split())) == 1) and (not previous_line)):
+                previous_line = line
+            elif (previous_line):
+                df_rows.append("%s %s" %(previous_line, line))
                 previous_line = ""
-            elif (len(line.split()) == 1):
-                previous_line = line.strip()
-            elif (len(line.split()) == (column_count - 2)):
-                  combined_line = "%s %s" %(previous_line, line.strip())
-                  previous_line = ""
-                  line_split = combined_line.split()
-                  filesystem_type = "-"
-                  for pmount in proc_mounts:
-                    if (pmount.get_mount_point().strip() == line_split[-1].strip()):
-                        filesystem_type = pmount.get_type()
-                  line_split.insert(1, filesystem_type)
-                  line_split.insert(2,  human_size(int(line_split[2]) * 1024))
-                  converted_lines.append(line_split)
-
-        wdata = tableize(converted_lines, column_names)
+            elif (len(line.split()) == (df_column_count)):
+                df_rows.append(line)
+        # Split into lines into column and add some additional columns.
+        df_table = []
+        for line in df_rows:
+            line_split = line.strip().split()
+            filesystem_type = "-"
+            for pmount in proc_mounts:
+                if (pmount.get_mount_point().strip() == line_split[-1].strip()):
+                    filesystem_type = pmount.get_type()
+            line_split.insert(1, filesystem_type)
+            try:
+                line_split.insert(2,  human_size(int(line_split[2]) * 1024))
+            except ValueError:
+                line_split.insert(2, "-")
+            # Remove some of the information we do not want to include
+            line_split.pop(5)
+            line_split.pop(4)
+            line_split.pop(3)
+            # Change some columns to location.
+            line_split.insert(2, line_split.pop(4))
+            df_table.append(line_split)
+        for row in df_table:
+            print row
+        #  Below here do converting oto human size and add other other stuff ad all that jazz.
+        wdata = tableize(df_table, column_names)
         if (wdata):
             print wdata
             write_to_file(path_to_dst_file, wdata, append_to_file=False, create_file=True)
@@ -423,7 +431,6 @@ if __name__ == "__main__":
         else:
             logging.getLogger(MAIN_LOGGER_NAME).status("The data was saved to the following file: %s" %(path_to_dst_file))
         sys.exit(0)
-
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

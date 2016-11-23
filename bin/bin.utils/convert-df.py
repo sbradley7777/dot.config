@@ -379,9 +379,11 @@ if __name__ == "__main__":
         df_column_count = 0
         column_names = ["Filesystem", "Type", "Mounted_On", "Size", "Usage"]
         if (lines):
-            line_zero = lines.pop(0)
+            line_zero = lines[0].strip()
             if (line_zero.startswith("Filesystem")):
-                df_column_count = len(line_zero.split())
+                line_zero = lines.pop(0)
+            line_zero = line_zero.replace("Mounted on", "Mounted_On")
+            df_column_count = len(line_zero.split())
 
         # Contains a list of list that will use the table string formatter i got.
         df_rows = []

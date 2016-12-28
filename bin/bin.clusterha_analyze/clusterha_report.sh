@@ -30,7 +30,6 @@ function footer_to_console {
 if [ -d $report_dir/clusterha2 ]; then
     summary_to_console $report_dir/clusterha2;
 elif [ -d $report_dir/clusterha ]; then
-    report_dir="$(pwd)/clusterha";
     summary_to_console $report_dir/clusterha;
 fi
 

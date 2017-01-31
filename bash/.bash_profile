@@ -21,6 +21,9 @@ export HISTIGNORE="ls:cd:cd -:pwd:exit:date:* --help";
 
 # Append to the Bash history file, rather than overwriting it.
 shopt -s histappend;
+# The second line calls history -a every time the prompt is shown, which
+# essentially appends the last command to the history file.
+PROMPT_COMMAND="history -a;$PROMPT_COMMAND";
 
 ##############################################################################
 # Man preferences

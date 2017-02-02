@@ -39,7 +39,7 @@ if [ -d $report_dir/clusterha ]; then
 fi
 
 # Print footer
-if [ -d report_dir/clusterha2 ]; then
+if [ -d $report_dir/clusterha2 ]; then
     footer_to_console $report_dir/clusterha2;
 elif [ -d $report_dir/clusterha ]; then
     footer_to_console $report_dir/clusterha;

@@ -70,3 +70,9 @@ alias pmscanner_list="pmscanner --list";
 alias pmscanner_turbosection="pmscanner  --scan --refresh --section ";
 # Deep scan: requires a section numbe from pms.
 alias pmscanner_deepsection="pmscanner --scan --refresh --force --section ";
+
+##############################################################################
+# Plex aliases
+##############################################################################
+alias yubikey_off='osascript -e "tell application \"yubiswitch\" to KeyOff"';
+alias yubikey_on='osascript -e "tell application \"yubiswitch\" to KeyOn"';

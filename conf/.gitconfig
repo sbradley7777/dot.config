@@ -105,3 +105,5 @@
         name = Shane Bradley
         email = shanebradley@gmail.com
 
+[credential]
+	helper = osxkeychain

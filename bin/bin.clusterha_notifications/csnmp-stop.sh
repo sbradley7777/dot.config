@@ -1,5 +1,5 @@
 #!/bin/sh
-service corosync-notifyd start
-service foghorn start
-service snmpd start
-service messagebus restart
+service corosync-notifyd stop
+service foghorn stop
+service snmpd stop
+service messagebus stop

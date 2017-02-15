@@ -19,13 +19,14 @@ FILE_COUNT=10;
 BLOCK_SIZE=1024;
 # Number of blocks in a file
 BLOCK_COUNT=4;
-
+# Random directory shuffle
+RANDOM_DIR=1;
 
 usage() {
     echo "$0 -p <path to directory> -s <subdirectory count> -f <file count>";
 }
 
-while getopts “hp:s:f:v” OPTION
+while getopts “hp:s:f:vr” OPTION
 do
      case $OPTION in
          h)
@@ -41,6 +42,8 @@ do
          f)
              FILE_COUNT=$OPTARG
              ;;
+	 r) RANDOM_DIR=0
+            ;;
          ?)
              usage
              exit
@@ -72,10 +75,31 @@ for dir_counter in $(seq -f "%07g" 1 $DIR_COUNT); do
     fi
 done;
 
+# Randomly shuffle the array of dir paths.
+dirs=( $(find $PATH_TO_DST_DIR/* -maxdepth 1 -type d) )
+path_to_dirs=()
+if [ $RANDOM_DIR -eq 0 ]; then
+    path_to_dirs=()
+    function checkArray {
+	for item in ${path_to_dirs[@]}
+	do
+	    [[ "$item" == "$1" ]] && return 0 # Exists in path_to_dirs
+	done
+	# Not found.
+	return 1
+    }
+    while [ "${#path_to_dirs[@]}" -ne "${#dirs[@]}" ]
+    do
+	rand=$[ $RANDOM % ${#dirs[@]} ]
+	checkArray "${dirs[$rand]}" || path_to_dirs=(${path_to_dirs[@]} "${dirs[$rand]}")
+    done
+else
+    path_to_dirs=(${dirs[*]})
+fi
 # Create the files in each of the subdirectories.
 printf -v fc_ceiling "%07d" $FILE_COUNT
-for i in $PATH_TO_DST_DIR/*
-do
+
+for i in "${path_to_dirs[@]}"; do
   if [ -d $i ]; then
       echo "Creating $FILE_COUNT random files for $i if they do not exist."
       for file_counter in $(seq -f "%07g" 1 $FILE_COUNT); do
@@ -83,7 +107,7 @@ do
 	  if [ ! -f "$pathToRandomFile" ]; then
 	      dd bs=$BLOCK_SIZE count=$BLOCK_COUNT if=/dev/zero of=$pathToRandomFile 2> /dev/null;
 	      if [ -f $pathToRandomFile ]; then
-		  echo "Created file $file_counter/$fc_ceiling for directory $i.";
+		  echo "  Created file $file_counter/$fc_ceiling for directory $i.";
 	      fi
 	  fi
       done;

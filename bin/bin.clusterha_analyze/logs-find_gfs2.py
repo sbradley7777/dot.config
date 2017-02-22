@@ -1,10 +1,13 @@
 #!/usr/bin/python
 """
+This script will analyze logs for gfs2 messages and try to keep them sorted
+by filesystem and time.
 
 @author    : Shane Bradley
 @contact   : sbradley@redhat.com
-@version   : 0.1
+@version   : 0.2
 @copyright : GPLv2
+
 """
 import sys
 import logging
@@ -21,7 +24,7 @@ from optparse import OptionParser, Option, SUPPRESS_HELP
 VERSION_NUMBER = "0.1-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
-RE_JOIN_CLUSTER = '.* (?P<hostname>[a-z0-9-_]*) [a-z0-9-_]*: GFS2.* Trying to join cluster "(?P<lock_protocal>lock_[a-z]*)", "(?P<cluster_name>[a-z0-9-_]*):(?P<filesystem_name>[a-z0-9-_]*)"'
+RE_JOIN_CLUSTER = '.* (?P<hostname>[a-z0-9-_]*) [a-z0-9-_]*:.*GFS2.* Trying to join cluster "(?P<lock_protocal>lock_[a-z]*)", "(?P<cluster_name>[a-z0-9-_]*):(?P<filesystem_name>[a-z0-9-_]*)"'
 RE_GFS2_FS ='.* fsid=(?P<cluster_name>[a-z0-9-_]*):(?P<filesystem_name>[a-z0-9-_]*).*'
 
 class GFS2_Filesystem():
@@ -84,7 +87,9 @@ def __find_gfs2_filesystems_in_logfile(file_contents):
     gfs2_filesystems = []
     for line in file_contents:
         # Does  not parse as it had fsid not empty.
-        #Jan 29 11:07:24 ftc-lbsbmqib501 kernel: GFS2: fsid=mqib_stg_501-502:log: Trying to join cluster "lock_dlm", "mqib_stg_501-502:log"
+        # Jan 29 11:07:24 ftc-lbsbmqib501 kernel: GFS2: fsid=mqib_stg_501-502:log: Trying to join cluster "lock_dlm", "mqib_stg_501-502:log"
+        # Feb 21 14:14:47 sapdhpdb1b kernel:      GFS2: fsid=hanacluster:hana-shared: Trying to join cluster "lock_dlm", "hanacluster:hana-shared"
+        # Feb 21 14:14:47 sapdhpdb1b kernel: [  131.552393] GFS2: fsid=hanacluster:hana-shared: Trying to join cluster "lock_dlm", "hanacluster:hana-shared"
         mo = rem_join_cluster.match(line.lower())
         if mo:
             gfs2_filesystem = GFS2_Filesystem(mo.group("hostname"),

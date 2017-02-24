@@ -106,4 +106,4 @@
         email = shanebradley@gmail.com
 
 [credential]
-	helper = osxkeychain
+	helper = cache

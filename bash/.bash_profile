@@ -175,3 +175,7 @@ fi
 # For iterm2
 test -e "${HOME}/.iterm2_shell_integration.bash" && source "${HOME}/.iterm2_shell_integration.bash"
 
+##############################################################################
+# Print uptime to console.
+echo "";
+echo "uptime: $(uptime)";

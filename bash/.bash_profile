@@ -6,7 +6,8 @@
 ##############################################################################
 export EDITOR="emacs";
 export TODAY=`date '+%F_%s'`;
-export GREP_OPTIONS='--color=auto';
+
+# GREP_OPTIONS no longer supported on fedora and have to use aliases.
 export GREP_COLOR='0;31';
 
 ##############################################################################

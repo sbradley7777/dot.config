@@ -16,7 +16,12 @@ export GREP_COLOR='0;31';
 export HISTSIZE=32768;
 export HISTFILESIZE=$HISTSIZE;
 export HISTCONTROL=ignoredups;
-export HISTTIMEFORMAT="%h %d %H:%M:%S | $ "
+if [ $(id -u) -eq 0 ];then
+    export HISTTIMEFORMAT="%h %d %H:%M:%S | # "
+else
+    export HISTTIMEFORMAT="%h %d %H:%M:%S | $ "
+fi
+
 # Make some commands not show up in history
 export HISTIGNORE="ls:cd:cd -:pwd:exit:date:* --help";
 

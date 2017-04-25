@@ -21,8 +21,17 @@ function footer_to_console {
     echo -e "\n-------------------------------------------------------------------------------------------------\n";
     echo -e "I will review the logs and comments next, please DO NOT make a public update based on information \nin this comment until my analysis is complete or stated otherwise.";
     echo -e "\n\n----------------------\nCluster Node ID Order:\n----------------------\n";
-    grep -ie Hostname -ie "Node ID" $1/*-summary.txt;
+    grep -ie Hostname -ie "Node ID" $1/*-summary.txt | paste -d "\t"  - - | awk '{print $2," id: ",$5}';
     echo "PWD: $(pwd)";
+    echo "";
+    pdir=$(dirname $1);
+    pdir=$(dirname $pdir)
+    for ereport in $pdir/*; do 
+	bname=$(basename $ereport);
+	if [[ ! $bname == reports ]]; then
+	    echo $ereport;
+	fi
+    done;
 }
 
 # Main

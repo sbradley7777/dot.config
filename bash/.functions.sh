@@ -2,6 +2,13 @@
 # Functions that are for bash.
 # Some of thesee function are from here: https://github.com/mathiasbynens/dotfiles/blob/master/.functions
 
+head_tail() {
+    # $1 is number of lines to print for head and tail output.
+    # prints head and tail. The length of the head is  $1 and length of tail is $1.
+    awk -v offset="$1" '{ if (NR <= offset) print; else { a[NR] = $0; delete a[NR-offset] } } END { for (i=NR-offset+1; i<=NR; i++) print a[i] }' ;
+}
+
+
 # Set the colours you can use
 black='\033[0;30m'
 white='\033[0;37m'

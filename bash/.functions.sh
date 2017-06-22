@@ -11,7 +11,14 @@ hat() {
     fi
     if [[ ! $number_of_lines =~ [^[:digit:]] ]]
     then
-	awk -v offset="$number_of_lines" '{ if (NR <= offset) print; else { a[NR] = $0; delete a[NR-offset] } } END { for (i=NR-offset+1; i<=NR; i++) print a[i] }' ;
+	index=0;
+	while read -r line ; do
+	    echo $line;
+	    ((index++))
+	    if [ $index -eq $number_of_lines ]; then
+		echo "[.......]";
+	    fi
+	done < <(awk -v offset="$number_of_lines" '{ if (NR <= offset) print; else { a[NR] = $0; delete a[NR-offset] } } END { for (i=NR-offset+1; i<=NR; i++) print a[i] }');
     else
 	echo "ERROR: non-digits are not allowed.";
     fi

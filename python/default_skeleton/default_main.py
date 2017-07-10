@@ -61,7 +61,7 @@ def mkdirs(path_to_dir):
     return os.path.isdir(path_to_dir)
 
 def get_data_from_file(path_to_filename) :
-    lines = get_data_from_file(path_to_filename)
+    lines = get_data_from_file_as_list(path_to_filename)
     if (not lines == None):
         data = ""
         for line in lines:

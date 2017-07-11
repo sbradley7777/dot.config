@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 # This script queries commandlinefu.com for command examples.
 # https://gist.github.com/tuxfight3r/f5543df35a5099bd3451
+
+# Should try this way of building the url string.
+# https://github.com/rlgomes/clifu/blob/master/src/clifu.py
+
 import urllib2
 import base64
 import json
@@ -27,16 +31,16 @@ def search_by_tags(command):
 
 def print_result(rjson, command):
     for c in rjson:
-        print "-" * 60
         votes = c['votes']
         summary = c['summary']
         cmd = c['command']
 
         cmd = cmd.replace(command, ansi("cyan")+command+ansi("off"))
-        cmd = re.sub(r'([!O>=(<>+@^)$*`#&{}\\\'":/|;,.?-])', ansi("cyan")+r'\1'+ansi("off"),cmd)
-        cmd = cmd.replace("|", ansi("cyan")+"|"+ansi("off"))
+        cmd = re.sub(r'([!O>=(<>+@^)$*`#&{}\\\'":/|;,.?-])', ansi("yellow") + r'\1' + ansi("off"), cmd)
+        cmd = cmd.replace("|", ansi("yellow")+ "|"+ ansi("off"))
         print "%sVotes: %s |  %s%s\n  %s" % (ansi("red"), votes, summary, ansi("off"), cmd)
-
+        print "-" * 60
+        
 def ansi(name):
     colors = {
         "off"       :0,

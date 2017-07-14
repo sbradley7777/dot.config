@@ -191,7 +191,8 @@ if __name__ == "__main__":
             for line in result:
                 if (line.startswith("Status:       ")):
                     status = line.split("Status:")[-1].strip()
-                    print "(%03d/%03d) %s | STATUS: %s" %(index, len(case_numbers), case_number, status)
+                    message = "(%03d/%03d) %s | STATUS: %s" %(index, len(case_numbers), case_number, status)
+                    logging.getLogger(MAIN_LOGGER_NAME).info(message)
                     if (status.lower() == "closed"):
                         closed_case_numbers.append(case_number)
                         break
@@ -209,7 +210,7 @@ if __name__ == "__main__":
                     shutil.rmtree(path_to_dir)
                 except OSError:
                     message = "An error occurred removing the directory: %s" %(path_to_dir)
-                    logging.getLogger(MAIN_LOGGER_NAME).error(message)
+                    logging.getLogger(MAIN_LOGGER_NAME).debug(message)
                     if (cmdline_opts.enable_sudo_rm):
                         message = "Removing the directory as root with sudo since normal user cannot remove."
                         logging.getLogger(MAIN_LOGGER_NAME).debug(message)

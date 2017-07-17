@@ -137,10 +137,10 @@ if __name__ == "__main__":
 
         # Log to main system logger that script has started then close the
         # handler before the other handlers are created.
-        sysLogHandler = logging.handlers.SysLogHandler(address = '/dev/log')
-        logger.addHandler(sysLogHandler)
-        logger.info("The script has started running.")
-        logger.removeHandler(sysLogHandler)
+        syslog_handler = logging.handlers.SysLogHandler(address = '/dev/log')
+        syslog_handler.setFormatter(logging.Formatter("%(name)s: %(message)s"))
+        logger.addHandler(syslog_handler)
+        # logger.removeHandler(sysLogHandler)
 
         # Create a function for the STATUS_LEVEL since not defined by python. This
         # means you can call it like the other predefined message
@@ -170,13 +170,11 @@ if __name__ == "__main__":
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             sys.exit(1)
         if (not os.path.exists(cmdline_opts.path_to_attachments_dir)):
-            message = "The path to the data directory does not exist: %s." %(path_to_attachments_dir)
+            message = "The path to the data directory does not exist: %s." %(cmdline_opts.path_to_attachments_dir)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             sys.exit(1)
 
-        message = "Analyzing the data directory: %s" %(cmdline_opts.path_to_attachments_dir)
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
-
+        logger.info("Analyzing data from the directory: %s." %(cmdline_opts.path_to_attachments_dir))
         case_numbers = []
         for dirname in os.listdir(cmdline_opts.path_to_attachments_dir):
            if (dirname.isdigit()):
@@ -198,8 +196,7 @@ if __name__ == "__main__":
                         break
             index += 1
 
-        message = "There is %d closed cases that will have its data purge." %(len(closed_case_numbers))
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
+        logger.info("Purging %d sub-directories from the directory: %s." %(len(case_numbers), cmdline_opts.path_to_attachments_dir))
         index = 1
         for case_number in closed_case_numbers:
             path_to_dir = os.path.join(cmdline_opts.path_to_attachments_dir, case_number)

@@ -190,7 +190,7 @@ if __name__ == "__main__":
                 if (line.startswith("Status:       ")):
                     status = line.split("Status:")[-1].strip()
                     message = "(%03d/%03d) %s | STATUS: %s" %(index, len(case_numbers), case_number, status)
-                    logging.getLogger(MAIN_LOGGER_NAME).info(message)
+                    logging.getLogger(MAIN_LOGGER_NAME).debug(message)
                     if (status.lower() == "closed"):
                         closed_case_numbers.append(case_number)
                         break

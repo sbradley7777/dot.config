@@ -196,7 +196,7 @@ if __name__ == "__main__":
                         break
             index += 1
 
-        logger.info("Purging %d sub-directories from the directory: %s." %(len(case_numbers), cmdline_opts.path_to_attachments_dir))
+        logger.info("Purging %d sub-directories from the directory: %s." %(len(closed_case_numbers), cmdline_opts.path_to_attachments_dir))
         index = 1
         for case_number in closed_case_numbers:
             path_to_dir = os.path.join(cmdline_opts.path_to_attachments_dir, case_number)

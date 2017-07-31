@@ -1,5 +1,18 @@
 #!/bin/bash
+# lsb-resource:        Simple LSB script resource.
 #
+# chkconfig: 345 97 03
+# description: Simple LSB script resource.
+# processname:
+# pidfile: /var/run/lsb-resource.pid
+
+### BEGIN INIT INFO
+# Required-Start: $local_fs $network $remote_fs $named $time
+# Required-Stop: $local_fs $network $remote_fs $named
+# Default-Start: 2 3 4 5
+# Default-Stop: 0 1 6
+### END INIT INFO
+
 # ###############################################################################
 # This script simply creates and remove a file. It is used as example
 # /usr/share/cluster/script.sh resource example.
@@ -8,13 +21,16 @@
 # STOP:   Removes the lock file
 # STATUS: Checks if the lock file exists
 # ###############################################################################
-. /etc/init.d/functions
+
+# Will cause errors to occur if this function is source in.
+#. /etc/init.d/functions
 
 # Name of the logger
 LOGGER_NAME=`basename $0`;
 
 # Path to the lockfile
 LOCKFILE=/var/lock/subsys/${0##*/}
+
 # 0 is enabled(true) and 1 is disabled(false)
 DELAY_STARTUP_SECONDS=0;
 # ###############################################################################

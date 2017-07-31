@@ -37,7 +37,7 @@ $path_to_lsb_script stop;   echo "stop result:   $? (Should be zero if stopped s
 # Is status 0 if not running?
 $path_to_lsb_script status; echo "status result: $? (Should be non-zero if not running)";
 # Is status 0 if not running?
-$path_to_lsb_script stop;   echo "stop result:  $? (Should be zero if stopped successfully)";
+$path_to_lsb_script stop;   echo "stop result:   $? (Should be zero if stopped successfully)";
 
 echo "DONE";
 echo "This does not test all aspects of validality of lsb resource when managed by pacemaker.";

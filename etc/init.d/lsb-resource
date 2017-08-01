@@ -2,7 +2,7 @@
 # lsb-resource:        Simple LSB script resource.
 #
 # chkconfig: 345 97 03
-# description: Simple LSB script resource.
+# description: A lsb script that starts a process running in the background.
 # processname:
 # pidfile: /var/run/lsb-resource.pid
 
@@ -14,119 +14,140 @@
 ### END INIT INFO
 
 # ###############################################################################
-# This script simply creates and remove a file. It is used as example
-# /usr/share/cluster/script.sh resource example.
-
-# START:  Creates the lock file
-# STOP:   Removes the lock file
+# This script simply starts a process running in the background.
+# START:  Creates the lock file and starts a process running in the background.
+# STOP:   Removes the lock file and kills the process running in the background.
 # STATUS: Checks if the lock file exists
 # ###############################################################################
 
+# ###############################################################################
+# systemd
+# ###############################################################################
+# * Will cause errors to occur if this function is source in when systemd attempts
+#   to start this script.
+#     . /etc/init.d/functions
+# * The pids created by systemd starting are located in the following file:
+#      /sys/fs/cgroup/systemd/system.slice/lsb-resource.service/tasks
+# * A SIGTERM signal has to be used for killing the process running in
+#   background. If SIGKILL (-9) is used then systemd will interrupt that as a
+#   failed stop.
+
+# ###############################################################################
+# pacemaker
+# ###############################################################################
 # To add to pacemaker:
 # pcs resource create lsb-res lsb:lsb-resource op monitor interval=20s
 
-# Will cause errors to occur if this function is source in.
-#. /etc/init.d/functions
-
-# Name of the logger
-LOGGER_NAME=`basename $0`;
-
-# Path to the lockfile
-LOCKFILE=/var/lock/subsys/${0##*/}
-
-# 0 is enabled(true) and 1 is disabled(false)
+# ###############################################################################
+# Vars
+# ###############################################################################
+# The name of the logger.
+# The path to the lockfile.
+LOCKFILE=/var/run/${0##*/}.pid;
+# If greater than zero then delay startup by X seconds. You set the delay that
+# is needed by changing this variable.
 DELAY_STARTUP_SECONDS=0;
+
 # ###############################################################################
 # The clug utility uses the normal logging levels as defined in
 # sys/syslog.h. Calls to clulog will use the logging level defined
 # for the Service Manager (clusvcmgrd).
 # ###############################################################################
-LOG_EMERG=0 # system is unusable
-LOG_ALERT=1 # action must be taken immediately
-LOG_CRIT=2 # critical conditions
-LOG_ERR=3 # error conditions
-LOG_WARNING=4 # warning conditions
-LOG_NOTICE=5 # normal but significant condition
-LOG_INFO=6 # informational
-LOG_DEBUG=7 # debug-level messages
+LOG_EMERG=0; # system is unusable
+LOG_ALERT=1; # action must be taken immediately
+LOG_CRIT=2; # critical conditions
+LOG_ERR=3; # error conditions
+LOG_WARNING=4; # warning conditions
+LOG_NOTICE=5; # normal but significant condition
+LOG_INFO=6; # informational
+LOG_DEBUG=7; # debug-level messages
 
 clulog(){
+    logger_name=`basename $0`;
     logger_level="local7.info";
     case "$1" in
 	$LOG_INFO)  logger_level="local7.info"; ;;
 	$LOG_WARNING)  logger_level="local7.warning"; ;;
 	*)  logger_level="local7.info"; ;;
     esac
-    logger -i -t "$LOGGER_NAME" -p "$logger_level" "$2"
+    logger -i -t "$logger_name" -p "$logger_level" "$2";
 }
 
-control_c() {
-  # Run if user hits control-c so clean exit.
-  echo -en "\n*** Control-c and will exit.***\n"
-  clulog $LOG_INFO "Control-c caught and will stop the script $0".
-  stopService;
-  exit $?
-}
-
-usage() {
-    echo $"usage: $SCRIPTNAME {start|stop|restart|reload|status}"
-    exit 1
-}
-
-stopService() {
-    clulog $LOG_INFO "Executing stop on the script: $0"
+stop() {
+    clulog $LOG_INFO "Executing stop on the script: $0";
     if [ ! -f $LOCKFILE ]; then
-        clulog $LOG_WARNING "The script is not running: $0."
+        clulog $LOG_WARNING "The script is not running: $0.";
         exit 0;
     fi
-    # If the orginal start process is still running then kill that process.
-    pid=`cat $LOCKFILE`
-    kill -9 $pid &> /dev/null
+    # If the process is still running then kill that process.
+    pid=`cat $LOCKFILE`;
+    kill $pid &> /dev/null;
     # If there was no error on killing the process then remove the file.
-    [ $? ] && rm $LOCKFILE; exit $? || exit 1;
+    if [ $? ]; then
+	clulog $LOG_INFO "Removing the lockfile: $LOCKFILE";
+	rm -f $LOCKFILE;
+	exit $?;
+    else
+	exit 1;
+    fi
 }
 
-startService() {
+start() {
     clulog $LOG_INFO "Executing start on the script: $0"
-    echo $$ > $LOCKFILE
-    result=$?
-    # A loop that will keep service in "starting" state.
-	if [ "$DELAY_STARTUP_SECONDS" -gt 0 ]; then
-        clulog $LOG_INFO "Delaying startup by $DELAY_STARTUP_SECONDS seconds for the script: $0."
+    # Start a process that runs in the background. When using systemd a running
+    # process is required in order to be considered successful.
+    # This process will create a bash pid and sleep pid that would change ever 120 seconds.
+    # /bin/bash -c "while true; do sleep 120; done" &
+    # This process will create a bash pid and a sleep pid that would not change.
+    /bin/bash -c "sleep infinity" &
+    echo $! > $LOCKFILE;
+    result=$?;
+    # The startup will sleep for X seconds to simulate a delayed start up if
+    # greater than zero.
+    if [ "$DELAY_STARTUP_SECONDS" -gt 0 ]; then
+        clulog $LOG_INFO "Delaying startup by $DELAY_STARTUP_SECONDS seconds for the script: $0.";
         sleep $DELAY_STARTUP_SECONDS;
     fi
+    clulog $LOG_INFO "The service started successfully.";
     exit $result;
 }
 
-statusService() {
-    basename=${0##*/}
-    clulog $LOG_INFO "Executing status on the script: $0"
+status() {
+    basename=${0##*/};
+    clulog $LOG_INFO "Executing status on the script: $0";
 	if [ -f $LOCKFILE ]; then
-	    clulog $LOG_INFO "The script $basename is running."
+	    clulog $LOG_INFO "The script $basename is running.";
 	    exit 0;
 	else
-	    clulog $LOG_INFO "The script $basename is not running."
+	    clulog $LOG_INFO "The script $basename is not running.";
 	    exit 1;
 	fi
 }
-reloadService() {
+
+monitor() {
+    status;
+}
+
+reload() {
     clulog $LOG_INFO "Executing reload on the script: $SCRIPTNAME.";
+}
+
+restart() {
+    stop;
+    start;
 }
 
 # ###############################################################################
 # Main
 # ###############################################################################
-
-# trap keyboard interrupt (control-c)
-trap control_c SIGINT
-
 case "$1" in
-  start)   $0 stop; startService; ;;
-  stop)    stopService; ;;
-  status)  statusService; ;;
-  restart) $0 stop; startService; ;;
-  reload)  reloadService; ;;
+  start)   start; ;;
+  stop)    stop; ;;
+  status)  status; ;;
+  monitor) monitor; ;;
+  restart) restart; ;;
+  reload)  reload; ;;
   *) usage; ;;
 esac
 
-exit 0
+exit 0;

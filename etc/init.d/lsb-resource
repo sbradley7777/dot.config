@@ -22,6 +22,9 @@
 # STATUS: Checks if the lock file exists
 # ###############################################################################
 
+# To add to pacemaker:
+# pcs resource create lsb-res lsb:lsb-resource op monitor interval=20s
+
 # Will cause errors to occur if this function is source in.
 #. /etc/init.d/functions
 

@@ -49,7 +49,7 @@
 # To add as systemd service, then will require that systemd service file is added.
 # cp lsb-resource.service /etc/systemd/system/lsb-resource.service
 # systemctl daemon-reload
-# pcs resource create lsb-res systemd:lsb-resource op monitor interval=20s
+# pcs resource create systemd-res systemd:lsb-resource op monitor interval=20s
 
 # Source in sysconfig if tha file exists
 [ -f /etc/sysconfig/${0##*/} ] && . /etc/sysconfig/${0##*/}

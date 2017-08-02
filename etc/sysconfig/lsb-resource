@@ -1,5 +1,4 @@
-# Set the amount of time to delay startup. 
+# Set the amount of time to delay startup.
 DELAY_STARTUP_SECONDS=0;
 # 0 enables httpd server on port 8088 and nonzero disables it.
 ENABLE_HTTPD=1;
-

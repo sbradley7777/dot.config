@@ -14,11 +14,19 @@
 ### END INIT INFO
 
 # ###############################################################################
-# This script simply starts a process running in the background.
+# This script simply starts a process running in the background. The process can
+# be httpd process or sleep process.
+
 # START:  Creates the lock file and starts a process running in the background.
 # STOP:   Removes the lock file and kills the process running in the background.
 # STATUS: Checks if the lock file exists
 # ###############################################################################
+
+# ###############################################################################
+# Files
+# ###############################################################################
+# https://github.com/sbradley7777/dot.config/blob/master/etc/sysconfig/lsb-resource
+# https://github.com/sbradley7777/dot.config/blob/master/etc/systemd/system/lsb-resource.service
 
 # ###############################################################################
 # systemd
@@ -35,8 +43,16 @@
 # ###############################################################################
 # pacemaker
 # ###############################################################################
-# To add to pacemaker:
+# To add to pacemaker as lsb resource:
 # pcs resource create lsb-res lsb:lsb-resource op monitor interval=20s
+
+# To add as systemd service, then will require that systemd service file is added.
+# cp lsb-resource.service /etc/systemd/system/lsb-resource.service
+# systemctl daemon-reload
+# pcs resource create lsb-res systemd:lsb-resource op monitor interval=20s
+
+# Source in sysconfig if tha file exists
+[ -f /etc/sysconfig/${0##*/} ] && . /etc/sysconfig/${0##*/}
 
 # ###############################################################################
 # Vars
@@ -46,12 +62,12 @@
 LOCKFILE=/var/run/${0##*/}.pid;
 # If greater than zero then delay startup by X seconds. You set the delay that
 # is needed by changing this variable.
-DELAY_STARTUP_SECONDS=0;
+[ -z "$DELAY_STARTUP_SECONDS" ] && DELAY_STARTUP_SECONDS=0
+[ -z "$ENABLE_HTTPD" ] && ENABLE_HTTPD=1
 
 # ###############################################################################
 # The clug utility uses the normal logging levels as defined in
-# sys/syslog.h. Calls to clulog will use the logging level defined
-# for the Service Manager (clusvcmgrd).
+# sys/syslog.h.
 # ###############################################################################
 LOG_EMERG=0; # system is unusable
 LOG_ALERT=1; # action must be taken immediately
@@ -63,7 +79,7 @@ LOG_INFO=6; # informational
 LOG_DEBUG=7; # debug-level messages
 
 clulog(){
-    logger_name=`basename $0`;
+    logger_name=${0##*/};
     logger_level="local7.info";
     case "$1" in
 	$LOG_INFO)  logger_level="local7.info"; ;;
@@ -93,15 +109,25 @@ stop() {
 }
 
 start() {
-    clulog $LOG_INFO "Executing start on the script: $0"
+    clulog $LOG_INFO "Executing start on the script: $0";
     # Start a process that runs in the background. When using systemd a running
-    # process is required in order to be considered successful.
-    # This process will create a bash pid and sleep pid that would change ever 120 seconds.
-    # /bin/bash -c "while true; do sleep 120; done" &
-    # This process will create a bash pid and a sleep pid that would not change.
-    /bin/bash -c "sleep infinity" &
-    echo $! > $LOCKFILE;
-    result=$?;
+    # process is required in order to be considered successful.  This process
+    # will create a running process in the background by doing a sleep command
+    # or starting a python httpd process.
+
+    #if ((ENABLE_HTTPD)); then
+    if [ $ENABLE_HTTPD -eq 0 ]; then
+	httpd_port=8088;
+	clulog $LOG_INFO "Starting httpd process on port $httpd_port in the background.";
+	cd /var/www/html/
+	python -m SimpleHTTPServer $httpd_port &> /dev/null &
+	echo $! > $LOCKFILE;
+	cd
+    else
+	clulog $LOG_INFO "Starting sleep infinity process in the background.";
+	/bin/bash -c "sleep infinity" &
+	echo $! > $LOCKFILE;
+    fi
     # The startup will sleep for X seconds to simulate a delayed start up if
     # greater than zero.
     if [ "$DELAY_STARTUP_SECONDS" -gt 0 ]; then
@@ -125,14 +151,16 @@ status() {
 }
 
 monitor() {
+    clulog $LOG_INFO "Executing monitor.";
     status;
 }
 
 reload() {
-    clulog $LOG_INFO "Executing reload on the script: $SCRIPTNAME.";
+    clulog $LOG_INFO "Executing reload.";
 }
 
 restart() {
+    clulog $LOG_INFO "Executing restart.";
     stop;
     start;
 }

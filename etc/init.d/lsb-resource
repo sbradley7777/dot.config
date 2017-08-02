@@ -90,9 +90,9 @@ clulog(){
 }
 
 stop() {
-    clulog $LOG_INFO "Executing stop on the script: $0";
+    clulog $LOG_INFO "Executing stop.";
     if [ ! -f $LOCKFILE ]; then
-        clulog $LOG_WARNING "The script is not running: $0.";
+        clulog $LOG_WARNING "The script is not running.";
         exit 0;
     fi
     # If the process is still running then kill that process.
@@ -109,38 +109,41 @@ stop() {
 }
 
 start() {
-    clulog $LOG_INFO "Executing start on the script: $0";
+    clulog $LOG_INFO "Executing start.";
     # Start a process that runs in the background. When using systemd a running
     # process is required in order to be considered successful.  This process
     # will create a running process in the background by doing a sleep command
     # or starting a python httpd process.
 
-    #if ((ENABLE_HTTPD)); then
-    if [ $ENABLE_HTTPD -eq 0 ]; then
-	httpd_port=8088;
-	clulog $LOG_INFO "Starting httpd process on port $httpd_port in the background.";
-	cd /var/www/html/
-	python -m SimpleHTTPServer $httpd_port &> /dev/null &
-	echo $! > $LOCKFILE;
-	cd
-    else
-	clulog $LOG_INFO "Starting sleep infinity process in the background.";
-	/bin/bash -c "sleep infinity" &
-	echo $! > $LOCKFILE;
-    fi
     # The startup will sleep for X seconds to simulate a delayed start up if
     # greater than zero.
     if [ "$DELAY_STARTUP_SECONDS" -gt 0 ]; then
         clulog $LOG_INFO "Delaying startup by $DELAY_STARTUP_SECONDS seconds for the script: $0.";
         sleep $DELAY_STARTUP_SECONDS;
     fi
-    clulog $LOG_INFO "The service started successfully.";
-    exit $result;
+    # Start background process
+    if [ $ENABLE_HTTPD -eq 0 ]; then
+	httpd_port=8088;
+	clulog $LOG_INFO "Starting httpd process on port $httpd_port in the background.";
+	cd /var/www/html/
+	python -m SimpleHTTPServer $httpd_port &> /dev/null &
+	echo $! > $LOCKFILE;
+    else
+	clulog $LOG_INFO "Starting sleep infinity process in the background.";
+	/bin/bash -c "sleep infinity" &
+	echo $! > $LOCKFILE;
+    fi
+    if [ -s $LOCKFILE ]; then
+	clulog $LOG_INFO "The service started successfully.";
+	exit 0;
+    fi
+    clulog $LOG_INFO "The service did not start successfully.";
+    exit 1;
 }
 
 status() {
     basename=${0##*/};
-    clulog $LOG_INFO "Executing status on the script: $0";
+    clulog $LOG_INFO "Executing status.";
 	if [ -f $LOCKFILE ]; then
 	    clulog $LOG_INFO "The script $basename is running.";
 	    exit 0;
@@ -175,7 +178,5 @@ case "$1" in
   monitor) monitor; ;;
   restart) restart; ;;
   reload)  reload; ;;
-  *) usage; ;;
+  *) exit 2; ;;
 esac
-
-exit 0;

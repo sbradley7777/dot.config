@@ -51,6 +51,15 @@
 # systemctl daemon-reload
 # pcs resource create systemd-res systemd:lsb-resource op monitor interval=20s
 
+# ###############################################################################
+# TODO
+# ###############################################################################
+# * Instead of using "exit", store the return code and that will be returned.
+#   Then in case statement capture return code and then script will return
+#   that. Review the init_script_example.sh on how they doing or other scripts.
+# * The stop() and start() should return the result of status() which should
+#   help not using command "exit".
+
 # Source in sysconfig if tha file exists
 [ -f /etc/sysconfig/${0##*/} ] && . /etc/sysconfig/${0##*/}
 
@@ -133,24 +142,31 @@ start() {
 	/bin/bash -c "sleep infinity" &
 	echo $! > $LOCKFILE;
     fi
+    # Check to see if lockfile is not empty containing a pid file number.
     if [ -s $LOCKFILE ]; then
 	clulog $LOG_INFO "The service started successfully.";
 	exit 0;
+    else
+	clulog $LOG_INFO "The service did not start successfully.";
+	exit 1;
     fi
-    clulog $LOG_INFO "The service did not start successfully.";
-    exit 1;
 }
 
 status() {
-    basename=${0##*/};
     clulog $LOG_INFO "Executing status.";
-	if [ -f $LOCKFILE ]; then
-	    clulog $LOG_INFO "The script $basename is running.";
+    if [ -f $LOCKFILE ]; then
+	clulog $LOG_INFO "The script is running.";
+	pgrep -F $LOCKFILE &> /dev/null;
+	if [ $? -eq 0 ]; then
 	    exit 0;
 	else
-	    clulog $LOG_INFO "The script $basename is not running.";
 	    exit 1;
 	fi
+    else
+	clulog $LOG_INFO "The script is not running.";
+	exit 1;
+    fi
+
 }
 
 monitor() {
@@ -160,12 +176,17 @@ monitor() {
 
 reload() {
     clulog $LOG_INFO "Executing reload.";
+    exit 0;
 }
 
 restart() {
     clulog $LOG_INFO "Executing restart.";
-    stop;
-    start;
+    $0 stop;
+    if [ $? -eq 0 ]; then
+	start;
+    else
+	exit 1;
+    fi
 }
 
 # ###############################################################################

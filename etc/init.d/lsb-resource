@@ -99,10 +99,11 @@ clulog(){
 }
 
 stop() {
+    # Assumes only running if lockfile exists.
     clulog $LOG_INFO "Executing stop.";
     if [ ! -f $LOCKFILE ]; then
         clulog $LOG_WARNING "The script is not running.";
-        exit 0;
+        return 0;
     fi
     # If the process is still running then kill that process.
     pid=`cat $LOCKFILE`;
@@ -111,9 +112,9 @@ stop() {
     if [ $? ]; then
 	clulog $LOG_INFO "Removing the lockfile: $LOCKFILE";
 	rm -f $LOCKFILE;
-	exit $?;
+	return $?;
     else
-	exit 1;
+	return 1;
     fi
 }
 
@@ -142,14 +143,8 @@ start() {
 	/bin/bash -c "sleep infinity" &
 	echo $! > $LOCKFILE;
     fi
-    # Check to see if lockfile is not empty containing a pid file number.
-    if [ -s $LOCKFILE ]; then
-	clulog $LOG_INFO "The service started successfully.";
-	exit 0;
-    else
-	clulog $LOG_INFO "The service did not start successfully.";
-	exit 1;
-    fi
+    status;
+    return $?
 }
 
 status() {
@@ -157,26 +152,25 @@ status() {
     if [ -f $LOCKFILE ]; then
 	clulog $LOG_INFO "The script is running.";
 	pgrep -F $LOCKFILE &> /dev/null;
-	if [ $? -eq 0 ]; then
-	    exit 0;
-	else
-	    exit 1;
+	if [ ! $? -eq 0 ]; then
+	   return 1;
 	fi
     else
 	clulog $LOG_INFO "The script is not running.";
-	exit 1;
+	return 1;
     fi
-
+    return 0;
 }
 
 monitor() {
     clulog $LOG_INFO "Executing monitor.";
     status;
+    return $?;
 }
 
 reload() {
     clulog $LOG_INFO "Executing reload.";
-    exit 0;
+    return 0;
 }
 
 restart() {
@@ -184,20 +178,24 @@ restart() {
     $0 stop;
     if [ $? -eq 0 ]; then
 	start;
+	status;
+	return $?;
     else
-	exit 1;
+	return 1;
     fi
 }
 
 # ###############################################################################
 # Main
 # ###############################################################################
+rc=1;
 case "$1" in
-  start)   start; ;;
-  stop)    stop; ;;
-  status)  status; ;;
-  monitor) monitor; ;;
-  restart) restart; ;;
-  reload)  reload; ;;
-  *) exit 2; ;;
+  start)   start;   rc=$?; ;;
+  stop)    stop;    rc=$?; ;;
+  status)  status;  rc=$?; ;;
+  monitor) monitor; rc=$?; ;;
+  restart) restart; rc=$?; ;;
+  reload)  reload;  rc=$?; ;;
+  *) rc=3; ;;
 esac
+exit $rc;

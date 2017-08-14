@@ -120,18 +120,20 @@ if [[ "$unamestr" == 'Linux' ]]; then
 	alias cat="/usr/bin/src-hilite-lesspipe.sh $1";
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
+    # !!! bash-completion takes too long to build index, so disabling for now. !!!
+    # 
     # The package bash-completion will need to be installed with brew and the
     # configuration files will be located here /usr/local/etc/bash_completion.d
     # on OSX.
-    if [[ `type brew &> /dev/null` -eq "0" ]] ; then
-        if [ -f $(brew --prefix)/etc/bash_completion ]; then
-            source $(brew --prefix)/etc/bash_completion;
+    #if [[ `type brew &> /dev/null` -eq "0" ]] ; then
+    #    if [ -f $(brew --prefix)/etc/bash_completion ]; then
+    #        source $(brew --prefix)/etc/bash_completion;
             # Add tab completion for `defaults read|write NSGlobalDomain`.
-            complete -W "NSGlobalDomain" defaults;
+    #        complete -W "NSGlobalDomain" defaults;
             # Add `killall` tab completion for common apps
-            complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes SystemUIServer Terminal Twitter" killall;
-        fi
-    fi
+    #        complete -o "nospace" -W "Contacts Calendar Dock Finder Mail Safari iTunes SystemUIServer Terminal Twitter" killall;
+    #    fi
+    #fi
     if [ -f $(brew --prefix)/bin/src-hilite-lesspipe.sh ]; then
 	# yum -y install source-highlight. May have to create a symlink for
 	export LESSOPEN="| $(brew --prefix)/bin/src-hilite-lesspipe.sh %s";

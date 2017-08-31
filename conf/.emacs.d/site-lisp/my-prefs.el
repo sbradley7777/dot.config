@@ -93,6 +93,11 @@ Non-interactive arguments are Begin End Regexp"
 
 (setq indent-tabs-mode nil)
 (infer-indentation-style)
+
+(add-hook 'python-mode-hook
+    (lambda ()
+        (setq indent-tabs-mode nil)
+        (infer-indentation-style)))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load slang mode support for event scripts in clustering:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

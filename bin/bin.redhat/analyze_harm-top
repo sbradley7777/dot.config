@@ -1,0 +1,458 @@
+#!/usr/bin/python
+"""
+The script parses top data collected in a file by the script ha-resourcemon.
+- https://access.redhat.com/solutions/368393
+
+@author    : Shane Bradley
+@contact   : sbradley@redhat.com
+@version   : 0.1
+@copyright : GPLv2
+
+"""
+import sys
+import logging
+import logging.handlers
+import os
+import os.path
+from optparse import OptionParser, Option, SUPPRESS_HELP
+from datetime import datetime
+
+# #####################################################################
+# Global vars:
+# #####################################################################
+VERSION_NUMBER = "0.1-1"
+MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
+
+# #####################################################################
+# Helper File Functions
+# ####################################################################
+
+def write_to_file(path_to_filename, data, append_to_file=True, create_file=False):
+    [parent_dir, filename] = os.path.split(path_to_filename)
+    if (os.path.isfile(path_to_filename) or (os.path.isdir(parent_dir) and create_file)):
+        try:
+            file_mode = "w"
+            if (append_to_file):
+                file_mode = "a"
+            fout = open(path_to_filename, file_mode)
+            fout.write(data + "\n")
+            fout.close()
+            return True
+        except UnicodeEncodeError, e:
+            message = "There was a unicode encode error writing to the file: %s." %(path_to_filename)
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            return False
+        except IOError:
+            message = "There was an error writing to the file: %s." %(path_to_filename)
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            return False
+    return False
+
+def get_data_from_file(path_to_filename) :
+    lines = get_data_from_file_as_list(path_to_filename)
+    if (not lines == None):
+        data = ""
+        for line in lines:
+            data = "%s%s" %(data, line)
+        return data
+    return None
+
+def get_data_from_file_as_list(path_to_filename) :
+    if (len(path_to_filename) > 0) :
+        try:
+            fin = open(path_to_filename, "r")
+            lines = fin.readlines()
+            fin.close()
+            data = []
+            for line in lines:
+                line = line.strip()
+                if (len(line) > 0):
+                    data.append(line.strip())
+            return data
+        except (IOError, os.error):
+            message = "An error occured reading the file: %s." %(path_to_filename)
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+    return None
+
+def truncate_rows(rows, max_item_length=70):
+    # This function will take a list of lists and remove any whitespaces at
+    # start or end of items in each list. It will also truncate any item that is
+    # longer than max_item_length and will insert into new rows the text longer
+    # than max_item_length.
+
+    # Strip out any white spaces when copying the list into a new list.
+    rows_copy = []
+    for row in rows:
+        new_row = []
+        for i in row:
+            try:
+                new_row.append(i.strip())
+            except AttributeError:
+                new_row.append(i)
+        rows_copy.append(new_row)
+    rindex = 0
+    for row in rows_copy:
+        iindex = 0;
+        index_with_long_lines = {}
+        for item in row:
+            if (len(str(item)) > max_item_length):
+                index_with_long_lines[iindex] = textwrap.wrap(str(item), max_item_length, break_long_words=False)
+            iindex += 1
+        for key in index_with_long_lines:
+            # Modify the current and change to the shorten version.
+            row[key] = index_with_long_lines.get(key).pop(0)
+        # Look over what is left and add new row. Could have multiple items in
+        # new row.
+        insert_after_row = rindex + 1
+        while (index_with_long_lines):
+            new_row = ["-"] * (len(row))
+            for key in index_with_long_lines.keys():
+                # If there is item in list then add to new row.
+                # if the list is empty then remove they key.
+                items = index_with_long_lines.get(key)
+                if (items):
+                    new_row[key] = index_with_long_lines.get(key).pop(0)
+                    if (not items):
+                        # Delete the key if nothing is in list.
+                        del index_with_long_lines[key]
+            if (new_row):
+                rows_copy.insert(insert_after_row, new_row)
+                insert_after_row += 1
+        # Increment the row index
+        rindex += 1
+    return rows_copy
+
+def tableize(rows, header, colorize=True):
+    """
+    Prints out a table using the data in `rows`, which is assumed to be a
+    sequence of sequences with the 0th element being the header.
+    https://gist.github.com/lonetwin/4721748
+    """
+    # Formatted string of table data returned.
+    formatted_table = ""
+    if (not rows):
+        return formatted_table
+
+    # Truncate any data in columns.
+    rows_copy = truncate_rows(rows)
+    # Insert the header
+    rows_copy.insert(0, header)
+    def __format_item(item):
+        import locale
+        locale.setlocale(locale.LC_NUMERIC, "")
+        try:
+            return str(item)
+        except UnicodeEncodeError:
+            return item.encode("utf-8")
+
+    # Convert all values in rows to strings.
+    if (len(rows_copy) > 0):
+        converted_rows_to_str = []
+        for row in rows_copy:
+            current_row = []
+            for item in row:
+                current_row.append(__format_item(item))
+            if (len(current_row) > 0):
+                converted_rows_to_str.append(current_row)
+        # Figure out each column widths which is max column size for all rows.
+        widths = [ len(max(columns, key=len)) for columns in zip(*converted_rows_to_str) ]
+        # Add seperator
+        formatted_table += '-+-'.join( '-' * width for width in widths) + "\n"
+        # Add the header
+        header, data = converted_rows_to_str[0], converted_rows_to_str[1:]
+        formatted_table += ' | '.join(format(title, "%ds" % width)
+                                      for width, title in zip(widths, header) ) + "\n"
+
+        # Add seperator from first row and header.
+        formatted_table += '-+-'.join( '-' * width for width in widths) + "\n"
+        count = 0
+        for row in data:
+            row_string = " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
+            if (not row_string.startswith("-")):
+                count = count + 1
+            formatted_table += row_string + "\n"
+    return formatted_table
+
+# ##############################################################################
+# parse and print data
+# ##############################################################################
+
+def __get_preamble_map(preamble):
+    preamble_map = {}
+    # Print preamble data and top rows
+    preamble_map["load average"] = preamble[0].split(",  ")[2].split(":")[1]
+    preamble_map["cpu_idle"] =  preamble[2].split(", ")[3]
+    preamble_map["mem_free"] = preamble[3].split(", ")[2].split()[0]
+    preamble_map["swap_used"] = preamble[4].split(",  ")[1].split()[0]
+    return preamble_map
+
+def print_top(top_chunks, number_of_processes):
+    # The file is sorted into bins to capture all top data captured at
+    # specific time.
+    tkeys = top_chunks.keys()
+    tkeys.sort()
+    for ts in tkeys:
+        dt = datetime.strptime("%s %s" %(date, ts), "%Y%m%d %H:%M:%S")
+        lines = top_chunks.get(ts)
+        # Build the header and preamble
+        preamble = []
+        header = ["timestamp"]
+        for line in lines:
+            line = line.strip()
+            if (line.startswith("PID")):
+                header += line.split()
+                break
+            elif (len(line) > 0):
+                preamble.append(line)
+        preamble_map = __get_preamble_map(preamble)
+        header += ["load average", "cpu_idle", "mem_free", "swap_used"]
+        # Create data structure for the pid rows.
+
+        # The first 6 lines we can skip
+        pidrows = []
+        for i in range(6, (number_of_processes + 7)):
+            row = [str(dt)] + lines[i].split()
+            row += [preamble_map["load average"], preamble_map["cpu_idle"],
+                    preamble_map["mem_free"], preamble_map["swap_used"]]
+            pidrows.append(row)
+        print "%s - (%s) (CPU idle: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"])
+        print "                    - (Mem Free: %s) (Swap Used: %s)" %(preamble_map["mem_free"], preamble_map["swap_used"])
+        tfrmt = tableize(pidrows, header)
+        print tfrmt
+
+        print "Now combine into one long table or make option for 1 long table or seperates. So can sort with just 1. "
+        print "so seperator option and if enabled then do not add the extra stuff in rows or headers."
+        print "save sort method then change option to seperator and delete function and realated code below"
+
+def print_top_cpu_sort(top_chunks):
+    print "broken and need to use above function
+    tkeys = top_chunks.keys()
+    tkeys.sort()
+    hcpu_rows = []
+    header = []
+    for ts in tkeys:
+        dt = datetime.strptime("%s %s" %(date, ts), "%Y%m%d %H:%M:%S")
+        lines = top_chunks.get(ts)
+        preamble = []
+        header = ["timestamp"]
+        for line in lines:
+            line = line.strip()
+            if (line.startswith("PID")):
+                header = header + line.split()
+                break
+            elif (len(line) > 0):
+                preamble.append(line)
+        # The first 6 lines we can skip
+        pidrows = []
+        for i in range(6, len(lines)):
+            row = [str(dt)] + lines[i].split()
+            if (not len(pidrows) > 0):
+                pidrows = row
+            elif (row[9] > pidrows[9]):
+                pidrows = row
+
+        # NOT WORKING -- the sort on display
+        import operator
+        top_rows = []
+        for i in range(6, len(lines)):
+            top_rows.append(lines[i])
+        top_rows.sort(key=operator.itemgetter(8), reverse=True)
+        # print snippet
+        print top_rows[0]
+        print
+
+        hcpu_rows.append([top_rows[0]])
+
+        # maybe it is and i need to add to the dict
+    # Print preamble data and top rows
+    print hcpu_rows
+    tfrmt = tableize(hcpu_rows, header)
+    print tfrmt
+
+
+    print "Have way to display X number of top processes using -c "
+
+# ##############################################################################
+# Get user selected options
+# ##############################################################################
+def __get_options(version) :
+    cmd_parser = OptionParserExtended(version)
+    cmd_parser.add_option("-d", "--debug",
+                          action="store_true",
+                          dest="enableDebugLogging",
+                          help="enables debug logging",
+                          default=False)
+    cmd_parser.add_option("-q", "--quiet",
+                          action="store_true",
+                          dest="disableLoggingToConsole",
+                          help="disables logging to console",
+                          default=False)
+    cmd_parser.add_option("-p", "--path_to_filename",
+                          action="store",
+                          dest="path_to_src_file",
+                          help="the path to the filename that will be parsed",
+                          type="string",
+                          metavar="<input filename>",
+                          default="")
+    cmd_parser.add_option("-c", "--number_of_processes",
+                          action="store",
+                          dest="number_of_processes",
+                          help="the number of processes that will be printed",
+                          type="int",
+                          metavar="<number of processes>",
+                          default=5)
+    cmd_parser.add_option("-C", "--process_cpu_percentage",
+                          action="store_true",
+                          dest="process_cpu_percentage",
+                          help="show process with highest cpu percentage for each interval",
+                          default=False)
+ # Get the options and return the result.
+    (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
+    return (cmdLine_opts, cmdLine_args)
+
+# ##############################################################################
+# OptParse classes for commandline options
+# ##############################################################################
+class OptionParserExtended(OptionParser):
+    def __init__(self, version) :
+        self.__command_name = os.path.basename(sys.argv[0])
+        OptionParser.__init__(self, option_class=ExtendOption,
+                              version="%s %s\n" %(self.__command_name, version),
+                              description="%s \n"%(self.__command_name))
+
+    def print_help(self):
+        self.print_version()
+        examples_message = "\n"
+        OptionParser.print_help(self)
+        #print examples_message
+
+class ExtendOption (Option):
+    ACTIONS = Option.ACTIONS + ("extend",)
+    STORE_ACTIONS = Option.STORE_ACTIONS + ("extend",)
+    TYPED_ACTIONS = Option.TYPED_ACTIONS + ("extend",)
+
+    def take_action(self, action, dest, opt, value, values, parser):
+        if (action == "extend") :
+            valueList = []
+            try:
+                for v in value.split(","):
+                    # Need to add code for dealing with paths if there is option for paths.
+                    newValue = value.strip().rstrip()
+                    if (len(newValue) > 0):
+                        valueList.append(newValue)
+            except:
+                pass
+            else:
+                values.ensure_value(dest, []).extend(valueList)
+        else:
+            Option.take_action(self, action, dest, opt, value, values, parser)
+
+# ###############################################################################
+# Main Function
+# ###############################################################################
+if __name__ == "__main__":
+    try:
+        # #######################################################################
+        # Get the options from the commandline.
+        # #######################################################################
+        (cmdline_opts, cmdline_args) = __get_options(VERSION_NUMBER)
+        # #######################################################################
+        # Setup the logger and create config directory
+        # #######################################################################
+        # Create the logger
+        logLevel = logging.INFO
+        logger = logging.getLogger(MAIN_LOGGER_NAME)
+        logger.setLevel(logLevel)
+        # Create a new status function and level.
+        logging.STATUS = logging.INFO + 2
+        logging.addLevelName(logging.STATUS, "STATUS")
+
+        # Log to main system logger that script has started then close the
+        # handler before the other handlers are created.
+        sysLogHandler = logging.handlers.SysLogHandler(address = '/dev/log')
+        logger.addHandler(sysLogHandler)
+        logger.info("The script has started running.")
+        logger.removeHandler(sysLogHandler)
+
+        # Create a function for the STATUS_LEVEL since not defined by python. This
+        # means you can call it like the other predefined message
+        # functions. Example: logging.getLogger("loggerName").status(message)
+        setattr(logger, "status", lambda *args: logger.log(logging.STATUS, *args))
+        stream_handler = logging.StreamHandler()
+        stream_handler.setLevel(logLevel)
+        stream_handler.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
+        logger.addHandler(stream_handler)
+
+        # #######################################################################
+        # Set the logging levels.
+        # #######################################################################
+        if ((cmdline_opts.enableDebugLogging) and (not cmdline_opts.disableLoggingToConsole)):
+            logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
+            stream_handler.setLevel(logging.DEBUG)
+            message = "Debugging has been enabled."
+            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+        if (cmdline_opts.disableLoggingToConsole):
+            stream_handler.setLevel(logging.CRITICAL)
+        # #######################################################################
+        # Check options
+        # #######################################################################
+        if (not cmdline_opts.path_to_src_file):
+            message = "A path to the file is required with the -p option."
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            sys.exit(1)
+        elif (not os.path.isfile(cmdline_opts.path_to_src_file)):
+            message = "The path does not exist or is not a file: %s" %(cmdline_opts.path_to_src_file)
+            logging.getLogger(MAIN_LOGGER_NAME).error(message)
+            sys.exit(1)
+
+        # #######################################################################
+        # Run main
+        # #######################################################################
+        message = "Analyzing the file: %s" %(cmdline_opts.path_to_src_file)
+        logging.getLogger(MAIN_LOGGER_NAME).info(message)
+
+        # filename: node42-20170820-230101-info-top.log
+        split_filename = cmdline_opts.path_to_src_file.split("-")
+        date = split_filename[1]
+        hour = split_filename[2][:2]
+
+        # Need to only capture data within that hour.
+        top_chunks = {}
+        for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
+            if line.startswith("top - "):
+                timestamp = line.split()[2]
+                if (hour == timestamp[:2]):
+                    cts = timestamp
+                    top_chunks[timestamp] = []
+                else:
+                    cts = ""
+            if (cts):
+                top_chunks[cts].append(line)
+
+        if (cmdline_opts.process_cpu_percentage):
+            print_top_cpu_sort(top_chunks)
+        else:
+            print_top(top_chunks, cmdline_opts.number_of_processes)
+        # Need to do cpu compare in different loops as i want to add timestamp column  REDO THIS SECTION.
+        # Maybe put memfree swap used in a column too and timestamp.
+
+        # top - 23:01:01 up 19 min,  2 users,  load average: 0.58, 0.19, 0.05
+        # Tasks: 467 total,   3 running, 464 sleeping,   0 stopped,   0 zombie
+        # Cpu(s):  0.5%us,  0.5%sy,  0.0%ni, 98.9%id,  0.2%wa,  0.0%hi,  0.0%si,  0.0%st
+        # Mem:  65958916k total,  3517908k used, 62441008k free,    44368k buffers
+        # Swap:  4194300k total,        0k used,  4194300k free,  2460112k cached
+
+        # PID   USER      PR  NI  VIRT  RES  SHR S %CPU %MEM    TIME+  COMMAND
+        # 44381 root      20   0  4308  684  300 R 86.5  0.0   0:42.00 gzip
+        # 798   root      20   0     0    0    0 S  2.0  0.0   0:00.17 jbd2/dm-0-8
+
+        # Add my table printer so all lined up !!!!!!!!!!!!!
+    except KeyboardInterrupt:
+        print ""
+        message =  "This script will exit since control-c was executed by end user."
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        sys.exit(1)
+    # #######################################################################
+    # Exit the application with zero exit code since we cleanly exited.
+    # #######################################################################
+    sys.exit()

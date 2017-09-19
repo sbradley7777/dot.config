@@ -225,7 +225,7 @@ def print_top(top_chunks, number_of_processes):
         print "save sort method then change option to seperator and delete function and realated code below"
 
 def print_top_cpu_sort(top_chunks):
-    print "broken and need to use above function
+    print "broken and need to use above function"
     tkeys = top_chunks.keys()
     tkeys.sort()
     hcpu_rows = []

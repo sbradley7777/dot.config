@@ -16,6 +16,7 @@ import os
 import os.path
 from optparse import OptionParser, Option, SUPPRESS_HELP
 from datetime import datetime
+import operator
 
 # #####################################################################
 # Global vars:
@@ -173,12 +174,20 @@ def tableize(rows, header, colorize=True):
             formatted_table += row_string + "\n"
     return formatted_table
 
+def __print_colorize_table(tfrmt):
+    index = 1
+    for line in tfrmt.split("\n"):
+        colorize_foreground = True
+        if (( (index % 2) == 0) and (not line.startswith("-"))):
+            line = __colorize_line(line, colorize_foreground)
+        print line
+        index += 1
+
 def __colorize_line(text, colorize_foreground=False):
     # Dark Gray = 100
     # Light Blue = 104
     # http://misc.flogisoft.com/bash/tip_colors_and_formatting
-    bgColor = "100"
-    bgColor = "40;104"
+    bgColor = "40;100"
     opencol = "\033["
     closecol = "m"
     clear = opencol + "0" + closecol
@@ -224,8 +233,11 @@ def print_top(top_chunks, number_of_processes, show_seperator):
 
         # The first 6 lines we can skip
         pid_rows = []
-        for i in range(6, (number_of_processes + 7)):
-            row = [str(dt)] + lines[i].split()
+        for i in range(6, (number_of_processes + 6)):
+            line = lines[i].strip()
+            if (not line):
+                continue
+            row = [str(dt)] + line.split()
             row += [preamble_map["load average"], preamble_map["cpu_idle"],
                     preamble_map["mem_free"], preamble_map["swap_used"]]
             pid_rows.append(row)
@@ -233,67 +245,51 @@ def print_top(top_chunks, number_of_processes, show_seperator):
             print "%s - (%s) (CPU idle: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"])
             print "                    - (Mem Free: %s) (Swap Used: %s)" %(preamble_map["mem_free"], preamble_map["swap_used"])
             tfrmt = tableize(pid_rows, header)
-            print tfrmt
+            __print_colorize_table(tfrmt)
         else:
             pid_rows_all += pid_rows
 
     tfrmt = tableize(pid_rows_all, header)
-    index = 1
-    print tfrmt.split("\n")
-    for line in tfrmt.split("\n"):
-        colorize_foreground = True
-        if (( (index % 2) == 0) and (not line.startswith("-"))):
-            line = __colorize_line(line, colorize_foreground)
-        print line
-        index += 1
+    __print_colorize_table(tfrmt)
 
-def print_top_cpu_sort(top_chunks):
-    print "broken and need to use above function"
+def print_top_cpu_sort(top_chunks, number_of_processes):
+    # The file is sorted into bins to capture all top data captured at
+    # specific time.
     tkeys = top_chunks.keys()
     tkeys.sort()
-    hcpu_rows = []
+    pid_rows_all = []
     header = []
     for ts in tkeys:
         dt = datetime.strptime("%s %s" %(date, ts), "%Y%m%d %H:%M:%S")
         lines = top_chunks.get(ts)
+        # Build the header and preamble
         preamble = []
         header = ["timestamp"]
         for line in lines:
             line = line.strip()
             if (line.startswith("PID")):
-                header = header + line.split()
+                header += line.split()
                 break
             elif (len(line) > 0):
                 preamble.append(line)
+        preamble_map = __get_preamble_map(preamble)
+        header += ["load average", "cpu_idle", "mem_free", "swap_used"]
+        # Create data structure for the pid rows.
+
         # The first 6 lines we can skip
         pid_rows = []
         for i in range(6, len(lines)):
             row = [str(dt)] + lines[i].split()
-            if (not len(pid_rows) > 0):
-                pid_rows = row
-            elif (row[9] > pid_rows[9]):
-                pid_rows = row
+            row += [preamble_map["load average"], preamble_map["cpu_idle"],
+                    preamble_map["mem_free"], preamble_map["swap_used"]]
+            pid_rows.append(row)
+        pid_rows_all += pid_rows
 
-        # NOT WORKING -- the sort on display
-        import operator
-        top_rows = []
-        for i in range(6, len(lines)):
-            top_rows.append(lines[i])
-        top_rows.sort(key=operator.itemgetter(8), reverse=True)
-        # print snippet
-        print top_rows[0]
-        print
-
-        hcpu_rows.append([top_rows[0]])
-
-        # maybe it is and i need to add to the dict
-    # Print preamble data and top rows
-    print hcpu_rows
-    tfrmt = tableize(hcpu_rows, header)
-    print tfrmt
-
-
-    print "Have way to display X number of top processes using -c "
+    # Sort all the rows in the list.
+    pid_rows_all.sort(key=operator.itemgetter(9), reverse=True)
+    prows = [pid_rows_all[i] for i in range(0, number_of_processes)]
+    tfrmt = tableize(prows, header)
+    __print_colorize_table(tfrmt)
 
 # ##############################################################################
 # Get user selected options
@@ -317,7 +313,7 @@ def __get_options(version) :
                           type="string",
                           metavar="<input filename>",
                           default="")
-    cmd_parser.add_option("-c", "--number_of_processes",
+    cmd_parser.add_option("-n", "--number_of_processes",
                           action="store",
                           dest="number_of_processes",
                           help="the number of processes that will be printed",
@@ -439,7 +435,7 @@ if __name__ == "__main__":
         # Run main
         # #######################################################################
         message = "Analyzing the file: %s" %(cmdline_opts.path_to_src_file)
-        logging.getLogger(MAIN_LOGGER_NAME).info(message)
+        logging.getLogger(MAIN_LOGGER_NAME).debug(message)
 
         # filename: node42-20170820-230101-info-top.log
         split_filename = cmdline_opts.path_to_src_file.split("-")
@@ -460,7 +456,7 @@ if __name__ == "__main__":
                 top_chunks[cts].append(line)
 
         if (cmdline_opts.process_cpu_percentage):
-            print_top_cpu_sort(top_chunks)
+            print_top_cpu_sort(top_chunks, cmdline_opts.number_of_processes)
         else:
             print_top(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.show_seperator)
     except KeyboardInterrupt:

@@ -227,12 +227,10 @@ def __get_preamble_map(preamble):
     # Print preamble data and top rows
     preamble_map["load average"] = preamble[0].split(",  ")[2].split(":")[1]
     preamble_map["cpu_idle"] =  preamble[2].split(", ")[3]
-    print
     mem_total = __bytes_to_human("%sK" %(preamble[3].split(", ")[0].split("+")[0].split()[3]))
     mem_free = __bytes_to_human("%sK" %(preamble[3].split(", ")[1].split()[0]))
-    print "My human_size() function in corrrect as I passing kb but function using by."
     preamble_map["mem_free"] = "%s (%s total)" %(mem_free, mem_total)
-    preamble_map["swap_used"] = preamble[4].split(",  ")[1].split()[0]
+    preamble_map["swap_used"] = __bytes_to_human("%sK" %(preamble[4].split(",  ")[1].split()[0]))
     return preamble_map
 
 def print_top(top_chunks, number_of_processes, show_seperator):

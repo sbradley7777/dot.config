@@ -198,40 +198,40 @@ def __colorize_line(text, colorize_foreground=False):
 # parse and print data
 # ##############################################################################
 
-def __human_size(size_bytes):
-    """
-    format a size in bytes into a 'human' file size, e.g. bytes, KB, MB, GB, TB, PB
-    Note that bytes/KB will be reported in whole numbers but MB and above will have greater precision
-    e.g. 1 byte, 43 bytes, 443 KB, 4.3 MB, 4.43 GB, etc
-    """
-    if size_bytes == 1:
-        # because I really hate unnecessary plurals
-        return "1 byte"
+# https://github.com/giampaolo/pyftpdlib/blob/master/scripts/ftpbench#L140
+# https://code.activestate.com/recipes/578019-bytes-to-human-human-to-bytes-converter/
+def __bytes_to_human(s, format="%(value).1f%(symbol)s"):
+    # Need error checking like if no symbol given.
+    symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    letter = s[-1:].strip().upper()
+    num = s[:-1]
+    assert num.isdigit() and letter in symbols, s
+    num = float(num)
+    prefix = {symbols[0]: 1}
+    for i, s in enumerate(symbols[1:]):
+        prefix[s] = 1 << (i + 1) * 10
+    # Converted string into bytes.
+    b =int(num * prefix[letter])
 
-    suffixes_table = [('bytes',0),('KB',0),('MB',1),('GB',2),('TB',2), ('PB',2)]
-
-    num = float(size_bytes)
-    for suffix, precision in suffixes_table:
-        if num < 1024.0:
-            break
-        num /= 1024.0
-
-    if precision == 0:
-        formatted_size = "%d" % num
-    else:
-        formatted_size = str(round(num, ndigits=precision))
-
-    return "%s %s" % (formatted_size, suffix)
+    prefix = {}
+    for i, s in enumerate(symbols[1:]):
+        prefix[s] = 1 << (i + 1) * 10
+    for symbol in reversed(symbols[1:]):
+        if b >= prefix[symbol]:
+            value = float(b) / prefix[symbol]
+            return format % locals()
+    return format % dict(symbol=symbols[0], value=n)
 
 def __get_preamble_map(preamble):
     preamble_map = {}
     # Print preamble data and top rows
     preamble_map["load average"] = preamble[0].split(",  ")[2].split(":")[1]
     preamble_map["cpu_idle"] =  preamble[2].split(", ")[3]
-    total_mem_size = __human_size(int(preamble[3].split(", ")[0].split("+")[0].split()[3]) / 1024)
-    print total_mem_size
+    print
+    mem_total = __bytes_to_human("%sK" %(preamble[3].split(", ")[0].split("+")[0].split()[3]))
+    mem_free = __bytes_to_human("%sK" %(preamble[3].split(", ")[1].split()[0]))
     print "My human_size() function in corrrect as I passing kb but function using by."
-    preamble_map["mem_free"] = __human_size(preamble[3].split(", ")[1].split()[0])
+    preamble_map["mem_free"] = "%s (%s total)" %(mem_free, mem_total)
     preamble_map["swap_used"] = preamble[4].split(",  ")[1].split()[0]
     return preamble_map
 
@@ -503,9 +503,6 @@ if __name__ == "__main__":
             print_top(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.show_seperator)
         print
         print "!!!!Need to pass datetime objec to print_top*() and need to sort chunks by datetime string. Currently pulling in date from main() which should not occur."
-        print
-        print "Fix human size function. See debug notes in preamble()."
-        print
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

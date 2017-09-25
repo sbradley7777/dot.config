@@ -252,7 +252,7 @@ def print_top(top_chunks, number_of_processes, show_seperator):
     tfrmt = tableize(pid_rows_all, header)
     __print_colorize_table(tfrmt)
 
-def print_top_cpu_sort(top_chunks, number_of_processes):
+def print_top_sort(top_chunks, number_of_processes, column_name):
     # The file is sorted into bins to capture all top data captured at
     # specific time.
     tkeys = top_chunks.keys()
@@ -285,8 +285,19 @@ def print_top_cpu_sort(top_chunks, number_of_processes):
             pid_rows.append(row)
         pid_rows_all += pid_rows
 
-    # Sort all the rows in the list.
-    pid_rows_all.sort(key=operator.itemgetter(9), reverse=True)
+    # Sort all the rows in the list. Could check header before, but require I
+    # store headers in var and might do later so error out before processing
+    # data.
+    cindex = 0
+    for cname in header:
+        if (cname.lower() == column_name.lower()):
+            break;
+        cindex += 1
+    if (cindex >= len(header)):
+        message = "The column name was not found."
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        sys.exit(1)
+    pid_rows_all.sort(key=operator.itemgetter(cindex), reverse=True)
     prows = [pid_rows_all[i] for i in range(0, number_of_processes)]
     tfrmt = tableize(prows, header)
     __print_colorize_table(tfrmt)
@@ -320,12 +331,13 @@ def __get_options(version) :
                           type="int",
                           metavar="<number of processes>",
                           default=5)
-    cmd_parser.add_option("-C", "--process_cpu_percentage",
-                          action="store_true",
-                          dest="process_cpu_percentage",
-                          help="show process with highest cpu percentage for each interval",
-                          default=False)
-
+    cmd_parser.add_option("-c", "--column_name",
+                          action="store",
+                          dest="column_name",
+                          help="the column name to sort by",
+                          type="string",
+                          metavar="<name of column>",
+                          default="")
     cmd_parser.add_option("-s", "--seperator",
                           action="store_true",
                           dest="show_seperator",
@@ -455,8 +467,8 @@ if __name__ == "__main__":
             if (cts):
                 top_chunks[cts].append(line)
 
-        if (cmdline_opts.process_cpu_percentage):
-            print_top_cpu_sort(top_chunks, cmdline_opts.number_of_processes)
+        if (cmdline_opts.column_name):
+            print_top_sort(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.column_name.strip())
         else:
             print_top(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.show_seperator)
     except KeyboardInterrupt:

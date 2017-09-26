@@ -24,6 +24,7 @@ import operator
 VERSION_NUMBER = "0.1-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
+DT_FORMAT = "%Y%m%d %H:%M:%S"
 # #####################################################################
 # Helper File Functions
 # ####################################################################
@@ -200,8 +201,20 @@ def __colorize_line(text, colorize_foreground=False):
 
 # https://github.com/giampaolo/pyftpdlib/blob/master/scripts/ftpbench#L140
 # https://code.activestate.com/recipes/578019-bytes-to-human-human-to-bytes-converter/
-def __bytes_to_human(s, format="%(value).1f%(symbol)s"):
-    # Need error checking like if no symbol given.
+def __bytes_to_human(n, format="%(value).1f%(symbol)s"):
+    if (not n.isdigit()):
+        n = __to_bytes(n)
+    symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
+    prefix = {}
+    for i, s in enumerate(symbols[1:]):
+        prefix[s] = 1 << (i + 1) * 10
+    for symbol in reversed(symbols[1:]):
+        if n >= prefix[symbol]:
+            value = float(n) / prefix[symbol]
+            return format % locals()
+    return format % dict(symbol=symbols[0], value=n)
+
+def __to_bytes(s):
     symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     letter = s[-1:].strip().upper()
     num = s[:-1]
@@ -210,27 +223,18 @@ def __bytes_to_human(s, format="%(value).1f%(symbol)s"):
     prefix = {symbols[0]: 1}
     for i, s in enumerate(symbols[1:]):
         prefix[s] = 1 << (i + 1) * 10
-    # Converted string into bytes.
-    b =int(num * prefix[letter])
-
-    prefix = {}
-    for i, s in enumerate(symbols[1:]):
-        prefix[s] = 1 << (i + 1) * 10
-    for symbol in reversed(symbols[1:]):
-        if b >= prefix[symbol]:
-            value = float(b) / prefix[symbol]
-            return format % locals()
-    return format % dict(symbol=symbols[0], value=n)
+    return int(num * prefix[letter])
 
 def __get_preamble_map(preamble):
     preamble_map = {}
     # Print preamble data and top rows
     preamble_map["load average"] = preamble[0].split(",  ")[2].split(":")[1]
     preamble_map["cpu_idle"] =  preamble[2].split(", ")[3]
-    mem_total = __bytes_to_human("%sK" %(preamble[3].split(", ")[0].split("+")[0].split()[3]))
-    mem_free = __bytes_to_human("%sK" %(preamble[3].split(", ")[1].split()[0]))
+    mem_total = __bytes_to_human("%sK" %(preamble[3].split(", ")[0].split()[1].replace("k", "")))
+    # mem_total = __bytes_to_human("%sK" %(preamble[3].split(", ")[0].split("+")[0].split()[3]))
+    mem_free = __bytes_to_human("%sK" %(preamble[3].split(", ")[1].split()[0].replace("k", "")))
     preamble_map["mem_free"] = "%s (%s total)" %(mem_free, mem_total)
-    preamble_map["swap_used"] = __bytes_to_human("%sK" %(preamble[4].split(",  ")[1].split()[0]))
+    preamble_map["swap_used"] = __bytes_to_human("%sK" %(preamble[4].split(",  ")[1].split()[0].replace("k", "")))
     return preamble_map
 
 def print_top(top_chunks, number_of_processes, show_seperator):
@@ -242,7 +246,7 @@ def print_top(top_chunks, number_of_processes, show_seperator):
     header = []
 
     for ts in tkeys:
-        dt = datetime.strptime("%s %s" %(date, ts), "%Y%m%d %H:%M:%S")
+        dt = datetime.strptime("%s" %(ts), DT_FORMAT)
         lines = top_chunks.get(ts)
         # Build the header and preamble
         preamble = []
@@ -265,6 +269,12 @@ def print_top(top_chunks, number_of_processes, show_seperator):
             if (not line):
                 continue
             row = [str(dt)] + line.split()
+            if (len(row) > 13):
+                modrow = []
+                for i in range(0, 12):
+                    modrow.append(row.pop(0))
+                modrow.append(" ".join(row))
+                row = modrow
             row += [preamble_map["load average"], preamble_map["cpu_idle"],
                     preamble_map["mem_free"], preamble_map["swap_used"]]
             pid_rows.append(row)
@@ -287,7 +297,7 @@ def print_top_sort(top_chunks, number_of_processes, column_name):
     pid_rows_all = []
     header = []
     for ts in tkeys:
-        dt = datetime.strptime("%s %s" %(date, ts), "%Y%m%d %H:%M:%S")
+        dt = datetime.strptime("%s" %(ts), DT_FORMAT)
         lines = top_chunks.get(ts)
         # Build the header and preamble
         preamble = []
@@ -307,6 +317,12 @@ def print_top_sort(top_chunks, number_of_processes, column_name):
         pid_rows = []
         for i in range(6, len(lines)):
             row = [str(dt)] + lines[i].split()
+            if (len(row) > 13):
+                modrow = []
+                for i in range(0, 12):
+                    modrow.append(row.pop(0))
+                modrow.append(" ".join(row))
+                row = modrow
             row += [preamble_map["load average"], preamble_map["cpu_idle"],
                     preamble_map["mem_free"], preamble_map["swap_used"]]
             pid_rows.append(row)
@@ -486,10 +502,10 @@ if __name__ == "__main__":
         for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
             if line.startswith("top - "):
                 timestamp = line.split()[2]
-                dt = datetime.strptime("%s %s" %(date, timestamp), "%Y%m%d %H:%M:%S")
+                dt = datetime.strptime("%s %s" %(date, timestamp), DT_FORMAT)
                 if (hour == dt.strftime("%H")):
-                    cts = timestamp
-                    top_chunks[timestamp] = []
+                    cts = dt.strftime(DT_FORMAT)
+                    top_chunks[cts] = []
                 else:
                     cts = ""
             if (cts):
@@ -499,8 +515,6 @@ if __name__ == "__main__":
             print_top_sort(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.column_name.strip())
         else:
             print_top(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.show_seperator)
-        print
-        print "!!!!Need to pass datetime objec to print_top*() and need to sort chunks by datetime string. Currently pulling in date from main() which should not occur."
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

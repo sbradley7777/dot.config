@@ -178,6 +178,12 @@ def tableize(rows, header, colorize=True):
             row_string = " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
             if (not row_string.startswith("-")):
                 count = count + 1
+            # Add header ever 40 lines.
+            if ((count % 40) == 0):
+                row_string += "\n%s" %('-+-'.join( '-' * width for width in widths))
+                row_string += "\n%s" %(' | '.join(format(title, "%ds" % width)
+                                                  for width, title in zip(widths, header) ))
+                row_string += "\n%s" %('-+-'.join( '-' * width for width in widths))
             formatted_table += row_string + "\n"
     return formatted_table
 
@@ -228,8 +234,8 @@ def show_d_state(data_slices, show_seperator):
                 continue
             row = [timestamp] + line.split()
 
-            # Found line that do not have all columns
-            if (len(row) < 9):
+            # If line does not have all the columns then do not parse.
+            if (len(row) < len(PS_COLUMN_NAMES.keys())):
                 message = "The line would not parse: \n\t %s" %(line)
                 logging.getLogger(MAIN_LOGGER_NAME).debug(message)
                 continue

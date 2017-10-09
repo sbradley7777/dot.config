@@ -229,7 +229,8 @@ def __to_bytes(s):
 def __get_preamble_map(preamble):
     preamble_map = {}
     # Print preamble data and top rows
-    preamble_map["load average"] = preamble[0].split(",  ")[2].split(":")[1]
+    #preamble_map["load average"] = preamble[0].split(",  ")[2].split(":")[1]
+    preamble_map["load average"] = preamble[0].split("load average:")[1]
     preamble_map["cpu_idle"] =  preamble[2].split(", ")[3]
     # The mem output comes in different versions:
     # Mem:  32832244k total, 21954424k used, 10877820k free,   852872k buffers
@@ -505,6 +506,7 @@ if __name__ == "__main__":
 
         # Need to only capture data within that hour.
         top_chunks = {}
+        cts = ""
         for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
             if line.startswith("top - "):
                 timestamp = line.split()[2]

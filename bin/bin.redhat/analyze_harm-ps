@@ -222,9 +222,12 @@ def show_d_state(data_slices, show_seperator):
     for ts in tkeys:
         dt = datetime.strptime("%s" %(ts), DT_FORMAT)
         timestamp = "%02d:%02d:%02d" %(int(dt.hour), int(dt.minute), int(dt.second))
-
         lines = data_slices.get(ts)
+        if (not lines):
+            continue
         lines.pop(0)
+        if (not lines):
+            continue
         header = ["timestamp"]
         header += lines.pop(0).split()
         pid_rows = []

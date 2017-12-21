@@ -27,6 +27,7 @@
 # ###############################################################################
 # https://github.com/sbradley7777/dot.config/blob/master/etc/sysconfig/lsb-resource
 # https://github.com/sbradley7777/dot.config/blob/master/etc/systemd/system/lsb-resource.service
+# https://github.com/ssato/misc/blob/master/init_script_example.sh
 
 # ###############################################################################
 # systemd
@@ -44,12 +45,12 @@
 # pacemaker
 # ###############################################################################
 # To add to pacemaker as lsb resource:
-# pcs resource create lsb-res lsb:lsb-resource op monitor interval=20s
+#    pcs resource create lsb-res lsb:lsb-resource op monitor interval=20s
 
 # To add as systemd service, then will require that systemd service file is added.
-# cp lsb-resource.service /etc/systemd/system/lsb-resource.service
-# systemctl daemon-reload
-# pcs resource create systemd-res systemd:lsb-resource op monitor interval=20s
+#    cp lsb-resource.service /etc/systemd/system/lsb-resource.service
+#    systemctl daemon-reload
+#    pcs resource create systemd-res systemd:lsb-resource op monitor interval=20s
 
 # ###############################################################################
 # TODO
@@ -66,13 +67,22 @@
 # ###############################################################################
 # Vars
 # ###############################################################################
-# The name of the logger.
+
 # The path to the lockfile.
 LOCKFILE=/var/run/${0##*/}.pid;
+
 # If greater than zero then delay startup by X seconds. You set the delay that
 # is needed by changing this variable.
-[ -z "$DELAY_STARTUP_SECONDS" ] && DELAY_STARTUP_SECONDS=0
-[ -z "$ENABLE_HTTPD" ] && ENABLE_HTTPD=1
+[ -z "$DELAY_START_SECONDS" ] && DELAY_START_SECONDS=0;
+# The amount of time to stall the stopping of the script.
+[ -z "$DELAY_STOP_SECONDS" ] && DELAY_STOP_SECONDS=0;
+
+# If $ENABLE_HTTPD and $PATH_TO_SCRIPT is enabled then $PATH_TO_SCRIPT will be
+# ignored.
+# If equal to zero then start webserver.
+[ -z "$ENABLE_HTTPD" ] && ENABLE_HTTPD=1;
+# If variable not empty then run the external script.
+[ -z "$PATH_TO_SCRIPT" ] && PATH_TO_SCRIPT=;
 
 # ###############################################################################
 # The clug utility uses the normal logging levels as defined in
@@ -110,9 +120,17 @@ stop() {
     kill $pid &> /dev/null;
     # If there was no error on killing the process then remove the file.
     if [ $? ]; then
-	clulog $LOG_INFO "Removing the lockfile: $LOCKFILE";
-	rm -f $LOCKFILE;
-	return $?;
+	status;
+	if [ $? -eq 1 ]; then
+	    clulog $LOG_INFO "Removing the lockfile: $LOCKFILE";
+	    rm -f $LOCKFILE;
+	    res=$?
+	    sleep $DELAY_STOP_SECONDS;
+	    return $res;
+	else
+	    clulog $LOG_ERR "The process is still running and did not die."
+	    return 1
+	fi
     else
 	return 1;
     fi
@@ -127,9 +145,9 @@ start() {
 
     # The startup will sleep for X seconds to simulate a delayed start up if
     # greater than zero.
-    if [ "$DELAY_STARTUP_SECONDS" -gt 0 ]; then
-        clulog $LOG_INFO "Delaying startup by $DELAY_STARTUP_SECONDS seconds for the script: $0.";
-        sleep $DELAY_STARTUP_SECONDS;
+    if [ "$DELAY_START_SECONDS" -gt 0 ]; then
+        clulog $LOG_INFO "Delaying startup by $DELAY_START_SECONDS seconds for the script: $0.";
+        sleep $DELAY_START_SECONDS;
     fi
     # Start background process
     if [ $ENABLE_HTTPD -eq 0 ]; then
@@ -137,6 +155,14 @@ start() {
 	clulog $LOG_INFO "Starting httpd process on port $httpd_port in the background.";
 	cd /var/www/html/
 	python -m SimpleHTTPServer $httpd_port &> /dev/null &
+	echo $! > $LOCKFILE;
+    elif [ ! -z $PATH_TO_SCRIPT ]; then
+	if [ ! -f $PATH_TO_SCRIPT ]; then
+	    clulog $LOG_ERR "The script does not exist: $PATH_TO_SCRIPT.";
+	    return 1;
+	fi
+	clulog $LOG_INFO "Starting script in the background: $PATH_TO_SCRIPT.";
+	$PATH_TO_SCRIPT &> /dev/null &
 	echo $! > $LOCKFILE;
     else
 	clulog $LOG_INFO "Starting sleep infinity process in the background.";

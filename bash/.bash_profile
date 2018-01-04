@@ -123,7 +123,7 @@ if [[ "$unamestr" == 'Linux' ]]; then
 	alias less_nl='less -m -N -g -i --underline-special --SILENT'
 	alias less='less -m -g -i --SILENT'
 	# Use "highlight" in place of "cat"
-	alias cat="/usr/bin/src-hilite-lesspipe.sh $1";
+	alias cathl="/usr/bin/src-hilite-lesspipe.sh $1";
     fi
 elif [[ "$unamestr" == 'Darwin' ]]; then
     # !!! bash-completion takes too long to build index, so disabling for now. !!!
@@ -147,7 +147,7 @@ elif [[ "$unamestr" == 'Darwin' ]]; then
 	alias less_nl='less -m -N -g -i -J --underline-special --SILENT'
 	alias less='less -m -g -i -J --SILENT'
 	# Use "highlight" in place of "cat"
-	alias cat="$(brew --prefix)/bin/src-hilite-lesspipe.sh $1";
+	alias cathl="$(brew --prefix)/bin/src-hilite-lesspipe.sh $1";
     fi
 fi
 

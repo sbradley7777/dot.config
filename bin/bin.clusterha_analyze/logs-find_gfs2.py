@@ -24,8 +24,7 @@ from optparse import OptionParser, Option, SUPPRESS_HELP
 VERSION_NUMBER = "0.1-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
-RE_JOIN_CLUSTER = '.* (?P<hostname>[a-z0-9-_]*) [a-z0-9-_]*:.*GFS2.* Trying to join cluster "(?P<lock_protocal>lock_[a-z]*)", "(?P<cluster_name>[a-z0-9-_]*):(?P<filesystem_name>[a-z0-9-_]*)"'
-RE_GFS2_FS ='.* fsid=(?P<cluster_name>[a-z0-9-_]*):(?P<filesystem_name>[a-z0-9-_]*).*'
+RE_GFS2_FS ='.* (?P<hostname>.*) kernel: GFS2: fsid=(?P<cluster_name>[a-z0-9-_]*):(?P<filesystem_name>[a-z0-9-_]*).*'
 
 class GFS2_Filesystem():
     def __init__(self, hostname, cluster_name, filesystem_name):
@@ -40,6 +39,8 @@ class GFS2_Filesystem():
                                                       self.__hostname)
 
     def __eq__(self, gfs2_filesystem):
+        if (gfs2_filesystem == None):
+            return False
         if ((self.__cluster_name == gfs2_filesystem.get_cluster_name()) and
             (self.__filesystem_name == gfs2_filesystem.get_filesystem_name())):
             return True
@@ -82,44 +83,23 @@ def get_data_from_file_as_list(path_to_filename) :
 # #####################################################################
 # Parsing functions
 # ####################################################################
-def __find_gfs2_filesystems_in_logfile(file_contents):
-    rem_join_cluster = re.compile(RE_JOIN_CLUSTER, re.IGNORECASE|re.DOTALL)
-    gfs2_filesystems = []
-    for line in file_contents:
-        # Does  not parse as it had fsid not empty.
-        # Jan 29 11:07:24 ftc-lbsbmqib501 kernel: GFS2: fsid=mqib_stg_501-502:log: Trying to join cluster "lock_dlm", "mqib_stg_501-502:log"
-        # Feb 21 14:14:47 sapdhpdb1b kernel:      GFS2: fsid=hanacluster:hana-shared: Trying to join cluster "lock_dlm", "hanacluster:hana-shared"
-        # Feb 21 14:14:47 sapdhpdb1b kernel: [  131.552393] GFS2: fsid=hanacluster:hana-shared: Trying to join cluster "lock_dlm", "hanacluster:hana-shared"
-        mo = rem_join_cluster.match(line.lower())
-        if mo:
-            gfs2_filesystem = GFS2_Filesystem(mo.group("hostname"),
-                                              mo.group("cluster_name"),
-                                              mo.group("filesystem_name"))
-            if (not gfs2_filesystem in gfs2_filesystems):
-                gfs2_filesystems.append(gfs2_filesystem)
-    return gfs2_filesystems
-
 def find_gfs2_logs(file_contents):
-    gfs2_filesystems = __find_gfs2_filesystems_in_logfile(file_contents)
-    rem_join_cluster = re.compile(RE_JOIN_CLUSTER, re.IGNORECASE|re.DOTALL)
+    gfs2_filesystems = []
     rem_gfs2_fs = re.compile(RE_GFS2_FS, re.IGNORECASE|re.DOTALL)
     for line in file_contents:
-        mo = rem_join_cluster.match(line.lower())
-        cluster_name = ""
-        fs_name = ""
+        gfs2_filesystem = None
+        mo = rem_gfs2_fs.match(line.lower())
         if mo:
-            cluster_name = mo.group("cluster_name")
-            fs_name = mo.group("filesystem_name")
-        else:
-            mo = rem_gfs2_fs.match(line.lower())
-            if mo:
-                cluster_name = mo.group("cluster_name")
-                fs_name = mo.group("filesystem_name")
-
-        if (cluster_name and fs_name):
+            if (mo.group("hostname") and mo.group("cluster_name") and
+                mo.group("filesystem_name")):
+                gfs2_filesystem = GFS2_Filesystem(mo.group("hostname"),
+                                                  mo.group("cluster_name"),
+                                                  mo.group("filesystem_name"))
+        if (not gfs2_filesystem == None):
+            if (not gfs2_filesystem in gfs2_filesystems):
+                gfs2_filesystems.append(gfs2_filesystem)
             for gfs2_fs in gfs2_filesystems:
-                if ((gfs2_fs.get_cluster_name() == cluster_name) and
-                    (gfs2_fs.get_filesystem_name() == fs_name)):
+                if (gfs2_filesystem == gfs2_fs):
                     gfs2_fs.append(line)
     return gfs2_filesystems
 

@@ -100,7 +100,16 @@ def find_gfs2_logs(file_contents):
                 gfs2_filesystems.append(gfs2_filesystem)
             for gfs2_fs in gfs2_filesystems:
                 if (gfs2_filesystem == gfs2_fs):
-                    gfs2_fs.append(line)
+                    if (not line.find("#012") >= 0):
+                        gfs2_fs.append(line)
+                    else:
+                        clines = line.split("#012")
+                        complete_line = clines.pop(0)
+                        gfs2_fs.append(complete_line)
+                        # Add missing text to the other line using complte line.
+                        head = complete_line.split("GFS2: ")[0]
+                        for cline in clines:
+                            gfs2_fs.append("%s%s" %(head, cline))
     return gfs2_filesystems
 
 # ##############################################################################

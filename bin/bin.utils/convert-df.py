@@ -13,6 +13,7 @@ import os
 import os.path
 import copy
 import argparse
+import textwrap
 
 # #####################################################################
 # Global vars:
@@ -70,7 +71,7 @@ def get_data_from_file_as_list(path_to_filename) :
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
     return None
 
-def truncate_rows(rows, max_item_length=70):
+def truncate_rows(rows, max_item_length=120):
     # This function will take a list of lists and remove any whitespaces at
     # start or end of items in each list. It will also truncate any item that is
     # longer than max_item_length and will insert into new rows the text longer

@@ -22,12 +22,17 @@
 # The other issue was passing "cipher" as a option. For now, it is hard coded.
 
 
-# Turn on debugging
+# Turn on debugging. Set to 1 to enable debugging.
 exp_internal 1
 
 # Time to wait for all the input to be recieved. In fencing scripts this would
-# be the "login_timeout".
-set timeout 30
+# be the "login_timeout". The timeout starts as soon as you enter the expect
+# {}. If the output is not matched by the time it hits timeout, then Timeout
+# Error is thrown.
+#
+# If a timeout occurs, then the last thing that was received will be written
+# before the Timeout Error occurs. This is demostrated with debugging enabled.
+set timeout 10
 
 # Set some vars from commandline options passed to script.
 set hostname [lindex $argv 0]
@@ -72,7 +77,7 @@ expect {
     $ilo_prompt {send "\n"}
     $prompt {send "\n"}
 }
-send_user "INFO: Successfully logged into $hostname.\n"
+send_user "\nINFO: Successfully logged into $hostname.\n"
 # Check to see if we got a prompt and if so run a command.
 expect {
     timeout { send_user "\nTimeout Error: Failed to find prompt for $hostname.\n"; exit 1 }

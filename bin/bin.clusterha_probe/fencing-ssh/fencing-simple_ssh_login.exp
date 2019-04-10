@@ -23,7 +23,7 @@
 
 
 # Turn on debugging. Set to 1 to enable debugging.
-exp_internal 1
+exp_internal 0
 
 # Time to wait for all the input to be recieved. In fencing scripts this would
 # be the "login_timeout". The timeout starts as soon as you enter the expect

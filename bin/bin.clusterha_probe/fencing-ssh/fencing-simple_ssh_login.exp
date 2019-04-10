@@ -3,24 +3,27 @@
 # enabled and runs a command. Uses "TCL" syntax and language in
 # expect script.
 #
+# Author    : Shane Bradley
+# Contact   : sbradley@redhat.com
+#
 # Usage:
 #   fencing-simple_ssh_login.exp <hostname> <username> <port> <path to key file | password>
 #
-# pyexpect is independent project that is pure python and does not use "expect".
+# pyexpect is independent project that is pure python and does not use
+# "expect". They are different implementations that try to acheive the same
+# goal. The pexpect attempts to use similar syntax as expect which is why they
+# look similar when coding.
+#
+# Useful Articles:
 # https://pexpect.readthedocs.io/en/stable
 # https://www.journaldev.com/1405/expect-script-ssh-example-tutorial
 # https://www.pantz.org/software/expect/expect_examples_and_tips.html
-#
-# The only issue is knowing when they give key file or password. For now the
-# "spawn" line has to be uncomment for connnecting to ssh with a key file or
-# password. Need to have some control flow if $argv 3 is a path to file then key
-# file and if not then password.
 #
 # The other issue was passing "cipher" as a option. For now, it is hard coded.
 
 
 # Turn on debugging
-exp_internal 0
+exp_internal 1
 
 # Time to wait for all the input to be recieved. In fencing scripts this would
 # be the "login_timeout".
@@ -32,14 +35,15 @@ set username [lindex $argv 1]
 set ssh_port [lindex $argv 2]
 set ssh_cipher "aes256-cbc"
 
-# The prompts to look for with expect.
-set prompt "$username@"
+# The prompts to look for with expect. The prompt can be tricky to get correct
+# if you do in color coding in bash with PS1 var. Enable debugging if the prompt
+# is never matched.
+set prompt "$username@*~*"
 set ilo_prompt "</>hpiLO->"
 
 # Make these use same index for now and to one of the commandline options.
 set ssh_key_file [lindex $argv 3]
 set password [lindex $argv 3]
-
 
 # If $argv3 is a path to existing file then assume it is for a key file.
 if {[file exists $ssh_key_file] == 1} {
@@ -60,26 +64,26 @@ if {[file exists $ssh_key_file] == 1} {
 # just hit enter to get another prompt to account for having enter password if
 # prompted.
 expect {
+    # The first match is the one that will be used. We want to have a request to
+    # enter password to be hit before searching for prompt.
     timeout { send_user "\nTimeout Error: Failed to find prompt for $hostname.\n"; exit 1 }
     eof { send_user "\nEOF Error: There was a SSH failure for $hostname.\n"; exit 1 }
-    $prompt {send "\r"}
-    $ilo_prompt {send "\r"}
-    "*assword:" {send "$password\r"}
+    "*assword:" {send "$password\n"}
+    $ilo_prompt {send "\n"}
+    $prompt {send "\n"}
 }
-# Check to see if we got a prompt and run command.
+send_user "INFO: Successfully logged into $hostname.\n"
+# Check to see if we got a prompt and if so run a command.
 expect {
     timeout { send_user "\nTimeout Error: Failed to find prompt for $hostname.\n"; exit 1 }
     eof { send_user "\nEOF Error: There was a SSH failure for $hostname.\n"; exit 1 }
+    $ilo_prompt {send "show /system1/oemhp_power1 oemhp_powerreg\n"}
     $prompt {send "logger \"The expect script has logged in with ssh.\"\n"}
-    $ilo_prompt {send "show /system1/oemhp_power1 oemhp_powerreg\r"}
 }
-send_user "INFO: Successfully logged into $hostname.\n"
-
 # Exit
 expect {
     timeout { send_user "\nTimeout Error: Failed to find prompt for $hostname.\n"; exit 1 }
     eof { send_user "\nEOF Error: There was a SSH failure for $hostname.\n"; exit 1 }
-    $prompt {send "exit\n"}
     $ilo_prompt {send "exit\r"}
-
+    $prompt {send "exit\n"}
 }

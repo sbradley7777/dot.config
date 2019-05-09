@@ -46,5 +46,6 @@ Clone the repo on some host if it does not exist then run the following command 
 $ mkdir -p ~/github/dot.config; git clone --quiet git://github.com/sbradley7777/dot.config.git ~/github/dot.config; ~/github/dot.config/install.py -y ; ~/github/dot.config/install_on_hosts.sh -p /root/github/dot.config -m "rh50 rh42"
 ~~~
 
+
 ##References
 * [bash configuration files and functions](https://github.com/mathiasbynens/dotfiles)

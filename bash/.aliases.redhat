@@ -4,7 +4,9 @@
 #################################################################################
 alias emacs='emacs -nw';
 alias screenattach='screen -d -r';
-alias sortlogs='sort -k1M -k2n -k3 -k4 -s';
+#alias sortlogs='sort -k1M -k2n -k3 -k4 -s';
+alias sortlogs='sort -k1M -k2n -k3 -k4';
+
 alias timef="/usr/bin/time --format='\tUser Time: %U sec | System Time: %S sec | Real Time: %e sec\n\tAvg CPU%% %P | Maximum Size of Process: %M KB | Avg Size of Memory: %Kkb'";
 alias which='alias | /usr/bin/which --tty-only --read-alias --show-dot --show-tilde';
 

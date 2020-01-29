@@ -26,5 +26,12 @@ fi
 cd $PATH_TO_INSIGHTS_PLUGINS;
 source $PATH_TO_INSIGHTS_PLUGINS/bin/activate;
 insights-run -p telemetry,shared_rules $path_to_sosreport;
+
+if [ -d $PATH_TO_INSIGHTS_PLUGINS/my_rules ]; then
+    echo "";
+    echo "----------------my_rules-------------------";
+    echo "";
+    insights-run -p my_rules $path_to_sosreport;
+fi
 exit;
 

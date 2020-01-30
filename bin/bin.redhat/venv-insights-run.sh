@@ -41,7 +41,7 @@ while getopts ":hp:IGMv" opt; do
             disable_my_rules=1;
             ;;
 	v)
-            verbose="-vv";
+            verbose="-v --debug";
             ;;
 	\?)
             echo "Invalid option: -$OPTARG" >&2

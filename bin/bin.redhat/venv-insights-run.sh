@@ -11,16 +11,18 @@ usage() {
     echo "   -I      disable the insights-plugins rules";
     echo "   -G      disable the gss-rules rules";
     echo "   -M      disable the my_rules rules (your local rules)";
+    echo "   -v      enable verbose output";
     echo -e "\nEXAMPLE:";
     echo "Analyze an sosreport and disable the rules for insights-plugins and gss-rules.";
     echo "$ $bname -p ~/sosreports-insights/sosreport-rhel7-1-2019-12-06-mhxylet.tar.xz -I -G";
 }
 
-
+# Get the user options.
 disable_insights_plugins=0;
 disable_gss_rules=0;
 disable_my_rules=0;
-while getopts ":hp:IGM" opt; do
+verbose="";
+while getopts ":hp:IGMv" opt; do
     case $opt in
 	h)
             usage;
@@ -37,6 +39,9 @@ while getopts ":hp:IGM" opt; do
             ;;
 	M)
             disable_my_rules=1;
+            ;;
+	v)
+            verbose="-vv";
             ;;
 	\?)
             echo "Invalid option: -$OPTARG" >&2
@@ -86,7 +91,7 @@ if [[ disable_insights_plugins -ne 1 || disable_gss_rules -ne 1 ]]; then
 	    plugins="$plugins,shared_rules";
 	fi
     fi
-    insights-run -p $plugins $path_to_sosreport;
+    insights-run -p $plugins $path_to_sosreport $verbose;
 fi
 
 if [[ disable_my_rules -ne 1 ]]; then
@@ -94,7 +99,7 @@ if [[ disable_my_rules -ne 1 ]]; then
 	echo "";
 	echo "----------------my_rules-------------------";
 	echo "";
-	insights-run -p my_rules $path_to_sosreport;
+	insights-run -p my_rules $path_to_sosreport $verbose;
     fi
 fi
 exit;

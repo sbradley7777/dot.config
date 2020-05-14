@@ -267,19 +267,19 @@ def show_d_state(data_slices, show_seperator):
                 modrow.append(row.pop(0))
 
             # Allow for finite size of command and options.
-            command = row.pop(0)
-            options = ""
             if (row):
-                max_options_char_count = max_command_length - len(command)
-                for item in row:
-                    if (len("%s %s" %(options, item)) > max_options_char_count):
-                        break
-                    options += " %s" %(item)
-                options += " ..."
-            command += " %s" %(options)
-            modrow.append(command.strip())
-
-            pid_rows.append(modrow)
+                command = row.pop(0)
+                options = ""
+                if (row):
+                    max_options_char_count = max_command_length - len(command)
+                    for item in row:
+                        if (len("%s %s" %(options, item)) > max_options_char_count):
+                            break
+                        options += " %s" %(item)
+                    options += " ..."
+                command += " %s" %(options)
+                modrow.append(command.strip())
+                pid_rows.append(modrow)
 
 
         # Pad command header before removing items.

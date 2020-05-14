@@ -8,13 +8,16 @@
 # After making the change, then propagate the cluster.conf and reboot the
 # cluster nodes or restart cluster stack.
 #
-#  - How to provide files to Red Hat Support (vmcore, rhev logcollector, sosreports, heap dumps, log files, etc.) 
+#  - How to provide files to Red Hat Support (vmcore, rhev logcollector, sosreports, heap dumps, log files, etc.)
 #    https://access.redhat.com/solutions/2112
 #
 # ************************************
 # This script has had limited testing.
 # ************************************
-
+#
+# NOTE: I spoke with engineering and they verified this script captures all the information
+#       required to debug a dlm issue (ex. dlm hung, dlm not recovering, etc).
+#
 # TODO:
 # * ticket number: TODO ADD ability to pass ticket number as ARG to command and
 #   include ticket number in the tarball and DLM debug directory filename.

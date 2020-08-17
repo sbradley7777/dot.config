@@ -26,14 +26,20 @@ ping -q -c 1 $host &>/dev/null
 if [ $? -eq 0 ] ; then
     #ipAddr=$(ssh $host  "/sbin/ifconfig $ETHERNET_DEVICE | grep 'inet addr:' | cut -d: -f2 " | awk '{ print $1}');
     ethernet_device="eth0";
-    ipAddr=$(ssh -o ForwardX11=no $host  "ip addr show dev $ethernet_device 2>/dev/null | sed -e's/^.*inet \([^ ]*\)\/.*$/\1/;t;d' 2>/dev/null" | head -n 1);
+    ipAddr=$(ssh -o ForwardX11=no $host  "/usr/sbin/ip addr show dev $ethernet_device 2>/dev/null | sed -e's/^.*inet \([^ ]*\)\/.*$/\1/;t;d' 2>/dev/null" | head -n 1);
     if valid_ip $ipAddr; then
 	echo "$ipAddr"
     else
 	ethernet_device="ens3";
-	ipAddr=$(ssh -o ForwardX11=no $host  "ip addr show dev $ethernet_device 2>/dev/null | sed -e's/^.*inet \([^ ]*\)\/.*$/\1/;t;d' 2>/dev/null" | head -n 1);
+	ipAddr=$(ssh -o ForwardX11=no $host  "/usr/sbin/ip addr show dev $ethernet_device 2>/dev/null | sed -e's/^.*inet \([^ ]*\)\/.*$/\1/;t;d' 2>/dev/null" | head -n 1);
 	if valid_ip $ipAddr; then
 	    echo "$ipAddr"
+	else
+	    ethernet_device="ens10";
+	    ipAddr=$(ssh -o ForwardX11=no $host  "/usr/sbin/ip addr show dev $ethernet_device 2>/dev/null | sed -e's/^.*inet \([^ ]*\)\/.*$/\1/;t;d' 2>/dev/null" | head -n 1);
+	    if valid_ip $ipAddr; then
+		echo "$ipAddr"
+	    fi
 	fi
     fi;
     exit;

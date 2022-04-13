@@ -218,7 +218,7 @@ def __bytes_to_human(n, format="%(value).1f%(symbol)s"):
 def __to_bytes(s):
     symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     letter = s[-1:].strip().upper()
-    num = s[:-1]
+    num = s[:-1].split('.')[0]
     assert num.isdigit() and letter in symbols, s
     num = float(num)
     prefix = {symbols[0]: 1}

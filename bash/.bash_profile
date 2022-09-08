@@ -13,7 +13,8 @@ export GREP_COLOR='0;31';
 ##############################################################################
 # History preferences
 ##############################################################################
-export HISTSIZE=32768;
+# Set to empty variable to have unlimited size. 
+export HISTSIZE=;
 export HISTFILESIZE=$HISTSIZE;
 export HISTCONTROL=ignoredups;
 if [ $(id -u) -eq 0 ];then

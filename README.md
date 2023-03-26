@@ -2,6 +2,7 @@
 This git repo contains configuration files for `bash` and `emacs`. There is bin directory that contains some `bash` scripts. The `bash` configuration files are designed to work with `OSX` or `Linux`(only `Red Hat`/`Fedora` tested). In addition there is some `Red Hat High-Availability` scripts included but are installed by default(see configuration file section below).
 When managing multiple physical machines, virtual machines, or operating systems it is very useful to have same configuration files installed.
 
+
 ##How to Install
 This one-liner assumes the local git repo `~/github/dot.config` does not exist and uses an install file to create all the changes:
 ~~~

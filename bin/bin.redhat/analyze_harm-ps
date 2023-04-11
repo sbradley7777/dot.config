@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python2
 """
 The script parses ps data collected in a file by the script ha-resourcemon.
 - https://access.redhat.com/solutions/368393

@@ -61,5 +61,6 @@ if [ ! -f $path_to_file ]; then
 fi
 
 prefix=$(printf "%*s" $prefix_whitespace_count)
-cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}';
+#cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}'
+cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}' | grep -v "journal\: Suppressed" | grep -v "of user root" | grep -v "Audit daemon rotating log files" | grep -v "User Slice of" | grep -v "systemd-logind" | grep -v "rate-limiting" | grep -v "Started Session" | grep -v "http://www.rsyslog.com" | less;
 exit;

@@ -62,5 +62,5 @@ fi
 
 prefix=$(printf "%*s" $prefix_whitespace_count)
 #cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}'
-cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}' | grep -v "journal\: Suppressed" | grep -v "of user root" | grep -v "Audit daemon rotating log files" | grep -v "User Slice of" | grep -v "systemd-logind" | grep -v "rate-limiting" | grep -v "Started Session" | grep -v "http://www.rsyslog.com" | grep -v goferd | grep -v sshd | grep -v sudo;
+cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}' | grep -a -v "journal\: Suppressed" | grep -a -v "of user root" | grep -a -v "Audit daemon rotating log files" | grep -a -v "User Slice of" | grep -a -v "systemd-logind" | grep -a -v "rate-limiting" | grep -a -v "Started Session" | grep -a -v "http://www.rsyslog.com" | grep -a -v goferd | grep -a -v sshd | grep -a -v sudo | grep -a -v "su\:" | grep -a -v "su\[";
 exit;

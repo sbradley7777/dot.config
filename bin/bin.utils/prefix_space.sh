@@ -1,9 +1,32 @@
 #!/bin/bash
+######################################################################
+# prefix-space.sh                                                    #
+#                                                                    #
+# Author: Shane Bradley(sbradley@redhat.com)                         #
+# Creation Date: 3-15-2024                                           #
+# Version: 2.0                                                       #
+#                                                                    #
+# usage:                                                             #
+# $ prefix-space.sh -p <path to file> -w <whitespace count>          #
+######################################################################
 
-#prefix_whitespace_count=2
-#prefix=$(printf "%*s" $prefix_whitespace_count)
-#cat $1 | awk -v prefix="$prefix" '{print prefix $0}';
-
+# A list of strings to ignore.
+GREP_IGNORES=(    'sshd' \
+                  'goferd' \
+                  'sudo' \
+		  'org.freedesktop' \
+                  'systemd-logind' \
+                  'rate-limiting' \
+		  "http://www.rsyslog.com" \
+		  "journal\: Suppressed" \
+		  "of user root" \
+		  "Audit daemon rotating log files" \
+		  "User Slice of" \
+                  "su\:" \
+                  "su\[" \
+                  "is marked world-inaccessible" \
+                  "is marked executable" \
+		  'Started Session' );
 
 
 usage() {
@@ -43,7 +66,6 @@ while getopts ":hp:w:" opt; do
     esac
 done
 
-# Make sure a path to lockdumps was given.
 if [ -z $path_to_file ]; then
     echo -e "ERROR: A path to the file that will be read is required with -p option.\n";
     usage;
@@ -60,7 +82,18 @@ if [ ! -f $path_to_file ]; then
     exit 1
 fi
 
+# Create a string that contains the number of spaces that will be prefixed for each line.
 prefix=$(printf "%*s" $prefix_whitespace_count)
-#cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}'
-cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}' | grep -a -v "journal\: Suppressed" | grep -a -v "of user root" | grep -a -v "Audit daemon rotating log files" | grep -a -v "User Slice of" | grep -a -v "systemd-logind" | grep -a -v "rate-limiting" | grep -a -v "Started Session" | grep -a -v "http://www.rsyslog.com" | grep -a -v goferd | grep -a -v sshd | grep -a -v sudo | grep -a -v "su\:" | grep -a -v "su\[";
+# Enable bash debugging by uncommenting this line.
+#set -x
+
+# Build a list of grep -e <string> options to exclude from the results.
+grep_ignore_regexs="";
+for i in ${!GREP_IGNORES[@]}; do
+    # grep_ignore_regexs+="-e '${GREP_IGNORES[i]}' ";
+    grep_ignore_regexs+="-e '${GREP_IGNORES[i]}' ";
+done;
+# Command to add spacing, then strip lines of strings that should be ignored.
+# Had to use "eval" as if ran direct it would add lots of escape quotes.
+eval "grep -ai -v $grep_ignore_regexs $path_to_file" | awk -v prefix="$prefix" '{print prefix $0}' | tail;
 exit;

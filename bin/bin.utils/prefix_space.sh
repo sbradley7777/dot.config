@@ -10,24 +10,42 @@
 # $ prefix-space.sh -p <path to file> -w <whitespace count>          #
 ######################################################################
 
-# A list of strings to ignore.
-GREP_IGNORES=(    'sshd' \
-                  'goferd' \
-                  'sudo' \
-		  'org.freedesktop' \
-                  'systemd-logind' \
-                  'rate-limiting' \
-		  "http://www.rsyslog.com" \
-		  "journal\: Suppressed" \
-		  "of user root" \
-		  "Audit daemon rotating log files" \
-		  "User Slice of" \
-                  "su\:" \
-                  "su\[" \
-                  "is marked world-inaccessible" \
-                  "is marked executable" \
-		  'Started Session' );
 
+# Examples
+#   "htt.*://www.rsyslog.com"
+#   "su[:[]" replaces
+#        "su\:"
+#        "su\["
+
+######################################################################
+# Global Variables
+######################################################################
+# A list of strings to ignore.
+GREP_IGNORES_DEFAULT=( 'sshd' \
+		       'snmpd' \
+		       'goferd' \
+		       'sudo' \
+		       'org.freedesktop' \
+		       'systemd-logind' \
+		       'rate-limiting' \
+		       "Audit daemon rotating log files" \
+		       "www.rsyslog.com" \
+		       "journal\: Suppressed" \
+		       "of user *." \
+		       "User Slice of" \
+		       'Started Session' \
+		       "su[:[]" \
+		       "is marked world-inaccessible" \
+		       "is marked executable" \
+		       "kernel\: martian source" \
+		       "kernel\: ll header" \
+		       "nfsidmap" );
+
+# A list of strings to ignore that can be disabled with -E option.
+GREP_IGNORES_EXTRAS=( 'podman\[' \
+		      'healthcheck');
+
+######################################################################
 
 usage() {
     bname=$(basename $0);
@@ -43,7 +61,9 @@ usage() {
 
 path_to_file="";
 prefix_whitespace_count=2;
-while getopts ":hp:w:" opt; do
+
+disable_grep_ignores_extras=false;
+while getopts ":hp:w:E" opt; do
     case $opt in
     h)
         usage;
@@ -54,6 +74,9 @@ while getopts ":hp:w:" opt; do
         ;;
     w)
         prefix_whitespace_count=$OPTARG;
+        ;;
+    E)
+        disable_grep_ignores_extras=true;
         ;;
     \?)
         echo "Invalid option: -$OPTARG" >&2
@@ -85,14 +108,21 @@ fi
 # Create a string that contains the number of spaces that will be prefixed for each line.
 prefix=$(printf "%*s" $prefix_whitespace_count)
 # Enable bash debugging by uncommenting this line.
-#set -x
+# set -x
 
 # Build a list of grep -e <string> options to exclude from the results.
 grep_ignore_regexs="";
-for i in ${!GREP_IGNORES[@]}; do
-    # grep_ignore_regexs+="-e '${GREP_IGNORES[i]}' ";
-    grep_ignore_regexs+="-e '${GREP_IGNORES[i]}' ";
+for i in ${!GREP_IGNORES_DEFAULT[@]}; do
+    grep_ignore_regexs+="-e '${GREP_IGNORES_DEFAULT[i]}' ";
 done;
+
+# If grep_ignores_extras is enabled then add these to the list.
+if [ "$disable_grep_ignores_extras" = false ]; then
+    for i in ${!GREP_IGNORES_EXTRAS[@]}; do
+	grep_ignore_regexs+="-e '${GREP_IGNORES_EXTRAS[i]}' ";
+    done;
+fi;
+
 # Command to add spacing, then strip lines of strings that should be ignored.
 # Had to use "eval" as if ran direct it would add lots of escape quotes.
 eval "grep -ai -v $grep_ignore_regexs $path_to_file" | awk -v prefix="$prefix" '{print prefix $0}';

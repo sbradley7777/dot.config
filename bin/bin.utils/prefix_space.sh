@@ -95,5 +95,5 @@ for i in ${!GREP_IGNORES[@]}; do
 done;
 # Command to add spacing, then strip lines of strings that should be ignored.
 # Had to use "eval" as if ran direct it would add lots of escape quotes.
-eval "grep -ai -v $grep_ignore_regexs $path_to_file" | awk -v prefix="$prefix" '{print prefix $0}' | tail;
+eval "grep -ai -v $grep_ignore_regexs $path_to_file" | awk -v prefix="$prefix" '{print prefix $0}';
 exit;

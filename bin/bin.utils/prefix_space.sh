@@ -10,6 +10,8 @@
 # $ prefix-space.sh -p <path to file> -w <whitespace count>          #
 ######################################################################
 
+# Example Articles
+# - https://phoenixnap.com/kb/grep-regex
 
 # Examples
 #   "htt.*://www.rsyslog.com"

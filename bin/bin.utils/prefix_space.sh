@@ -45,7 +45,8 @@ GREP_IGNORES_DEFAULT=( 'sshd' \
 
 # A list of strings to ignore that can be disabled with -E option.
 GREP_IGNORES_EXTRAS=( 'podman\[' \
-		      'healthcheck');
+		      'healthcheck' \
+		      'ansible-');
 
 ######################################################################
 

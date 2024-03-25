@@ -66,7 +66,8 @@ path_to_file="";
 prefix_whitespace_count=2;
 
 disable_grep_ignores_extras=false;
-while getopts ":hp:w:E" opt; do
+disable_grep_ignores=false;
+while getopts ":hp:w:EG" opt; do
     case $opt in
     h)
         usage;
@@ -80,6 +81,9 @@ while getopts ":hp:w:E" opt; do
         ;;
     E)
         disable_grep_ignores_extras=true;
+        ;;
+    G)
+        disable_grep_ignores=true;
         ;;
     \?)
         echo "Invalid option: -$OPTARG" >&2
@@ -126,7 +130,12 @@ if [ "$disable_grep_ignores_extras" = false ]; then
     done;
 fi;
 
-# Command to add spacing, then strip lines of strings that should be ignored.
-# Had to use "eval" as if ran direct it would add lots of escape quotes.
-eval "grep -ai -v $grep_ignore_regexs $path_to_file" | awk -v prefix="$prefix" '{print prefix $0}';
+# Disable grep ignores
+if [ "$disable_grep_ignores" = true ]; then
+    cat $path_to_file | awk -v prefix="$prefix" '{print prefix $0}';
+else
+    # Command to add spacing, then strip lines of strings that should be ignored.
+    # Had to use "eval" as if ran direct it would add lots of escape quotes.
+    eval "grep -ai -v $grep_ignore_regexs $path_to_file" | awk -v prefix="$prefix" '{print prefix $0}';
+ fi
 exit;

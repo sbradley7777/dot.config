@@ -39,8 +39,9 @@ GREP_IGNORES_DEFAULT=( 'sshd' \
 		       "su[:[]" \
 		       "is marked world-inaccessible" \
 		       "is marked executable" \
-		       "kernel\: martian source" \
-		       "kernel\: ll header" \
+		       "martian source" \
+		       "ll header" \
+		       "net_ratelimit" \
 		       "nfsidmap" );
 
 # A list of strings to ignore that can be disabled with -E option.

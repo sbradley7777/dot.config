@@ -23,45 +23,62 @@
 # Global Variables
 ######################################################################
 # A list of strings to ignore.
-GREP_IGNORES_DEFAULT=( 'sshd' \
-		       'snmpd' \
-		       'goferd' \
-		       'sudo' \
-		       'org.freedesktop' \
-		       'systemd-logind' \
-		       'rate-limiting' \
+GREP_IGNORES_DEFAULT=( "sshd" \
+		       "snmpd" \
+		       "goferd" \
+		       "sudo" \
+		       "xinetd" \
+		       "automount" \
+		       "adclient" \
+		       "adinfo" \
+		       "org.freedesktop" \
+		       "systemd-logind" \
+		       "rate-limiting" \
 		       "Audit daemon rotating log files" \
 		       "www.rsyslog.com" \
 		       "journal\: Suppressed" \
 		       "of user *." \
+		       "of root" \
 		       "User Slice of" \
-		       'Started Session' \
+		       "Started Session" \
+		       "Removed session" \
 		       "su[:[]" \
 		       "is marked world-inaccessible" \
 		       "is marked executable" \
 		       "martian source" \
 		       "ll header" \
 		       "net_ratelimit" \
-		       "nfsidmap" );
+		       "nfsidmap" \
+		       "system activity accounting tool" \
+ 		       "sysstat-collect.service" );
 
 # A list of strings to ignore that can be disabled with -E option.
-GREP_IGNORES_EXTRAS=( 'podman\[' \
-		      'healthcheck' \
-		      'ansible-');
+GREP_IGNORES_EXTRAS=( "podman\[" \
+		      "healthcheck" \
+		      "dnsmasq" \
+		      "node_exporter" \
+		      "kernel\: IN\="
+		      "ansible-" \
+		      "CROND");
 
 ######################################################################
-
+# Usage
+######################################################################
 usage() {
     bname=$(basename $0);
     echo -e "usage: $bname -s <path to file> -w <prefix whitespace count>";
-    echo -e "This script counts the number of holders and waiters for a GFS2 lockdump or glocktop output.\n";
+    echo -e "This script adds a whitespace prefix before each line in the file and ignores lines that contain certain strings.\n";
     echo "OPTIONS:";
     echo "   -h      show this message";
     echo "   -p      path to the file that will be analyzed";
     echo "   -w      prefix whitespace count (default: 2)";
+    echo "   -E      disables optional grep ignores";
+    echo "   -G      disable all grep ignores";
     echo -e "\nEXAMPLE:";
     echo "$ $bname -s ~/somefile.txt -w  5";
 }
+
+######################################################################
 
 path_to_file="";
 prefix_whitespace_count=2;

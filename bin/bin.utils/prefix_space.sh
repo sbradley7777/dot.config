@@ -36,6 +36,7 @@ GREP_IGNORES_DEFAULT=( "sshd" \
 		       "rate-limiting" \
 		       "Audit daemon rotating log files" \
 		       "www.rsyslog.com" \
+		       "journal reloaded" \
 		       "journal\: Suppressed" \
 		       "of user *." \
 		       "of root" \

@@ -105,34 +105,34 @@ while getopts ":hp:w:EG" opt; do
         disable_grep_ignores=true;
         ;;
     \?)
-        echo "Invalid option: -$OPTARG" >&2
-        exit 1
+        echo "Invalid option: -$OPTARG" >&2;
+        exit 1;
         ;;
     :)
-        echo "Option -$OPTARG requires an argument." >&2
-        exit 1
+        echo "Option -$OPTARG requires an argument." >&2;
+        exit 1;
         ;;
     esac
-done
+done;
 
 if [ -z $path_to_file ]; then
     echo -e "ERROR: A path to the file that will be read is required with -p option.\n";
     usage;
-    exit 1
-fi
+    exit 1;
+fi;
 if [ ! -n $path_to_file ]; then
     echo -e "ERROR: A path to the file that will be read is required with the -p option.\n";
     usage;
-    exit 1
-fi
+    exit 1;
+fi;
 if [ ! -f $path_to_file ]; then
     echo -e "ERROR: The file does not exist: $1\n";
     usage;
-    exit 1
-fi
+    exit 1;
+fi;
 
 # Create a string that contains the number of spaces that will be prefixed for each line.
-prefix=$(printf "%*s" $prefix_whitespace_count)
+prefix=$(printf "%*s" $prefix_whitespace_count);
 # Enable bash debugging by uncommenting this line.
 # set -x
 
@@ -156,5 +156,5 @@ else
     # Command to add spacing, then strip lines of strings that should be ignored.
     # Had to use "eval" as if ran direct it would add lots of escape quotes.
     eval "grep -ai -v $grep_ignore_regexs $path_to_file" | awk -v prefix="$prefix" '{print prefix $0}';
- fi
+ fi;
 exit;

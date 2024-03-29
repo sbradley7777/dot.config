@@ -31,6 +31,7 @@ GREP_IGNORES_DEFAULT=( "sshd" \
 		       "automount" \
 		       "adclient" \
 		       "adinfo" \
+		       "cupsd" \
 		       "org.freedesktop" \
 		       "systemd-logind" \
 		       "rate-limiting" \
@@ -51,7 +52,9 @@ GREP_IGNORES_DEFAULT=( "sshd" \
 		       "net_ratelimit" \
 		       "nfsidmap" \
 		       "system activity accounting tool" \
- 		       "sysstat-collect.service" );
+ 		       "sysstat-collect.service" \
+		       "pmlogger" \
+		       "pmie" );
 
 # A list of strings to ignore that can be disabled with -E option.
 GREP_IGNORES_EXTRAS=( "podman\[" \

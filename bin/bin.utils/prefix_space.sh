@@ -32,6 +32,7 @@ GREP_IGNORES_DEFAULT=( "sshd" \
 		       "adclient" \
 		       "adinfo" \
 		       "cupsd" \
+		       "sssd" \
 		       "org.freedesktop" \
 		       "systemd-logind" \
 		       "rate-limiting" \

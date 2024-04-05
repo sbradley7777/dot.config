@@ -180,7 +180,7 @@ def __print_colorize_table(tfrmt):
     index = 1
     for line in tfrmt.split("\n"):
         colorize_foreground = True
-        if (( (index % 2) == 0) and (not line.startswith("-"))):
+        if index == 2 or (( (index % 2) != 0) and (not line.startswith("-"))):
             line = __colorize_line(line, colorize_foreground)
         print line
         index += 1

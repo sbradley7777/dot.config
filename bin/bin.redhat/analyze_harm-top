@@ -379,7 +379,7 @@ def __get_options(version) :
                           help="the number of processes that will be printed",
                           type="int",
                           metavar="<number of processes>",
-                          default=5)
+                          default=10)
     cmd_parser.add_option("-c", "--column_name",
                           action="store",
                           dest="column_name",

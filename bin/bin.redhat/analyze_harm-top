@@ -125,7 +125,7 @@ def truncate_rows(rows, max_item_length=70):
         rindex += 1
     return rows_copy
 
-def tableize(rows, header, colorize=True):
+def tableize(rows, header):
     """
     Prints out a table using the data in `rows`, which is assumed to be a
     sequence of sequences with the 0th element being the header.
@@ -237,7 +237,7 @@ def __get_preamble_map(preamble):
     # KiB Mem : 79230297+total, 22083852+free,  5549860 used, 56591456+buff/cache
     mem_total = __bytes_to_human("%sK" %(preamble[3].split(": ")[1].split()[0].split("+")[0].replace("k", "")))
     mem_free = __bytes_to_human("%sK" %(preamble[3].split("free")[0].strip().rsplit(" ", 1)[1].replace("k", "").replace("+", "")))
-    preamble_map["mem_free"] = "%s (%s total)" %(mem_free, mem_total)
+    preamble_map["mem_free"] = "%s | Memory Total: %s" %(mem_free, mem_total)
     # The swap output comes in different versions:
     # Swap:  2088956k total,        0k used,  2088956k free,  1820752k cached
     # KiB Swap: 16777212 total, 16777212 free,        0 used. 78353670+avail Mem
@@ -286,8 +286,7 @@ def print_top(top_chunks, number_of_processes, show_seperator):
                     preamble_map["mem_free"], preamble_map["swap_used"]]
             pid_rows.append(row)
         if (show_seperator):
-            print "%s - (%s) (CPU idle: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"])
-            print "                    - (Mem Free: %s) (Swap Used: %s)" %(preamble_map["mem_free"], preamble_map["swap_used"])
+            print "%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"], preamble_map["mem_free"], preamble_map["swap_used"])
             tfrmt = tableize(pid_rows, header)
             __print_colorize_table(tfrmt)
         else:

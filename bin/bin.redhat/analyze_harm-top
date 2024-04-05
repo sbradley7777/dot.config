@@ -1,7 +1,7 @@
 #!/usr/bin/python2
 """
 The script parses top data collected in a file by the script ha-resourcemon.
-- https://access.redhat.com/solutions/368393
+  - https://access.redhat.com/solutions/368393
 
 @author    : Shane Bradley
 @contact   : sbradley@redhat.com
@@ -78,17 +78,14 @@ def get_data_from_file_as_list(path_to_filename) :
     return None
 
 def truncate_rows(rows, max_item_length=70):
-    # This function will take a list of lists and remove any whitespaces at
-    # start or end of items in each list. It will also truncate any item that is
-    # longer than max_item_length and will insert into new rows the text longer
-    # than max_item_length.
-
-    # Strip out any white spaces when copying the list into a new list.
+    # This function will take a list of lists and remove any whitespaces at start or end of items in each list. It will also
+    # truncate any item that is longer than max_item_length and will insert into new rows the text longer than max_item_length.
     rows_copy = []
     for row in rows:
         new_row = []
         for i in row:
             try:
+                # Strip out any white spaces when copying the list into a new list.
                 new_row.append(i.strip())
             except AttributeError:
                 new_row.append(i)
@@ -104,14 +101,12 @@ def truncate_rows(rows, max_item_length=70):
         for key in index_with_long_lines:
             # Modify the current and change to the shorten version.
             row[key] = index_with_long_lines.get(key).pop(0)
-        # Look over what is left and add new row. Could have multiple items in
-        # new row.
+        # Look over what is left and add new row. Could have multiple items in new row.
         insert_after_row = rindex + 1
         while (index_with_long_lines):
             new_row = ["-"] * (len(row))
             for key in index_with_long_lines.keys():
-                # If there is item in list then add to new row.
-                # if the list is empty then remove they key.
+                # If there is item in list then add to new row.  if the list is empty then remove they key.
                 items = index_with_long_lines.get(key)
                 if (items):
                     new_row[key] = index_with_long_lines.get(key).pop(0)
@@ -188,7 +183,7 @@ def __print_colorize_table(tfrmt):
 def __colorize_line(text, colorize_foreground=False):
     # Dark Gray = 100
     # Light Blue = 104
-    # http://misc.flogisoft.com/bash/tip_colors_and_formatting
+    # - http://misc.flogisoft.com/bash/tip_colors_and_formatting
     bgColor = "40;100"
     opencol = "\033["
     closecol = "m"
@@ -200,9 +195,9 @@ def __colorize_line(text, colorize_foreground=False):
 # parse and print data
 # ##############################################################################
 
-# https://github.com/giampaolo/pyftpdlib/blob/master/scripts/ftpbench#L140
-# https://code.activestate.com/recipes/578019-bytes-to-human-human-to-bytes-converter/
 def __bytes_to_human(n, format="%(value).1f%(symbol)s"):
+    # - https://github.com/giampaolo/pyftpdlib/blob/master/scripts/ftpbench#L140
+    # - https://code.activestate.com/recipes/578019-bytes-to-human-human-to-bytes-converter/
     if (not n.isdigit()):
         n = __to_bytes(n)
     symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
@@ -229,24 +224,22 @@ def __to_bytes(s):
 def __get_preamble_map(preamble):
     preamble_map = {}
     # Print preamble data and top rows
-    #preamble_map["load average"] = preamble[0].split(",  ")[2].split(":")[1]
     preamble_map["load average"] = preamble[0].split("load average:")[1]
     preamble_map["cpu_idle"] =  preamble[2].split(", ")[3]
     # The mem output comes in different versions:
-    # Mem:  32832244k total, 21954424k used, 10877820k free,   852872k buffers
-    # KiB Mem : 79230297+total, 22083852+free,  5549860 used, 56591456+buff/cache
+    #   Mem:  32832244k total, 21954424k used, 10877820k free,   852872k buffers
+    #   KiB Mem : 79230297+total, 22083852+free,  5549860 used, 56591456+buff/cache
     mem_total = __bytes_to_human("%sK" %(preamble[3].split(": ")[1].split()[0].split("+")[0].replace("k", "")))
     mem_free = __bytes_to_human("%sK" %(preamble[3].split("free")[0].strip().rsplit(" ", 1)[1].replace("k", "").replace("+", "")))
     preamble_map["mem_free"] = "%s | Memory Total: %s" %(mem_free, mem_total)
     # The swap output comes in different versions:
-    # Swap:  2088956k total,        0k used,  2088956k free,  1820752k cached
-    # KiB Swap: 16777212 total, 16777212 free,        0 used. 78353670+avail Mem
+    #   Swap:  2088956k total,        0k used,  2088956k free,  1820752k cached
+    #   KiB Swap: 16777212 total, 16777212 free,        0 used. 78353670+avail Mem
     preamble_map["swap_used"] = __bytes_to_human("%sK" %(preamble[4].split("used")[0].strip().rsplit(" ", 1)[1].replace("k", "").replace("+", "")))
     return preamble_map
 
 def print_top(top_chunks, number_of_processes, show_seperator):
-    # The file is sorted into bins to capture all top data captured at
-    # specific time.
+    # The file is sorted into bins to capture all top data captured at specific time.
     tkeys = top_chunks.keys()
     tkeys.sort()
     pid_rows_all = []
@@ -268,9 +261,8 @@ def print_top(top_chunks, number_of_processes, show_seperator):
         preamble_map = __get_preamble_map(preamble)
         header += ["load average", "cpu_idle", "mem_free", "swap_used"]
         # Create data structure for the pid rows.
-
-        # The first 6 lines we can skip
         pid_rows = []
+        # The first 6 lines we can skip.
         for i in range(6, (number_of_processes + 6)):
             line = lines[i].strip()
             if (not line):
@@ -296,8 +288,7 @@ def print_top(top_chunks, number_of_processes, show_seperator):
     __print_colorize_table(tfrmt)
 
 def print_top_sort(top_chunks, number_of_processes, column_name):
-    # The file is sorted into bins to capture all top data captured at
-    # specific time.
+    # The file is sorted into bins to capture all top data captured at specific time.
     tkeys = top_chunks.keys()
     tkeys.sort()
     pid_rows_all = []
@@ -318,9 +309,8 @@ def print_top_sort(top_chunks, number_of_processes, column_name):
         preamble_map = __get_preamble_map(preamble)
         header += ["load average", "cpu_idle", "mem_free", "swap_used"]
         # Create data structure for the pid rows.
-
-        # The first 6 lines we can skip
         pid_rows = []
+        # The first 6 lines we can skip
         for i in range(6, len(lines)):
             row = [str(dt)] + lines[i].split()
             if (len(row) > 13):
@@ -334,9 +324,8 @@ def print_top_sort(top_chunks, number_of_processes, column_name):
             pid_rows.append(row)
         pid_rows_all += pid_rows
 
-    # Sort all the rows in the list. Could check header before, but require I
-    # store headers in var and might do later so error out before processing
-    # data.
+    # Sort all the rows in the list. Could check header before, but require I store headers in var and might do later so error
+    # out before processing data.
     cindex = 0
     for cname in header:
         if (cname.lower() == column_name.lower()):
@@ -454,16 +443,14 @@ if __name__ == "__main__":
         logging.STATUS = logging.INFO + 2
         logging.addLevelName(logging.STATUS, "STATUS")
 
-        # Log to main system logger that script has started then close the
-        # handler before the other handlers are created.
+        # Log to main system logger that script has started then close the handler before the other handlers are created.
         sysLogHandler = logging.handlers.SysLogHandler(address = '/dev/log')
         logger.addHandler(sysLogHandler)
         logger.info("The script has started running.")
         logger.removeHandler(sysLogHandler)
 
-        # Create a function for the STATUS_LEVEL since not defined by python. This
-        # means you can call it like the other predefined message
-        # functions. Example: logging.getLogger("loggerName").status(message)
+        # Create a function for the STATUS_LEVEL since not defined by python. This means you can call it like the other
+        # predefined message functions. Example: logging.getLogger("loggerName").status(message)
         setattr(logger, "status", lambda *args: logger.log(logging.STATUS, *args))
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logLevel)

@@ -113,7 +113,9 @@ def truncate_rows(rows, max_item_length=125):
             iindex += 1
         for key in index_with_long_lines:
             # Modify the current and change to the shorten version.
-            row[key] = index_with_long_lines.get(key).pop(0)
+            row[key] = "%s...." % (index_with_long_lines.get(key).pop(0))
+        """
+        # Comment out this section of code that adds an addition line for the rest of the command.
         # Look over what is left and add new row. Could have multiple items in
         # new row.
         insert_after_row = rindex + 1
@@ -124,7 +126,7 @@ def truncate_rows(rows, max_item_length=125):
                 # if the list is empty then remove they key.
                 items = index_with_long_lines.get(key)
                 if (items):
-                    new_row[key] = index_with_long_lines.get(key).pop(0)
+                    new_row[key] = '\t %s' % (index_with_long_lines.get(key).pop(0))
                     if (not items):
                         # Delete the key if nothing is in list.
                         del index_with_long_lines[key]
@@ -133,6 +135,7 @@ def truncate_rows(rows, max_item_length=125):
                 insert_after_row += 1
         # Increment the row index
         rindex += 1
+        """
     return rows_copy
 
 
@@ -271,7 +274,7 @@ def show_d_state(data_slices):
                 header.pop(PS_COLUMN_NAMES.get(cname))
                 for prow in pid_rows:
                     prow.pop(PS_COLUMN_NAMES.get(cname))
-
+        # Format and print the rows of ps lines that matched.
         if (pid_rows):
             tfrmt = tableize(pid_rows, header)
             __print_colorize_table(tfrmt)
@@ -421,6 +424,7 @@ if __name__ == "__main__":
             regex = "^(?P<day>mon|tue|wed|thu|fri|sat|sun) .*"
             rem = re.compile(regex)
             mo = rem.match(line.lower())
+            # Check if date/time line.
             if (mo):
                 linesplit = line.split()
                 linesplit[2] = "%02d" %(int(linesplit[2]))
@@ -432,7 +436,8 @@ if __name__ == "__main__":
                     data_slices[cts] = []
                 else:
                     cts = ""
-            if (cts):
+            elif (cts):
+                # Add all the lines for the current timestamp.
                 data_slices[cts].append(line)
         # Print all the processes in D state.
         show_d_state(data_slices)

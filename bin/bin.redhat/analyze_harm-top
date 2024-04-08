@@ -3,6 +3,8 @@
 The script parses top data collected in a file by the script ha-resourcemon.
   - https://access.redhat.com/solutions/368393
 
+For best results then use a black background and white (or green) foreground.
+
 @author    : Shane Bradley
 @contact   : sbradley@redhat.com
 @version   : 0.1
@@ -24,12 +26,12 @@ import textwrap
 # #####################################################################
 VERSION_NUMBER = "0.1-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
-
 DT_FORMAT = "%Y%m%d %H:%M:%S"
+
+
 # #####################################################################
 # Helper File Functions
 # ####################################################################
-
 def write_to_file(path_to_filename, data, append_to_file=True, create_file=False):
     [parent_dir, filename] = os.path.split(path_to_filename)
     if (os.path.isfile(path_to_filename) or (os.path.isdir(parent_dir) and create_file)):
@@ -50,6 +52,7 @@ def write_to_file(path_to_filename, data, append_to_file=True, create_file=False
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
     return False
+
 
 def get_data_from_file(path_to_filename) :
     lines = get_data_from_file_as_list(path_to_filename)
@@ -76,6 +79,7 @@ def get_data_from_file_as_list(path_to_filename) :
             message = "An error occured reading the file: %s." %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
     return None
+
 
 def truncate_rows(rows, max_item_length=70):
     # This function will take a list of lists and remove any whitespaces at start or end of items in each list. It will also
@@ -119,6 +123,7 @@ def truncate_rows(rows, max_item_length=70):
         # Increment the row index
         rindex += 1
     return rows_copy
+
 
 def tableize(rows, header):
     """
@@ -171,6 +176,7 @@ def tableize(rows, header):
             formatted_table += row_string + "\n"
     return formatted_table
 
+
 def __print_colorize_table(tfrmt):
     index = 1
     for line in tfrmt.split("\n"):
@@ -179,6 +185,7 @@ def __print_colorize_table(tfrmt):
             line = __colorize_line(line, colorize_foreground)
         print line
         index += 1
+
 
 def __colorize_line(text, colorize_foreground=False):
     # Dark Gray = 100
@@ -191,10 +198,10 @@ def __colorize_line(text, colorize_foreground=False):
     bg = opencol + bgColor + closecol
     return "%s%s%s" % (bg, text, clear)
 
+
 # ##############################################################################
 # parse and print data
 # ##############################################################################
-
 def __bytes_to_human(n, format="%(value).1f%(symbol)s"):
     # - https://github.com/giampaolo/pyftpdlib/blob/master/scripts/ftpbench#L140
     # - https://code.activestate.com/recipes/578019-bytes-to-human-human-to-bytes-converter/
@@ -210,6 +217,7 @@ def __bytes_to_human(n, format="%(value).1f%(symbol)s"):
             return format % locals()
     return format % dict(symbol=symbols[0], value=n)
 
+
 def __to_bytes(s):
     symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     letter = s[-1:].strip().upper()
@@ -220,6 +228,7 @@ def __to_bytes(s):
     for i, s in enumerate(symbols[1:]):
         prefix[s] = 1 << (i + 1) * 10
     return int(num * prefix[letter])
+
 
 def __get_preamble_map(preamble):
     preamble_map = {}
@@ -237,6 +246,7 @@ def __get_preamble_map(preamble):
     #   KiB Swap: 16777212 total, 16777212 free,        0 used. 78353670+avail Mem
     preamble_map["swap_used"] = __bytes_to_human("%sK" %(preamble[4].split("used")[0].strip().rsplit(" ", 1)[1].replace("k", "").replace("+", "")))
     return preamble_map
+
 
 def print_top(top_chunks, number_of_processes, show_seperator):
     # The file is sorted into bins to capture all top data captured at specific time.
@@ -287,58 +297,6 @@ def print_top(top_chunks, number_of_processes, show_seperator):
     tfrmt = tableize(pid_rows_all, header)
     __print_colorize_table(tfrmt)
 
-def print_top_sort(top_chunks, number_of_processes, column_name):
-    # The file is sorted into bins to capture all top data captured at specific time.
-    tkeys = top_chunks.keys()
-    tkeys.sort()
-    pid_rows_all = []
-    header = []
-    for ts in tkeys:
-        dt = datetime.strptime("%s" %(ts), DT_FORMAT)
-        lines = top_chunks.get(ts)
-        # Build the header and preamble
-        preamble = []
-        header = ["timestamp"]
-        for line in lines:
-            line = line.strip()
-            if (line.startswith("PID")):
-                header += line.split()
-                break
-            elif (len(line) > 0):
-                preamble.append(line)
-        preamble_map = __get_preamble_map(preamble)
-        header += ["load average", "cpu_idle", "mem_free", "swap_used"]
-        # Create data structure for the pid rows.
-        pid_rows = []
-        # The first 6 lines we can skip
-        for i in range(6, len(lines)):
-            row = [str(dt)] + lines[i].split()
-            if (len(row) > 13):
-                modrow = []
-                for i in range(0, 12):
-                    modrow.append(row.pop(0))
-                modrow.append(" ".join(row))
-                row = modrow
-            row += [preamble_map["load average"], preamble_map["cpu_idle"],
-                    preamble_map["mem_free"], preamble_map["swap_used"]]
-            pid_rows.append(row)
-        pid_rows_all += pid_rows
-
-    # Sort all the rows in the list. Could check header before, but require I store headers in var and might do later so error
-    # out before processing data.
-    cindex = 0
-    for cname in header:
-        if (cname.lower() == column_name.lower()):
-            break;
-        cindex += 1
-    if (cindex >= len(header)):
-        message = "The column name was not found."
-        logging.getLogger(MAIN_LOGGER_NAME).error(message)
-        sys.exit(1)
-    pid_rows_all.sort(key=operator.itemgetter(cindex), reverse=True)
-    prows = [pid_rows_all[i] for i in range(0, number_of_processes)]
-    tfrmt = tableize(prows, header)
-    __print_colorize_table(tfrmt)
 
 # ##############################################################################
 # Get user selected options
@@ -369,13 +327,6 @@ def __get_options(version) :
                           type="int",
                           metavar="<number of processes>",
                           default=10)
-    cmd_parser.add_option("-c", "--column_name",
-                          action="store",
-                          dest="column_name",
-                          help="the column name to sort by",
-                          type="string",
-                          metavar="<name of column>",
-                          default="")
     cmd_parser.add_option("-s", "--seperator",
                           action="store_true",
                           dest="show_seperator",
@@ -505,10 +456,7 @@ if __name__ == "__main__":
             if (cts):
                 top_chunks[cts].append(line)
 
-        if (cmdline_opts.column_name):
-            print_top_sort(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.column_name.strip())
-        else:
-            print_top(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.show_seperator)
+        print_top(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.show_seperator)
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

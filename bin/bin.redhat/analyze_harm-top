@@ -43,7 +43,7 @@ def write_to_file(path_to_filename, data, append_to_file=True, create_file=False
             fout.write(data + "\n")
             fout.close()
             return True
-        except UnicodeEncodeError, e:
+        except UnicodeEncodeError as e:
             message = "There was a unicode encode error writing to the file: %s." %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
@@ -109,7 +109,7 @@ def truncate_rows(rows, max_item_length=70):
         insert_after_row = rindex + 1
         while (index_with_long_lines):
             new_row = ["-"] * (len(row))
-            for key in index_with_long_lines.keys():
+            for key in list(index_with_long_lines.keys()):
                 # If there is item in list then add to new row.  if the list is empty then remove they key.
                 items = index_with_long_lines.get(key)
                 if (items):
@@ -183,7 +183,7 @@ def __print_colorize_table(tfrmt):
         colorize_foreground = True
         if index == 2 or (( (index % 2) != 0) and (not line.startswith("-"))):
             line = __colorize_line(line, colorize_foreground)
-        print line
+        print(line)
         index += 1
 
 
@@ -250,7 +250,7 @@ def __get_preamble_map(preamble):
 
 def print_top(top_chunks, number_of_processes):
     # The file is sorted into bins to capture all top data captured at specific time.
-    tkeys = top_chunks.keys()
+    tkeys = list(top_chunks.keys())
     tkeys.sort()
     header = []
 
@@ -286,7 +286,7 @@ def print_top(top_chunks, number_of_processes):
             row += [preamble_map["load average"], preamble_map["cpu_idle"],
                     preamble_map["mem_free"], preamble_map["swap_used"]]
             pid_rows.append(row)
-        print "%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"], preamble_map["mem_free"], preamble_map["swap_used"])
+        print("%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"], preamble_map["mem_free"], preamble_map["swap_used"]))
         tfrmt = tableize(pid_rows, header)
         __print_colorize_table(tfrmt)
 
@@ -446,7 +446,7 @@ if __name__ == "__main__":
 
         print_top(top_chunks, cmdline_opts.number_of_processes)
     except KeyboardInterrupt:
-        print ""
+        print("")
         message =  "This script will exit since control-c was executed by end user."
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         sys.exit(1)

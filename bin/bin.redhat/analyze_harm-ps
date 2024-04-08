@@ -48,7 +48,7 @@ def write_to_file(path_to_filename, data, append_to_file=True, create_file=False
             fout.write(data + "\n")
             fout.close()
             return True
-        except UnicodeEncodeError, e:
+        except UnicodeEncodeError as e:
             message = "There was a unicode encode error writing to the file: %s." %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
@@ -119,7 +119,7 @@ def truncate_rows(rows, max_item_length=125):
         insert_after_row = rindex + 1
         while (index_with_long_lines):
             new_row = ["-"] * (len(row))
-            for key in index_with_long_lines.keys():
+            for key in list(index_with_long_lines.keys()):
                 # If there is item in list then add to new row.
                 # if the list is empty then remove they key.
                 items = index_with_long_lines.get(key)
@@ -200,7 +200,7 @@ def __print_colorize_table(tfrmt):
         colorize_foreground = True
         if (( (index % 2) == 0) and (not line.startswith("-"))):
             line = __colorize_line(line, colorize_foreground)
-        print line
+        print(line)
         index += 1
 
 
@@ -223,7 +223,7 @@ def show_d_state(data_slices, show_seperator):
     max_command_length = 120
     # The file is sorted into bins to capture all top data captured at
     # specific time.
-    tkeys = data_slices.keys()
+    tkeys = list(data_slices.keys())
     tkeys.sort()
     pid_rows_all = []
     header = []
@@ -259,17 +259,17 @@ def show_d_state(data_slices, show_seperator):
               row.append(search_object.group('started'))
               row += search_object.group('after_started').split(None, 2)
             # If the process is not in D state or incorrect number of columns then skip it. The line does not have timestamp added, so -1 on index that it is in.
-            if not row[PS_COLUMN_NAMES.get('STAT')].find('D') == 0 or len(row) < len(PS_COLUMN_NAMES.keys()):
+            if not row[PS_COLUMN_NAMES.get('STAT')].find('D') == 0 or len(row) < len(list(PS_COLUMN_NAMES.keys())):
                 continue
             # Commented out some of the code as it was not working.
             pid_rows.append(row)
         # Pad command header before removing items.
-        if (PS_COLUMN_NAMES.has_key("COMMAND")):
+        if ("COMMAND" in PS_COLUMN_NAMES):
             header[PS_COLUMN_NAMES.get("COMMAND")] = header[PS_COLUMN_NAMES.get("COMMAND")].ljust(125)
         # Remove columns we are not going to print. They listed in reverse sort so I could remove them last to first.
         rm_column_names = ["WCHAN", "TIME", "STARTED", "TT", "RSS", "VSZ", "USER"]
         for cname in rm_column_names:
-            if (PS_COLUMN_NAMES.has_key(cname)):
+            if (cname in PS_COLUMN_NAMES):
                 header.pop(PS_COLUMN_NAMES.get(cname))
                 for prow in pid_rows:
                     prow.pop(PS_COLUMN_NAMES.get(cname))
@@ -451,7 +451,7 @@ if __name__ == "__main__":
         show_d_state(data_slices, cmdline_opts.show_seperator)
 
     except KeyboardInterrupt:
-        print ""
+        print("")
         message =  "This script will exit since control-c was executed by end user."
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         sys.exit(1)

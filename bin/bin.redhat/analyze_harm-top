@@ -248,11 +248,10 @@ def __get_preamble_map(preamble):
     return preamble_map
 
 
-def print_top(top_chunks, number_of_processes, show_seperator):
+def print_top(top_chunks, number_of_processes):
     # The file is sorted into bins to capture all top data captured at specific time.
     tkeys = top_chunks.keys()
     tkeys.sort()
-    pid_rows_all = []
     header = []
 
     for ts in tkeys:
@@ -287,15 +286,9 @@ def print_top(top_chunks, number_of_processes, show_seperator):
             row += [preamble_map["load average"], preamble_map["cpu_idle"],
                     preamble_map["mem_free"], preamble_map["swap_used"]]
             pid_rows.append(row)
-        if (show_seperator):
-            print "%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"], preamble_map["mem_free"], preamble_map["swap_used"])
-            tfrmt = tableize(pid_rows, header)
-            __print_colorize_table(tfrmt)
-        else:
-            pid_rows_all += pid_rows
-
-    tfrmt = tableize(pid_rows_all, header)
-    __print_colorize_table(tfrmt)
+        print "%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"], preamble_map["mem_free"], preamble_map["swap_used"])
+        tfrmt = tableize(pid_rows, header)
+        __print_colorize_table(tfrmt)
 
 
 # ##############################################################################
@@ -327,11 +320,6 @@ def __get_options(version) :
                           type="int",
                           metavar="<number of processes>",
                           default=10)
-    cmd_parser.add_option("-s", "--seperator",
-                          action="store_true",
-                          dest="show_seperator",
-                          help="show seperator in process listing",
-                          default=False)
 
  # Get the options and return the result.
     (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
@@ -456,7 +444,7 @@ if __name__ == "__main__":
             if (cts):
                 top_chunks[cts].append(line)
 
-        print_top(top_chunks, cmdline_opts.number_of_processes, cmdline_opts.show_seperator)
+        print_top(top_chunks, cmdline_opts.number_of_processes)
     except KeyboardInterrupt:
         print ""
         message =  "This script will exit since control-c was executed by end user."

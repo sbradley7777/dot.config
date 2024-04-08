@@ -197,23 +197,21 @@ def tableize(rows, header, colorize=True):
 def __print_colorize_table(tfrmt):
     index = 1
     for line in tfrmt.split("\n"):
-        colorize_foreground = True
-        if (( (index % 2) == 0) and (not line.startswith("-"))):
-            line = __colorize_line(line, colorize_foreground)
+        if index == 2 or (( (index % 2) != 0) and (not line.startswith("-"))):
+            line = __colorize_line_background(line)
         print(line)
         index += 1
 
 
-def __colorize_line(text, colorize_foreground=False):
+def __colorize_line_background(text):
     # Dark Gray = 100
     # Light Blue = 104
-    # http://misc.flogisoft.com/bash/tip_colors_and_formatting
-    bgColor = "40;100"
+    # - http://misc.flogisoft.com/bash/tip_colors_and_formatting
+    color_id = "40;100"
     opencol = "\033["
     closecol = "m"
-    clear = opencol + "0" + closecol
-    bg = opencol + bgColor + closecol
-    return "%s%s%s" % (bg, text, clear)
+    color = opencol + color_id + closecol
+    return "%s%s%s" % (color, text, opencol + "0" + closecol)
 
 
 # ##############################################################################
@@ -244,7 +242,7 @@ def show_d_state(data_slices):
             line = line.strip()
             if (not line):
                 continue
-            # The STARTED column can come in 2 formats that causes issues when trying to split on "whitespaces". 
+            # The STARTED column can come in 2 formats that causes issues when trying to split on "whitespaces".
             # USER         PID    PPID %CPU %MEM    VSZ   RSS TT       STAT  STARTED     TIME WCHAN                            COMMAND
             # root           1       0  0.1  0.0 243604  7168 ?        Ds     Mar 24 00:16:57 alloc_shrinker_info              /usr/lib/systemd/systemd --switched-root --system --deserialize 18
             # root     4068084       1  0.0  0.1  75412 57908 ?        D<Ls 00:00:01 00:00:22 cgroup_path_ns                   /usr/bin/atop -w /var/log/atop/atop_20240403 600

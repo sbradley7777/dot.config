@@ -27,14 +27,16 @@ VERSION_NUMBER = "0.1-1"
 MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
 
 DT_FORMAT = "%a %b %d %H:%M:%S %Y"
-PS_COLUMN_NAMES = {"timestamp":0, "USER":1, "PID":2, "%CPU":3, "%MEM":4,
-                   "VSZ":5, "RSS":6, "TT":7, "STAT":8, "STARTED":9,
-                   "TIME":10, "WCHAN":11, "COMMAND":12}
+# The format used to display the date.
+DT_FORMAT_OUTPUT = "%Y-%m-%d %H:%M:%S"
+PS_COLUMN_NAMES = {"timestamp":0, "USER":1, "PID":2, "PPID":3, "%CPU":4, "%MEM":5,
+                   "VSZ":6, "RSS":7, "TT":8, "STAT":9, "STARTED":10,
+                   "TIME":11, "WCHAN":12, "COMMAND":13}
+
 
 # #####################################################################
 # Helper File Functions
 # ####################################################################
-
 def write_to_file(path_to_filename, data, append_to_file=True, create_file=False):
     [parent_dir, filename] = os.path.split(path_to_filename)
     if (os.path.isfile(path_to_filename) or (os.path.isdir(parent_dir) and create_file)):
@@ -56,6 +58,7 @@ def write_to_file(path_to_filename, data, append_to_file=True, create_file=False
             return False
     return False
 
+
 def get_data_from_file(path_to_filename) :
     lines = get_data_from_file_as_list(path_to_filename)
     if (not lines == None):
@@ -64,6 +67,7 @@ def get_data_from_file(path_to_filename) :
             data = "%s%s" %(data, line)
         return data
     return None
+
 
 def get_data_from_file_as_list(path_to_filename) :
     if (len(path_to_filename) > 0) :
@@ -81,6 +85,7 @@ def get_data_from_file_as_list(path_to_filename) :
             message = "An error occured reading the file: %s." %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
     return None
+
 
 def truncate_rows(rows, max_item_length=125):
     # This function will take a list of lists and remove any whitespaces at
@@ -129,6 +134,7 @@ def truncate_rows(rows, max_item_length=125):
         # Increment the row index
         rindex += 1
     return rows_copy
+
 
 def tableize(rows, header, colorize=True):
     """
@@ -187,6 +193,7 @@ def tableize(rows, header, colorize=True):
             formatted_table += row_string + "\n"
     return formatted_table
 
+
 def __print_colorize_table(tfrmt):
     index = 1
     for line in tfrmt.split("\n"):
@@ -195,6 +202,7 @@ def __print_colorize_table(tfrmt):
             line = __colorize_line(line, colorize_foreground)
         print line
         index += 1
+
 
 def __colorize_line(text, colorize_foreground=False):
     # Dark Gray = 100
@@ -206,6 +214,7 @@ def __colorize_line(text, colorize_foreground=False):
     clear = opencol + "0" + closecol
     bg = opencol + bgColor + closecol
     return "%s%s%s" % (bg, text, clear)
+
 
 # ##############################################################################
 # parse and print data
@@ -221,7 +230,7 @@ def show_d_state(data_slices, show_seperator):
 
     for ts in tkeys:
         dt = datetime.strptime("%s" %(ts), DT_FORMAT)
-        timestamp = "%02d:%02d:%02d" %(int(dt.hour), int(dt.minute), int(dt.second))
+        timestamp = dt.strftime(DT_FORMAT_OUTPUT)
         lines = data_slices.get(ts)
         if (not lines):
             continue
@@ -235,58 +244,29 @@ def show_d_state(data_slices, show_seperator):
             line = line.strip()
             if (not line):
                 continue
-            row = [timestamp] + line.split()
+            # The STARTED column can come in 2 formats that causes issues when trying to split on "whitespaces". 
+            # USER         PID    PPID %CPU %MEM    VSZ   RSS TT       STAT  STARTED     TIME WCHAN                            COMMAND
+            # root           1       0  0.1  0.0 243604  7168 ?        Ds     Mar 24 00:16:57 alloc_shrinker_info              /usr/lib/systemd/systemd --switched-root --system --deserialize 18
+            # root     4068084       1  0.0  0.1  75412 57908 ?        D<Ls 00:00:01 00:00:22 cgroup_path_ns                   /usr/bin/atop -w /var/log/atop/atop_20240403 600
 
-            # If line does not have all the columns then do not parse.
-            if (len(row) < len(PS_COLUMN_NAMES.keys())):
-                message = "The line would not parse: \n\t %s" %(line)
-                logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+            # Split the line into 2 parts. Split on column "STAT" and include -1 because the PS_COLUMN_NAMES includes timestamp
+            # column that currently does not exist.
+            row = [timestamp] + line.split(None, PS_COLUMN_NAMES.get("STAT"))[:9]
+            line_after_stat = line.split(None, PS_COLUMN_NAMES.get("STAT"))[9:][0]
+            pattern = re.compile('(?P<started>((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ([012][0-9]|30|31))|(\d\d:\d\d:\d\d))(?P<after_started>.*)')
+            search_object = pattern.search(line_after_stat)
+            if search_object:
+              row.append(search_object.group('started'))
+              row += search_object.group('after_started').split(None, 2)
+            # If the process is not in D state or incorrect number of columns then skip it. The line does not have timestamp added, so -1 on index that it is in.
+            if not row[PS_COLUMN_NAMES.get('STAT')].find('D') == 0 or len(row) < len(PS_COLUMN_NAMES.keys()):
                 continue
-
-            modrow = []
-            # These will split differently  because one has two time values and other in mon/day ts value
-            # applmgr  24055  0.2  0.1 110452 44728 ?        S    19:14:10 00:02:14 sk_wait_data                     ls -la /home
-            # root     25006  0.0  0.0      0     0 ?        S<     Jul 20 00:00:00 slow_work_thread                 [kslowd000]
-            for i in range(0, 8):
-                modrow.append(row.pop(0))
-            process_state = row.pop(0)
-            # If not d state process then skip
-            if (not process_state.find("D") == 0):
-                continue
-            modrow.append(process_state)
-            # If starts with numeric then only pop 3 times, if starts with alpha
-            # then have to pop 4 and combine first 2 because it is month-day and
-            # not time..
-            if (row[0].isalpha()):
-                modrow.append(" ".join([row.pop(0), row.pop(0)]))
-                modrow.append(row.pop(0))
-                modrow.append(row.pop(0))
-            else:
-                modrow.append(row.pop(0))
-                modrow.append(row.pop(0))
-                modrow.append(row.pop(0))
-
-            # Allow for finite size of command and options.
-            if (row):
-                command = row.pop(0)
-                options = ""
-                if (row):
-                    max_options_char_count = max_command_length - len(command)
-                    for item in row:
-                        if (len("%s %s" %(options, item)) > max_options_char_count):
-                            break
-                        options += " %s" %(item)
-                    options += " ..."
-                command += " %s" %(options)
-                modrow.append(command.strip())
-                pid_rows.append(modrow)
-
-
+            # Commented out some of the code as it was not working.
+            pid_rows.append(row)
         # Pad command header before removing items.
         if (PS_COLUMN_NAMES.has_key("COMMAND")):
             header[PS_COLUMN_NAMES.get("COMMAND")] = header[PS_COLUMN_NAMES.get("COMMAND")].ljust(125)
-        # Remove columns we are not going to print. They listed in reverse
-        # sort so I could remove them last to first.
+        # Remove columns we are not going to print. They listed in reverse sort so I could remove them last to first.
         rm_column_names = ["WCHAN", "TIME", "STARTED", "TT", "RSS", "VSZ", "USER"]
         for cname in rm_column_names:
             if (PS_COLUMN_NAMES.has_key(cname)):
@@ -336,6 +316,7 @@ def __get_options(version) :
     (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
     return (cmdLine_opts, cmdLine_args)
 
+
 # ##############################################################################
 # OptParse classes for commandline options
 # ##############################################################################
@@ -351,6 +332,7 @@ class OptionParserExtended(OptionParser):
         examples_message = "\n"
         OptionParser.print_help(self)
         #print examples_message
+
 
 class ExtendOption (Option):
     ACTIONS = Option.ACTIONS + ("extend",)
@@ -372,6 +354,7 @@ class ExtendOption (Option):
                 values.ensure_value(dest, []).extend(valueList)
         else:
             Option.take_action(self, action, dest, opt, value, values, parser)
+
 
 # ###############################################################################
 # Main Function
@@ -464,7 +447,7 @@ if __name__ == "__main__":
                     cts = ""
             if (cts):
                 data_slices[cts].append(line)
-
+        # Print all the processes in D state.
         show_d_state(data_slices, cmdline_opts.show_seperator)
 
     except KeyboardInterrupt:

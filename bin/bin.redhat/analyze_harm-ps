@@ -219,7 +219,7 @@ def __colorize_line(text, colorize_foreground=False):
 # ##############################################################################
 # parse and print data
 # ##############################################################################
-def show_d_state(data_slices, show_seperator):
+def show_d_state(data_slices):
     max_command_length = 120
     # The file is sorted into bins to capture all top data captured at
     # specific time.
@@ -275,14 +275,8 @@ def show_d_state(data_slices, show_seperator):
                     prow.pop(PS_COLUMN_NAMES.get(cname))
 
         if (pid_rows):
-            if (show_seperator):
-                tfrmt = tableize(pid_rows, header)
-                __print_colorize_table(tfrmt)
-            else:
-                pid_rows_all += pid_rows
-    if (len(pid_rows_all)):
-        tfrmt = tableize(pid_rows_all, header)
-        __print_colorize_table(tfrmt)
+            tfrmt = tableize(pid_rows, header)
+            __print_colorize_table(tfrmt)
 
 # ##############################################################################
 # Get user selected options
@@ -306,11 +300,6 @@ def __get_options(version) :
                           type="string",
                           metavar="<input filename>",
                           default="")
-    cmd_parser.add_option("-s", "--seperator",
-                          action="store_true",
-                          dest="show_seperator",
-                          help="show seperator in process listing",
-                          default=False)
 
  # Get the options and return the result.
     (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
@@ -448,7 +437,7 @@ if __name__ == "__main__":
             if (cts):
                 data_slices[cts].append(line)
         # Print all the processes in D state.
-        show_d_state(data_slices, cmdline_opts.show_seperator)
+        show_d_state(data_slices)
 
     except KeyboardInterrupt:
         print("")

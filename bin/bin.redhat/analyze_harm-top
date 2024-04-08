@@ -180,23 +180,30 @@ def tableize(rows, header):
 def __print_colorize_table(tfrmt):
     index = 1
     for line in tfrmt.split("\n"):
-        colorize_foreground = True
         if index == 2 or (( (index % 2) != 0) and (not line.startswith("-"))):
-            line = __colorize_line(line, colorize_foreground)
+            line = __colorize_line_background(line)
         print(line)
         index += 1
 
 
-def __colorize_line(text, colorize_foreground=False):
+def __colorize_line_background(text):
     # Dark Gray = 100
     # Light Blue = 104
     # - http://misc.flogisoft.com/bash/tip_colors_and_formatting
-    bgColor = "40;100"
+    color_id = "40;100"
     opencol = "\033["
     closecol = "m"
-    clear = opencol + "0" + closecol
-    bg = opencol + bgColor + closecol
-    return "%s%s%s" % (bg, text, clear)
+    color = opencol + color_id + closecol
+    return "%s%s%s" % (color, text, opencol + "0" + closecol)
+
+
+def __colorize_line_foreground(text):
+    # Red = 31
+    color_id = '31'
+    opencol = '\033[1;'
+    closecol = 'm'
+    color = opencol +  color_id + closecol
+    return '%s%s%s' % (color, text, opencol + '0' + closecol)
 
 
 # ##############################################################################
@@ -286,7 +293,7 @@ def print_top(top_chunks, number_of_processes):
             row += [preamble_map["load average"], preamble_map["cpu_idle"],
                     preamble_map["mem_free"], preamble_map["swap_used"]]
             pid_rows.append(row)
-        print("%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"], preamble_map["mem_free"], preamble_map["swap_used"]))
+        print(__colorize_line_foreground("%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s)" %(str(dt), preamble_map["load average"], preamble_map["cpu_idle"], preamble_map["mem_free"], preamble_map["swap_used"])))
         tfrmt = tableize(pid_rows, header)
         __print_colorize_table(tfrmt)
 

@@ -215,11 +215,18 @@ def __colorize_line_background(text):
     color = opencol + color_id + closecol
     return '%s%s%s' % (color, text, opencol + '0' + closecol)
 
+def __colorize_line_foreground(text):
+    # Red = 31
+    color_id = '31'
+    opencol = '\033[1;'
+    closecol = 'm'
+    color = opencol +  color_id + closecol
+    return '%s%s%s' % (color, text, opencol + '0' + closecol)
 
 # ##############################################################################
 # parse and print data
 # ##############################################################################
-def show_d_state(data_slices):
+def show_d_state(hostname, data_slices):
     max_command_length = 120
     # The file is sorted into bins to capture all top data captured at
     # specific time.
@@ -274,6 +281,7 @@ def show_d_state(data_slices):
                     prow.pop(PS_COLUMN_NAMES.get(cname))
         # Format and print the rows of ps lines that matched.
         if (pid_rows):
+            print(__colorize_line_foreground('%s @%s' %(ts, hostname)))
             tfrmt = tableize(pid_rows, header)
             __print_colorize_table(tfrmt)
 
@@ -415,9 +423,12 @@ if __name__ == '__main__':
         # Need to only capture data within that hour.
         data_slices = {}
         cts = ''
+        hostname = ''
         for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
             line = line.strip()
-            if (line.startswith('#')):
+            if line.startswith('#'):
+                if line.find('#UNAME') >= 0:
+                    hostname = line.split('#UNAME=')[1].split()[1]
                 continue
             regex = '^(?P<day>mon|tue|wed|thu|fri|sat|sun) .*'
             rem = re.compile(regex)
@@ -438,7 +449,7 @@ if __name__ == '__main__':
                 # Add all the lines for the current timestamp.
                 data_slices[cts].append(line)
         # Print all the processes in D state.
-        show_d_state(data_slices)
+        show_d_state(hostname, data_slices)
 
     except KeyboardInterrupt:
         print('')

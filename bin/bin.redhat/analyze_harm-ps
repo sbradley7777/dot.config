@@ -23,15 +23,15 @@ import textwrap
 # #####################################################################
 # Global vars:
 # #####################################################################
-VERSION_NUMBER = "0.1-1"
-MAIN_LOGGER_NAME = "%s" %(os.path.basename(sys.argv[0]))
+VERSION_NUMBER = '0.1-1'
+MAIN_LOGGER_NAME = '%s' %(os.path.basename(sys.argv[0]))
 
-DT_FORMAT = "%a %b %d %H:%M:%S %Y"
+DT_FORMAT = '%a %b %d %H:%M:%S %Y'
 # The format used to display the date.
-DT_FORMAT_OUTPUT = "%Y-%m-%d %H:%M:%S"
-PS_COLUMN_NAMES = {"timestamp":0, "USER":1, "PID":2, "PPID":3, "%CPU":4, "%MEM":5,
-                   "VSZ":6, "RSS":7, "TT":8, "STAT":9, "STARTED":10,
-                   "TIME":11, "WCHAN":12, "COMMAND":13}
+DT_FORMAT_OUTPUT = '%Y-%m-%d %H:%M:%S'
+PS_COLUMN_NAMES = {'timestamp':0, 'USER':1, 'PID':2, 'PPID':3, '%CPU':4, '%MEM':5,
+                   'VSZ':6, 'RSS':7, 'TT':8, 'STAT':9, 'STARTED':10,
+                   'TIME':11, 'WCHAN':12, 'COMMAND':13}
 
 
 # #####################################################################
@@ -41,19 +41,19 @@ def write_to_file(path_to_filename, data, append_to_file=True, create_file=False
     [parent_dir, filename] = os.path.split(path_to_filename)
     if (os.path.isfile(path_to_filename) or (os.path.isdir(parent_dir) and create_file)):
         try:
-            file_mode = "w"
+            file_mode = 'w'
             if (append_to_file):
-                file_mode = "a"
+                file_mode = 'a'
             fout = open(path_to_filename, file_mode)
-            fout.write(data + "\n")
+            fout.write(data + '\n')
             fout.close()
             return True
         except UnicodeEncodeError as e:
-            message = "There was a unicode encode error writing to the file: %s." %(path_to_filename)
+            message = 'There was a unicode encode error writing to the file: %s.' %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
         except IOError:
-            message = "There was an error writing to the file: %s." %(path_to_filename)
+            message = 'There was an error writing to the file: %s.' %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             return False
     return False
@@ -62,9 +62,9 @@ def write_to_file(path_to_filename, data, append_to_file=True, create_file=False
 def get_data_from_file(path_to_filename) :
     lines = get_data_from_file_as_list(path_to_filename)
     if (not lines == None):
-        data = ""
+        data = ''
         for line in lines:
-            data = "%s%s" %(data, line)
+            data = '%s%s' %(data, line)
         return data
     return None
 
@@ -72,7 +72,7 @@ def get_data_from_file(path_to_filename) :
 def get_data_from_file_as_list(path_to_filename) :
     if (len(path_to_filename) > 0) :
         try:
-            fin = open(path_to_filename, "r")
+            fin = open(path_to_filename, 'r')
             lines = fin.readlines()
             fin.close()
             data = []
@@ -82,7 +82,7 @@ def get_data_from_file_as_list(path_to_filename) :
                     data.append(line.strip())
             return data
         except (IOError, os.error):
-            message = "An error occured reading the file: %s." %(path_to_filename)
+            message = 'An error occured reading the file: %s.' %(path_to_filename)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
     return None
 
@@ -113,7 +113,7 @@ def truncate_rows(rows, max_item_length=125):
             iindex += 1
         for key in index_with_long_lines:
             # Modify the current and change to the shorten version.
-            row[key] = "%s...." % (index_with_long_lines.get(key).pop(0))
+            row[key] = '%s....' % (index_with_long_lines.get(key).pop(0))
         """
         # Comment out this section of code that adds an addition line for the rest of the command.
         # Look over what is left and add new row. Could have multiple items in
@@ -146,7 +146,7 @@ def tableize(rows, header, colorize=True):
     https://gist.github.com/lonetwin/4721748
     """
     # Formatted string of table data returned.
-    formatted_table = ""
+    formatted_table = ''
     if (not rows):
         return formatted_table
     # Truncate any data in columns.
@@ -155,11 +155,11 @@ def tableize(rows, header, colorize=True):
     rows_copy.insert(0, header)
     def __format_item(item):
         import locale
-        locale.setlocale(locale.LC_NUMERIC, "")
+        locale.setlocale(locale.LC_NUMERIC, '')
         try:
             return str(item)
         except UnicodeEncodeError:
-            return item.encode("utf-8")
+            return item.encode('utf-8')
 
     # Convert all values in rows to strings.
     if (len(rows_copy) > 0):
@@ -173,33 +173,33 @@ def tableize(rows, header, colorize=True):
         # Figure out each column widths which is max column size for all rows.
         widths = [ len(max(columns, key=len)) for columns in zip(*converted_rows_to_str) ]
         # Add seperator
-        formatted_table += '-+-'.join( '-' * width for width in widths) + "\n"
+        formatted_table += '-+-'.join( '-' * width for width in widths) + '\n'
         # Add the header
         header, data = converted_rows_to_str[0], converted_rows_to_str[1:]
-        formatted_table += ' | '.join(format(title, "%ds" % width)
-                                      for width, title in zip(widths, header) ) + "\n"
+        formatted_table += ' | '.join(format(title, '%ds' % width)
+                                      for width, title in zip(widths, header) ) + '\n'
 
         # Add seperator from first row and header.
-        formatted_table += '-+-'.join( '-' * width for width in widths) + "\n"
+        formatted_table += '-+-'.join( '-' * width for width in widths) + '\n'
         count = 0
         for row in data:
-            row_string = " | ".join(format(cdata, "%ds" % width) for width, cdata in zip(widths, row))
-            if (not row_string.startswith("-")):
+            row_string = ' | '.join(format(cdata, '%ds' % width) for width, cdata in zip(widths, row))
+            if (not row_string.startswith('-')):
                 count = count + 1
             # Add header ever 40 lines.
             if ((count % 40) == 0):
-                row_string += "\n%s" %('-+-'.join( '-' * width for width in widths))
-                row_string += "\n%s" %(' | '.join(format(title, "%ds" % width)
+                row_string += '\n%s' %('-+-'.join( '-' * width for width in widths))
+                row_string += '\n%s' %(' | '.join(format(title, '%ds' % width)
                                                   for width, title in zip(widths, header) ))
-                row_string += "\n%s" %('-+-'.join( '-' * width for width in widths))
-            formatted_table += row_string + "\n"
+                row_string += '\n%s' %('-+-'.join( '-' * width for width in widths))
+            formatted_table += row_string + '\n'
     return formatted_table
 
 
 def __print_colorize_table(tfrmt):
     index = 1
-    for line in tfrmt.split("\n"):
-        if index == 2 or (( (index % 2) != 0) and (not line.startswith("-"))):
+    for line in tfrmt.split('\n'):
+        if index == 2 or (( (index % 2) != 0) and (not line.startswith('-'))):
             line = __colorize_line_background(line)
         print(line)
         index += 1
@@ -209,11 +209,11 @@ def __colorize_line_background(text):
     # Dark Gray = 100
     # Light Blue = 104
     # - http://misc.flogisoft.com/bash/tip_colors_and_formatting
-    color_id = "40;100"
-    opencol = "\033["
-    closecol = "m"
+    color_id = '40;100'
+    opencol = '\033['
+    closecol = 'm'
     color = opencol + color_id + closecol
-    return "%s%s%s" % (color, text, opencol + "0" + closecol)
+    return '%s%s%s' % (color, text, opencol + '0' + closecol)
 
 
 # ##############################################################################
@@ -229,29 +229,29 @@ def show_d_state(data_slices):
     header = []
     # Go through all the data.
     for ts in tkeys:
-        dt = datetime.strptime("%s" %(ts), DT_FORMAT)
+        dt = datetime.strptime('%s' %(ts), DT_FORMAT)
         timestamp = dt.strftime(DT_FORMAT_OUTPUT)
         lines = data_slices.get(ts)
         if (not lines):
             continue
         if (not lines):
             continue
-        header = ["timestamp"]
+        header = ['timestamp']
         header += lines.pop(0).split()
         pid_rows = []
         for line in lines:
             line = line.strip()
             if (not line):
                 continue
-            # The STARTED column can come in 2 formats that causes issues when trying to split on "whitespaces".
+            # The STARTED column can come in 2 formats that causes issues when trying to split on 'whitespaces'.
             # USER         PID    PPID %CPU %MEM    VSZ   RSS TT       STAT  STARTED     TIME WCHAN                            COMMAND
             # root           1       0  0.1  0.0 243604  7168 ?        Ds     Mar 24 00:16:57 alloc_shrinker_info              /usr/lib/systemd/systemd --switched-root --system --deserialize 18
             # root     4068084       1  0.0  0.1  75412 57908 ?        D<Ls 00:00:01 00:00:22 cgroup_path_ns                   /usr/bin/atop -w /var/log/atop/atop_20240403 600
 
-            # Split the line into 2 parts. Split on column "STAT" and include -1 because the PS_COLUMN_NAMES includes timestamp
+            # Split the line into 2 parts. Split on column 'STAT' and include -1 because the PS_COLUMN_NAMES includes timestamp
             # column that currently does not exist.
-            row = [timestamp] + line.split(None, PS_COLUMN_NAMES.get("STAT"))[:9]
-            line_after_stat = line.split(None, PS_COLUMN_NAMES.get("STAT"))[9:][0]
+            row = [timestamp] + line.split(None, PS_COLUMN_NAMES.get('STAT'))[:9]
+            line_after_stat = line.split(None, PS_COLUMN_NAMES.get('STAT'))[9:][0]
             pattern = re.compile('(?P<started>((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ([012][0-9]|30|31))|(\d\d:\d\d:\d\d))(?P<after_started>.*)')
             search_object = pattern.search(line_after_stat)
             if search_object:
@@ -263,10 +263,10 @@ def show_d_state(data_slices):
             # Commented out some of the code as it was not working.
             pid_rows.append(row)
         # Pad command header before removing items.
-        if ("COMMAND" in PS_COLUMN_NAMES):
-            header[PS_COLUMN_NAMES.get("COMMAND")] = header[PS_COLUMN_NAMES.get("COMMAND")].ljust(125)
+        if ('COMMAND' in PS_COLUMN_NAMES):
+            header[PS_COLUMN_NAMES.get('COMMAND')] = header[PS_COLUMN_NAMES.get('COMMAND')].ljust(125)
         # Remove columns we are not going to print. They listed in reverse sort so I could remove them last to first.
-        rm_column_names = ["WCHAN", "TIME", "STARTED", "TT", "RSS", "VSZ", "USER"]
+        rm_column_names = ['WCHAN', 'TIME', 'STARTED', 'TT', 'RSS', 'VSZ', 'USER']
         for cname in rm_column_names:
             if (cname in PS_COLUMN_NAMES):
                 header.pop(PS_COLUMN_NAMES.get(cname))
@@ -282,23 +282,23 @@ def show_d_state(data_slices):
 # ##############################################################################
 def __get_options(version) :
     cmd_parser = OptionParserExtended(version)
-    cmd_parser.add_option("-d", "--debug",
-                          action="store_true",
-                          dest="enableDebugLogging",
-                          help="enables debug logging",
+    cmd_parser.add_option('-d', '--debug',
+                          action='store_true',
+                          dest='enableDebugLogging',
+                          help='enables debug logging',
                           default=False)
-    cmd_parser.add_option("-q", "--quiet",
-                          action="store_true",
-                          dest="disableLoggingToConsole",
-                          help="disables logging to console",
+    cmd_parser.add_option('-q', '--quiet',
+                          action='store_true',
+                          dest='disableLoggingToConsole',
+                          help='disables logging to console',
                           default=False)
-    cmd_parser.add_option("-p", "--path_to_filename",
-                          action="store",
-                          dest="path_to_src_file",
-                          help="the path to the filename that will be parsed",
-                          type="string",
-                          metavar="<input filename>",
-                          default="")
+    cmd_parser.add_option('-p', '--path_to_filename',
+                          action='store',
+                          dest='path_to_src_file',
+                          help='the path to the filename that will be parsed',
+                          type='string',
+                          metavar='<input filename>',
+                          default='')
 
  # Get the options and return the result.
     (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
@@ -312,26 +312,26 @@ class OptionParserExtended(OptionParser):
     def __init__(self, version) :
         self.__command_name = os.path.basename(sys.argv[0])
         OptionParser.__init__(self, option_class=ExtendOption,
-                              version="%s %s\n" %(self.__command_name, version),
-                              description="%s \n"%(self.__command_name))
+                              version='%s %s\n' %(self.__command_name, version),
+                              description='%s \n'%(self.__command_name))
 
     def print_help(self):
         self.print_version()
-        examples_message = "\n"
+        examples_message = '\n'
         OptionParser.print_help(self)
         #print examples_message
 
 
 class ExtendOption (Option):
-    ACTIONS = Option.ACTIONS + ("extend",)
-    STORE_ACTIONS = Option.STORE_ACTIONS + ("extend",)
-    TYPED_ACTIONS = Option.TYPED_ACTIONS + ("extend",)
+    ACTIONS = Option.ACTIONS + ('extend',)
+    STORE_ACTIONS = Option.STORE_ACTIONS + ('extend',)
+    TYPED_ACTIONS = Option.TYPED_ACTIONS + ('extend',)
 
     def take_action(self, action, dest, opt, value, values, parser):
-        if (action == "extend") :
+        if (action == 'extend') :
             valueList = []
             try:
-                for v in value.split(","):
+                for v in value.split(','):
                     # Need to add code for dealing with paths if there is option for paths.
                     newValue = value.strip().rstrip()
                     if (len(newValue) > 0):
@@ -347,7 +347,7 @@ class ExtendOption (Option):
 # ###############################################################################
 # Main Function
 # ###############################################################################
-if __name__ == "__main__":
+if __name__ == '__main__':
     try:
         # #######################################################################
         # Get the options from the commandline.
@@ -362,22 +362,22 @@ if __name__ == "__main__":
         logger.setLevel(logLevel)
         # Create a new status function and level.
         logging.STATUS = logging.INFO + 2
-        logging.addLevelName(logging.STATUS, "STATUS")
+        logging.addLevelName(logging.STATUS, 'STATUS')
 
         # Log to main system logger that script has started then close the
         # handler before the other handlers are created.
         sysLogHandler = logging.handlers.SysLogHandler(address = '/dev/log')
         logger.addHandler(sysLogHandler)
-        logger.info("The script has started running.")
+        logger.info('The script has started running.')
         logger.removeHandler(sysLogHandler)
 
         # Create a function for the STATUS_LEVEL since not defined by python. This
         # means you can call it like the other predefined message
-        # functions. Example: logging.getLogger("loggerName").status(message)
-        setattr(logger, "status", lambda *args: logger.log(logging.STATUS, *args))
+        # functions. Example: logging.getLogger('loggerName').status(message)
+        setattr(logger, 'status', lambda *args: logger.log(logging.STATUS, *args))
         stream_handler = logging.StreamHandler()
         stream_handler.setLevel(logLevel)
-        stream_handler.setFormatter(logging.Formatter("%(levelname)s %(message)s"))
+        stream_handler.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
         logger.addHandler(stream_handler)
 
         # #######################################################################
@@ -386,7 +386,7 @@ if __name__ == "__main__":
         if ((cmdline_opts.enableDebugLogging) and (not cmdline_opts.disableLoggingToConsole)):
             logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
             stream_handler.setLevel(logging.DEBUG)
-            message = "Debugging has been enabled."
+            message = 'Debugging has been enabled.'
             logging.getLogger(MAIN_LOGGER_NAME).debug(message)
         if (cmdline_opts.disableLoggingToConsole):
             stream_handler.setLevel(logging.CRITICAL)
@@ -394,46 +394,46 @@ if __name__ == "__main__":
         # Check options
         # #######################################################################
         if (not cmdline_opts.path_to_src_file):
-            message = "A path to the file is required with the -p option."
+            message = 'A path to the file is required with the -p option.'
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             sys.exit(1)
         elif (not os.path.isfile(cmdline_opts.path_to_src_file)):
-            message = "The path does not exist or is not a file: %s" %(cmdline_opts.path_to_src_file)
+            message = 'The path does not exist or is not a file: %s' %(cmdline_opts.path_to_src_file)
             logging.getLogger(MAIN_LOGGER_NAME).error(message)
             sys.exit(1)
 
         # #######################################################################
         # Run main
         # #######################################################################
-        message = "Analyzing the file: %s" %(cmdline_opts.path_to_src_file)
+        message = 'Analyzing the file: %s' %(cmdline_opts.path_to_src_file)
         logging.getLogger(MAIN_LOGGER_NAME).debug(message)
 
         # filename: node42-20170820-230101-info-top.log
-        split_filename = cmdline_opts.path_to_src_file.rsplit("-", 5)
+        split_filename = cmdline_opts.path_to_src_file.rsplit('-', 5)
         date = split_filename[1]
         hour = split_filename[2][:2]
         # Need to only capture data within that hour.
         data_slices = {}
-        cts = ""
+        cts = ''
         for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
             line = line.strip()
-            if (line.startswith("#")):
+            if (line.startswith('#')):
                 continue
-            regex = "^(?P<day>mon|tue|wed|thu|fri|sat|sun) .*"
+            regex = '^(?P<day>mon|tue|wed|thu|fri|sat|sun) .*'
             rem = re.compile(regex)
             mo = rem.match(line.lower())
             # Check if date/time line.
             if (mo):
                 linesplit = line.split()
-                linesplit[2] = "%02d" %(int(linesplit[2]))
+                linesplit[2] = '%02d' %(int(linesplit[2]))
                 linesplit.pop(4)
-                line = " ".join(linesplit)
+                line = ' '.join(linesplit)
                 dt = datetime.strptime(line, DT_FORMAT)
-                if (hour == dt.strftime("%H")):
+                if (hour == dt.strftime('%H')):
                     cts = dt.strftime(DT_FORMAT)
                     data_slices[cts] = []
                 else:
-                    cts = ""
+                    cts = ''
             elif (cts):
                 # Add all the lines for the current timestamp.
                 data_slices[cts].append(line)
@@ -441,9 +441,8 @@ if __name__ == "__main__":
         show_d_state(data_slices)
 
     except KeyboardInterrupt:
-        print("")
-        message =  "This script will exit since control-c was executed by end user."
-        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        print('')
+        logging.getLogger(MAIN_LOGGER_NAME).error('This script will exit since control-c was executed by end user.')
         sys.exit(1)
     # #######################################################################
     # Exit the application with zero exit code since we cleanly exited.

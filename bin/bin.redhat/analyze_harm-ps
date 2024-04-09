@@ -32,6 +32,7 @@ DT_FORMAT_OUTPUT = '%Y-%m-%d %H:%M:%S'
 PS_COLUMN_NAMES = {'timestamp':0, 'USER':1, 'PID':2, 'PPID':3, '%CPU':4, '%MEM':5,
                    'VSZ':6, 'RSS':7, 'TT':8, 'STAT':9, 'STARTED':10,
                    'TIME':11, 'WCHAN':12, 'COMMAND':13}
+REGEX_PROCESSES_STAT_SLEEP_IDLE = '[SI][ s+N<lL][ l+s]'
 
 
 # #####################################################################
@@ -257,17 +258,27 @@ def show_d_state(hostname, data_slices):
 
             # Split the line into 2 parts. Split on column 'STAT' and include -1 because the PS_COLUMN_NAMES includes timestamp
             # column that currently does not exist.
-            row = [timestamp] + line.split(None, PS_COLUMN_NAMES.get('STAT'))[:9]
-            line_after_stat = line.split(None, PS_COLUMN_NAMES.get('STAT'))[9:][0]
+            row = [timestamp] + line.split(None, PS_COLUMN_NAMES.get('STAT'))[:PS_COLUMN_NAMES.get('STAT')]
+            line_after_stat = line.split(None, PS_COLUMN_NAMES.get('STAT'))[PS_COLUMN_NAMES.get('STAT'):][0]
             pattern = re.compile('(?P<started>((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ([012][0-9]|30|31))|(\d\d:\d\d:\d\d))(?P<after_started>.*)')
             search_object = pattern.search(line_after_stat)
             if search_object:
               row.append(search_object.group('started'))
               row += search_object.group('after_started').split(None, 2)
-            # If the process is not in D state or incorrect number of columns then skip it. The line does not have timestamp added, so -1 on index that it is in.
-            if not row[PS_COLUMN_NAMES.get('STAT')].find('D') == 0 or len(row) < len(list(PS_COLUMN_NAMES.keys())):
+            process_stat = row[PS_COLUMN_NAMES.get('STAT')].ljust(5)
+            # Only include processes that are 'D' state.
+            # REGEX_PROCESSES_STAT_DEFUNCT = 'D'
+            # pattern = re.compile(REGEX_PROCESSES_STAT_DEFUNCT)
+            # search_object = pattern.search(process_stat)
+            # if not search_object or len(row) != len(list(PS_COLUMN_NAMES.keys())):
+            #    continue
+
+            # If the process is in sleep/idle state or incorrect number of columns then skip it. The process 'STAT' is padded
+            # with whitespaces for the regex to work in all cases.
+            pattern = re.compile(REGEX_PROCESSES_STAT_SLEEP_IDLE)
+            search_object = pattern.search(process_stat)
+            if search_object or len(row) != len(list(PS_COLUMN_NAMES.keys())):
                 continue
-            # Commented out some of the code as it was not working.
             pid_rows.append(row)
         # Pad command header before removing items.
         if ('COMMAND' in PS_COLUMN_NAMES):

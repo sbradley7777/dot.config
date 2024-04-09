@@ -149,7 +149,6 @@ def tableize(rows, header, colorize=True):
     formatted_table = ""
     if (not rows):
         return formatted_table
-
     # Truncate any data in columns.
     rows_copy = truncate_rows(rows)
     # Insert the header
@@ -228,14 +227,13 @@ def show_d_state(data_slices):
     tkeys.sort()
     pid_rows_all = []
     header = []
-
+    # Go through all the data.
     for ts in tkeys:
         dt = datetime.strptime("%s" %(ts), DT_FORMAT)
         timestamp = dt.strftime(DT_FORMAT_OUTPUT)
         lines = data_slices.get(ts)
         if (not lines):
             continue
-        lines.pop(0)
         if (not lines):
             continue
         header = ["timestamp"]

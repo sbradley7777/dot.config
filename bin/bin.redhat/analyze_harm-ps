@@ -25,7 +25,8 @@ from optparse import Option, OptionParser
 VERSION_NUMBER = '0.1-1'
 MAIN_LOGGER_NAME = '%s' % (os.path.basename(sys.argv[0]))
 
-DT_FORMAT = '%a %b %d %H:%M:%S %Y'
+# The date format used in the file before each iteration of the data.
+DT_FORMAT_FILE_CONTENTS = '%a %b %d %H:%M:%S %Y'
 # The format used to display the date.
 DT_FORMAT_OUTPUT = '%Y-%m-%d %H:%M:%S'
 PS_COLUMN_NAMES = {'timestamp': 0, 'USER': 1, 'PID': 2, 'PPID': 3, '%CPU': 4, '%MEM': 5,
@@ -91,7 +92,7 @@ def truncate_rows(rows, max_item_length=125):
         for key in index_with_long_lines:
             # Modify the current and change to the shorten version.
             row[key] = '%s....' % (index_with_long_lines.get(key).pop(0))
-        """
+    """
         # This variable goes before "for row in rows_copy:".
         rindex = 0
         # Comment out this section of code that adds an addition line for the rest of the command.
@@ -114,7 +115,7 @@ def truncate_rows(rows, max_item_length=125):
                 insert_after_row += 1
         # Increment the row index
         rindex += 1
-        """
+    """
     return rows_copy
 
 
@@ -210,10 +211,9 @@ def show_d_state(hostname, data_slices, show_only_defunct_processes=False):
     tkeys.sort()
     header = []
     # Go through all the data.
-    for ts in tkeys:
-        dt = datetime.strptime('%s' % (ts), DT_FORMAT)
-        timestamp = dt.strftime(DT_FORMAT_OUTPUT)
-        lines = data_slices.get(ts)
+    for ts_key in tkeys:
+        timestamp = ts_key.strftime(DT_FORMAT_OUTPUT)
+        lines = data_slices.get(ts_key)
         if not lines:
             continue
         if not lines:
@@ -268,7 +268,7 @@ def show_d_state(hostname, data_slices, show_only_defunct_processes=False):
                     prow.pop(PS_COLUMN_NAMES.get(cname))
         # Format and print the rows of ps lines that matched.
         if pid_rows:
-            print(__colorize_line_foreground('%s @%s | Number of matching processes: %d' % (ts, hostname, len(pid_rows))))
+            print(__colorize_line_foreground('%s @%s | Number of matching processes: %d' % (ts_key, hostname, len(pid_rows))))
             tfrmt = tableize(pid_rows, header)
             __print_colorize_table(tfrmt)
 
@@ -395,7 +395,7 @@ def main():
     hour = split_filename[2][:2]
     # Need to only capture data within that hour.
     data_slices = {}
-    current_timestamp = ''
+    last_timestamp = ''
     hostname = ''
     for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
         line = line.strip()
@@ -403,8 +403,8 @@ def main():
             if line.find('#UNAME') >= 0:
                 hostname = line.split('#UNAME=')[1].split()[1]
             continue
-        regex = '^(?P<day>mon|tue|wed|thu|fri|sat|sun) .*'
-        rem = re.compile(regex)
+        # The regex for find date and time the output of data was created.
+        rem = re.compile('^(?P<day>mon|tue|wed|thu|fri|sat|sun) .*')
         match_object = rem.match(line.lower())
         # Check if date/time line.
         if match_object:
@@ -412,15 +412,15 @@ def main():
             linesplit[2] = '%02d' % (int(linesplit[2]))
             linesplit.pop(4)
             line = ' '.join(linesplit)
-            date_time = datetime.strptime(line, DT_FORMAT)
+            date_time = datetime.strptime(line, DT_FORMAT_FILE_CONTENTS)
             if hour == date_time.strftime('%H'):
-                current_timestamp = date_time.strftime(DT_FORMAT)
-                data_slices[current_timestamp] = []
+                last_timestamp = date_time
+                data_slices[last_timestamp] = []
             else:
-                current_timestamp = ''
-        elif current_timestamp:
+                last_timestamp = None
+        elif last_timestamp:
             # Add all the lines for the current timestamp.
-            data_slices[current_timestamp].append(line)
+            data_slices[last_timestamp].append(line)
     # Print all the processes in D state.
     show_d_state(hostname, data_slices, show_only_defunct_processes=cmdline_opts.show_only_defunct_processes)
 

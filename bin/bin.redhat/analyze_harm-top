@@ -286,12 +286,12 @@ def __get_options(version) :
     cmd_parser = OptionParserExtended(version)
     cmd_parser.add_option('-d', '--debug',
                           action='store_true',
-                          dest='enableDebugLogging',
+                          dest='enable_debug',
                           help='enables debug logging',
                           default=False)
     cmd_parser.add_option('-q', '--quiet',
                           action='store_true',
-                          dest='disableLoggingToConsole',
+                          dest='disable_logging',
                           help='disables logging to console',
                           default=False)
     cmd_parser.add_option('-p', '--path_to_filename',
@@ -350,89 +350,93 @@ class ExtendOption (Option):
         else:
             Option.take_action(self, action, dest, opt, value, values, parser)
 
+
+# ###############################################################################
+# Main Function
+# ###############################################################################
+def main():
+    # #######################################################################
+    # Get the options from the commandline.
+    # #######################################################################
+    (cmdline_opts, cmdline_args) = __get_options(VERSION_NUMBER)
+    # #######################################################################
+    # Setup the logger and create config directory
+    # #######################################################################
+    # Create the logger
+    log_level = logging.INFO
+    logger = logging.getLogger(MAIN_LOGGER_NAME)
+    logger.setLevel(log_level)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(log_level)
+    stream_handler.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
+    logger.addHandler(stream_handler)
+    if cmdline_opts.enable_debug and not cmdline_opts.disable_logging:
+        logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
+        stream_handler.setLevel(logging.DEBUG)
+        message = 'Debugging has been enabled.'
+        logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+    if cmdline_opts.disable_logging:
+        stream_handler.setLevel(logging.CRITICAL)
+
+    # #######################################################################
+    # Check options
+    # #######################################################################
+    if not cmdline_opts.path_to_src_file:
+        message = 'A path to the file is required with the -p option.'
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        sys.exit(1)
+    elif not os.path.isfile(cmdline_opts.path_to_src_file):
+        message = 'The path does not exist or is not a file: %s' % (cmdline_opts.path_to_src_file)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        sys.exit(1)
+
+    # #######################################################################
+    # Check options
+    # #######################################################################
+    if not cmdline_opts.path_to_src_file:
+        message = 'A path to the file is required with the -p option.'
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        sys.exit(1)
+    elif not os.path.isfile(cmdline_opts.path_to_src_file):
+        message = 'The path does not exist or is not a file: %s' % (cmdline_opts.path_to_src_file)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        sys.exit(1)
+
+    # #######################################################################
+    # Run main
+    # #######################################################################
+    message = 'Analyzing the file: %s' % (cmdline_opts.path_to_src_file)
+    logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+
+    # filename: node42-20170820-230101-info-top.log
+    split_filename = cmdline_opts.path_to_src_file.rsplit('-', 4)
+    date = split_filename[1]
+    hour = split_filename[2][:2]
+
+    # Need to only capture data within that hour.
+    top_chunks = {}
+    cts = ''
+    for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
+        if line.startswith('top - '):
+            timestamp = line.split()[2]
+            dt = datetime.strptime('%s %s' % (date, timestamp), DT_FORMAT)
+            if hour == dt.strftime('%H'):
+                cts = dt.strftime(DT_FORMAT)
+                top_chunks[cts] = []
+            else:
+                cts = ''
+        if cts:
+            top_chunks[cts].append(line)
+    # Print all the iterations.
+    print_top(top_chunks, cmdline_opts.number_of_processes)
+
+
 # ###############################################################################
 # Main Function
 # ###############################################################################
 if __name__ == '__main__':
     try:
-        # #######################################################################
-        # Get the options from the commandline.
-        # #######################################################################
-        (cmdline_opts, cmdline_args) = __get_options(VERSION_NUMBER)
-        # #######################################################################
-        # Setup the logger and create config directory
-        # #######################################################################
-        # Create the logger
-        logLevel = logging.INFO
-        logger = logging.getLogger(MAIN_LOGGER_NAME)
-        logger.setLevel(logLevel)
-        # Create a new status function and level.
-        logging.STATUS = logging.INFO + 2
-        logging.addLevelName(logging.STATUS, 'STATUS')
-
-        # Log to main system logger that script has started then close the handler before the other handlers are created.
-        sysLogHandler = logging.handlers.SysLogHandler(address = '/dev/log')
-        logger.addHandler(sysLogHandler)
-        logger.info('The script has started running.')
-        logger.removeHandler(sysLogHandler)
-
-        # Create a function for the STATUS_LEVEL since not defined by python. This means you can call it like the other
-        # predefined message functions. Example: logging.getLogger("loggerName").status(message)
-        setattr(logger, 'status', lambda *args: logger.log(logging.STATUS, *args))
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logLevel)
-        stream_handler.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
-        logger.addHandler(stream_handler)
-
-        # #######################################################################
-        # Set the logging levels.
-        # #######################################################################
-        if cmdline_opts.enableDebugLogging and not cmdline_opts.disableLoggingToConsole:
-            logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
-            stream_handler.setLevel(logging.DEBUG)
-            message = 'Debugging has been enabled.'
-            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-        if cmdline_opts.disableLoggingToConsole:
-            stream_handler.setLevel(logging.CRITICAL)
-        # #######################################################################
-        # Check options
-        # #######################################################################
-        if not cmdline_opts.path_to_src_file:
-            message = 'A path to the file is required with the -p option.'
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            sys.exit(1)
-        elif not os.path.isfile(cmdline_opts.path_to_src_file):
-            message = 'The path does not exist or is not a file: %s' % (cmdline_opts.path_to_src_file)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            sys.exit(1)
-
-        # #######################################################################
-        # Run main
-        # #######################################################################
-        message = 'Analyzing the file: %s' % (cmdline_opts.path_to_src_file)
-        logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-
-        # filename: node42-20170820-230101-info-top.log
-        split_filename = cmdline_opts.path_to_src_file.rsplit('-', 4)
-        date = split_filename[1]
-        hour = split_filename[2][:2]
-
-        # Need to only capture data within that hour.
-        top_chunks = {}
-        cts = ''
-        for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
-            if line.startswith('top - '):
-                timestamp = line.split()[2]
-                dt = datetime.strptime('%s %s' % (date, timestamp), DT_FORMAT)
-                if hour == dt.strftime('%H'):
-                    cts = dt.strftime(DT_FORMAT)
-                    top_chunks[cts] = []
-                else:
-                    cts = ''
-            if cts:
-                top_chunks[cts].append(line)
-
-        print_top(top_chunks, cmdline_opts.number_of_processes)
+        main()
     except KeyboardInterrupt:
         print('')
         message =  'This script will exit since control-c was executed by end user.'

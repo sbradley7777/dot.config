@@ -1,4 +1,4 @@
-#!/usr/bin/python2
+#!/usr/bin/env python3
 """
 The script parses top data collected in a file by the script ha-resourcemon.
   - https://access.redhat.com/solutions/368393
@@ -32,28 +32,6 @@ DT_FORMAT = '%Y%m%d %H:%M:%S'
 # #####################################################################
 # Helper File Functions
 # ####################################################################
-def write_to_file(path_to_filename, data, append_to_file=True, create_file=False):
-    [parent_dir, filename] = os.path.split(path_to_filename)
-    if os.path.isfile(path_to_filename) or (os.path.isdir(parent_dir) and create_file):
-        try:
-            file_mode = 'w'
-            if append_to_file:
-                file_mode = 'a'
-            fout = open(path_to_filename, file_mode)
-            fout.write(data + '\n')
-            fout.close()
-            return True
-        except UnicodeEncodeError as e:
-            message = 'There was a unicode encode error writing to the file: %s.' % (path_to_filename)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            return False
-        except IOError:
-            message = 'There was an error writing to the file: %s.' % (path_to_filename)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            return False
-    return False
-
-
 def get_data_from_file(path_to_filename) :
     lines = get_data_from_file_as_list(path_to_filename)
     if lines is not None:
@@ -63,12 +41,13 @@ def get_data_from_file(path_to_filename) :
         return data
     return None
 
+
 def get_data_from_file_as_list(path_to_filename) :
-    if len(path_to_filename) > 0:
+    if len(path_to_filename) > 0 :
         try:
-            fin = open(path_to_filename, 'r')
-            lines = fin.readlines()
-            fin.close()
+            with open(path_to_filename, 'r', encoding='utf-8') as fin:
+                lines = fin.readlines()
+                fin.close()
             data = []
             for line in lines:
                 line = line.strip()

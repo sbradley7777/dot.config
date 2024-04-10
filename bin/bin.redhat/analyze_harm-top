@@ -267,7 +267,7 @@ def print_top(top_chunks, number_of_processes):
                 # In a normal split there will be 13 columns (including timestamp). In the event there is more than 13 columns
                 # then we want to create a string out of the 13 to n columns. The 13th column contains the command.
                 modrow = []
-                for i in range(0, 12):
+                for i in range(0, 12):  # pylint: disable=W0612
                     modrow.append(row.pop(0))
                 modrow.append(' '.join(row))
                 row = modrow

@@ -11,6 +11,7 @@ For best results then use a black background and white (or green) foreground.
 @copyright : GPLv2
 
 """
+import locale
 import logging
 import logging.handlers
 import os
@@ -119,7 +120,6 @@ def tableize(rows, header):
     rows_copy.insert(0, header)
 
     def __format_item(item):
-        import locale
         locale.setlocale(locale.LC_NUMERIC, '')
         try:
             return str(item)
@@ -245,7 +245,7 @@ def print_top(top_chunks, number_of_processes):
         header = ['timestamp']
         for line in lines:
             line = line.strip()
-            if line.startswith('PID'):
+            if line.startswith('PID'):  # pylint: disable=R1723
                 header += line.split()
                 break
             elif len(line) > 0:
@@ -255,8 +255,8 @@ def print_top(top_chunks, number_of_processes):
         # Create data structure for the pid rows.
         pid_rows = []
         # The first 6 lines we can skip.
-        for i in range(6, (number_of_processes + 6)):
-            line = lines[i].strip()
+        for index in range(6, (number_of_processes + 6)):
+            line = lines[index].strip()
             if not line:
                 continue
             row = [str(dt)] + line.split()
@@ -310,8 +310,8 @@ def __get_options(version) :
                           default=10)
 
     # Get the options and return the result.
-    (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
-    return (cmdLine_opts, cmdLine_args)
+    (cmdline_opts, cmdline_args) = cmd_parser.parse_args()
+    return (cmdline_opts, cmdline_args)
 
 
 # ##############################################################################
@@ -441,8 +441,7 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         print('')
-        message = 'This script will exit since control-c was executed by end user.'
-        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        logging.getLogger(MAIN_LOGGER_NAME).error('This script will exit since control-c was executed by end user.')
         sys.exit(1)
     # #######################################################################
     # Exit the application with zero exit code since we cleanly exited.

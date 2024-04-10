@@ -186,33 +186,33 @@ def __colorize_line_foreground(text):
 
 
 # ##############################################################################
-# parse and print data
+# Parse and print data
 # ##############################################################################
-def __bytes_to_human(n, format='%(value).1f%(symbol)s'):
+def __bytes_to_human(size, format='%(value).1f%(symbol)s'):  # pylint: disable=W0622
     # - https://github.com/giampaolo/pyftpdlib/blob/master/scripts/ftpbench#L140
     # - https://code.activestate.com/recipes/578019-bytes-to-human-human-to-bytes-converter/
-    if not n.isdigit():
-        n = __to_bytes(n)
+    if not size.isdigit():
+        size = __to_bytes(size)
     symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
     prefix = {}
-    for i, s in enumerate(symbols[1:]):
-        prefix[s] = 1 << (i + 1) * 10
+    for index, symbol in enumerate(symbols[1:]):
+        prefix[symbol] = 1 << (index + 1) * 10
     for symbol in reversed(symbols[1:]):
-        if n >= prefix[symbol]:
-            value = float(n) / prefix[symbol]
+        if size >= prefix[symbol]:
+            value = float(size) / prefix[symbol]  # pylint: disable=W0641
             return format % locals()
-    return format % dict(symbol=symbols[0], value=n)
+    return format % dict(symbol=symbols[0], value=size)
 
 
-def __to_bytes(s):
+def __to_bytes(size):
     symbols = ('B', 'K', 'M', 'G', 'T', 'P', 'E', 'Z', 'Y')
-    letter = s[-1:].strip().upper()
-    num = s[:-1].split('.')[0]
-    assert num.isdigit() and letter in symbols, s
+    letter = size[-1:].strip().upper()
+    num = size[:-1].split('.')[0]
+    assert num.isdigit() and letter in symbols, size
     num = float(num)
     prefix = {symbols[0]: 1}
-    for i, s in enumerate(symbols[1:]):
-        prefix[s] = 1 << (i + 1) * 10
+    for index, symbol in enumerate(symbols[1:]):
+        prefix[symbol] = 1 << (index + 1) * 10
     return int(num * prefix[letter])
 
 
@@ -264,6 +264,8 @@ def print_top(top_chunks, number_of_processes):
                 continue
             row = [str(timestamp)] + line.split()
             if len(row) > 13:
+                # In a normal split there will be 13 columns (including timestamp). In the event there is more than 13 columns
+                # then we want to create a string out of the 13 to n columns. The 13th column contains the command.
                 modrow = []
                 for i in range(0, 12):
                     modrow.append(row.pop(0))

@@ -281,13 +281,13 @@ def print_top(hostname, top_chunks, number_of_processes):
                 row = modrow
             row += [preamble_map['load average'], preamble_map['cpu_idle'], preamble_map['mem_free'], preamble_map['swap_used']]
             pid_rows.append(row)
-        print(__colorize_line_foreground('%s @%s | Number of matching processes: %d'% (ts_key,
-                                                                                       hostname,
-                                                                                       len(pid_rows))))
-        print(__colorize_line_foreground('Load Average: %s | CPU idle: %s | Memory Free: %s | Swap Used: %s' %(preamble_map['load average'],
-                                                                                                               preamble_map['cpu_idle'],
-                                                                                                               preamble_map['mem_free'],
-                                                                                                               preamble_map['swap_used'])))
+        print(__colorize_line_foreground('%s @%s | Number of matching processes: %d' % (ts_key,
+                                                                                        hostname,
+                                                                                        len(pid_rows))))
+        print(__colorize_line_foreground('Load Average: %s | CPU idle: %s | Memory Free: %s | Swap Used: %s' % (preamble_map['load average'],
+                                                                                                                preamble_map['cpu_idle'],
+                                                                                                                preamble_map['mem_free'],
+                                                                                                                preamble_map['swap_used'])))
         tfrmt = tableize(pid_rows, header)
         __print_colorize_table(tfrmt)
 

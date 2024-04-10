@@ -13,13 +13,12 @@ For best results then use a black background and white (or green) foreground.
 """
 import logging
 import logging.handlers
-import operator
 import os
 import os.path
 import sys
 import textwrap
 from datetime import datetime
-from optparse import SUPPRESS_HELP, Option, OptionParser
+from optparse import Option, OptionParser
 
 # #####################################################################
 # Global vars:
@@ -74,7 +73,7 @@ def truncate_rows(rows, max_item_length=70):
         rows_copy.append(new_row)
     rindex = 0
     for row in rows_copy:
-        iindex = 0;
+        iindex = 0
         index_with_long_lines = {}
         for item in row:
             if len(str(item)) > max_item_length:
@@ -118,6 +117,7 @@ def tableize(rows, header):
     rows_copy = truncate_rows(rows)
     # Insert the header
     rows_copy.insert(0, header)
+
     def __format_item(item):
         import locale
         locale.setlocale(locale.LC_NUMERIC, '')
@@ -156,7 +156,7 @@ def tableize(rows, header):
 def __print_colorize_table(tfrmt):
     index = 1
     for line in tfrmt.split('\n'):
-        if index == 2 or (( (index % 2) != 0) and (not line.startswith('-'))):
+        if index == 2 or (((index % 2) != 0) and (not line.startswith('-'))):
             line = __colorize_line_background(line)
         print(line)
         index += 1
@@ -178,7 +178,7 @@ def __colorize_line_foreground(text):
     color_id = '31'
     opencol = '\033[1;'
     closecol = 'm'
-    color = opencol +  color_id + closecol
+    color = opencol + color_id + closecol
     return '%s%s%s' % (color, text, opencol + '0' + closecol)
 
 
@@ -217,7 +217,7 @@ def __get_preamble_map(preamble):
     preamble_map = {}
     # Print preamble data and top rows
     preamble_map['load average'] = preamble[0].split('load average:')[1]
-    preamble_map['cpu_idle'] =  preamble[2].split(', ')[3]
+    preamble_map['cpu_idle'] = preamble[2].split(', ')[3]
     # The mem output comes in different versions:
     #   Mem:  32832244k total, 21954424k used, 10877820k free,   852872k buffers
     #   KiB Mem : 79230297+total, 22083852+free,  5549860 used, 56591456+buff/cache
@@ -309,9 +309,10 @@ def __get_options(version) :
                           metavar='<number of processes>',
                           default=10)
 
- # Get the options and return the result.
+    # Get the options and return the result.
     (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
     return (cmdLine_opts, cmdLine_args)
+
 
 # ##############################################################################
 # OptParse classes for commandline options
@@ -321,13 +322,14 @@ class OptionParserExtended(OptionParser):
         self.__command_name = os.path.basename(sys.argv[0])
         OptionParser.__init__(self, option_class=ExtendOption,
                               version='%s %s\n' % (self.__command_name, version),
-                              description='%s \n'% (self.__command_name))
+                              description='%s \n' % (self.__command_name))
 
     def print_help(self):
         self.print_version()
-        examples_message = '\n'
         OptionParser.print_help(self)
-        #print examples_message
+        # examples_message = '\n'
+        # print examples_message
+
 
 class ExtendOption (Option):
     ACTIONS = Option.ACTIONS + ('extend',)
@@ -336,17 +338,17 @@ class ExtendOption (Option):
 
     def take_action(self, action, dest, opt, value, values, parser):
         if action == 'extend':
-            valueList = []
+            value_list = []
             try:
                 for v in value.split(','):
                     # Need to add code for dealing with paths if there is option for paths.
-                    newValue = value.strip().rstrip()
-                    if len(newValue) > 0:
-                        valueList.append(newValue)
-            except:
+                    new_value = value.strip().rstrip()
+                    if len(new_value) > 0:
+                        value_list.append(new_value)
+            except:  # noqa
                 pass
             else:
-                values.ensure_value(dest, []).extend(valueList)
+                values.ensure_value(dest, []).extend(value_list)
         else:
             Option.take_action(self, action, dest, opt, value, values, parser)
 
@@ -439,7 +441,7 @@ if __name__ == '__main__':
         main()
     except KeyboardInterrupt:
         print('')
-        message =  'This script will exit since control-c was executed by end user.'
+        message = 'This script will exit since control-c was executed by end user.'
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         sys.exit(1)
     # #######################################################################

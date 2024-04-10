@@ -37,31 +37,9 @@ REGEX_PROCESSES_STAT_DEFUNCT = 'D'
 # #####################################################################
 # Helper File Functions
 # ####################################################################
-def write_to_file(path_to_filename, data, append_to_file=True, create_file=False):
-    [parent_dir, filename] = os.path.split(path_to_filename)
-    if (os.path.isfile(path_to_filename) or (os.path.isdir(parent_dir) and create_file)):
-        try:
-            file_mode = 'w'
-            if (append_to_file):
-                file_mode = 'a'
-            fout = open(path_to_filename, file_mode)
-            fout.write(data + '\n')
-            fout.close()
-            return True
-        except UnicodeEncodeError as e:
-            message = 'There was a unicode encode error writing to the file: %s.' %(path_to_filename)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            return False
-        except IOError:
-            message = 'There was an error writing to the file: %s.' %(path_to_filename)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            return False
-    return False
-
-
 def get_data_from_file(path_to_filename) :
     lines = get_data_from_file_as_list(path_to_filename)
-    if (not lines == None):
+    if (not lines is None):
         data = ''
         for line in lines:
             data = '%s%s' %(data, line)
@@ -105,7 +83,7 @@ def truncate_rows(rows, max_item_length=125):
         rows_copy.append(new_row)
     rindex = 0
     for row in rows_copy:
-        iindex = 0;
+        iindex = 0
         index_with_long_lines = {}
         for item in row:
             if (len(str(item)) > max_item_length):
@@ -233,7 +211,6 @@ def show_d_state(hostname, data_slices, show_only_defunct_processes=False):
     # specific time.
     tkeys = list(data_slices.keys())
     tkeys.sort()
-    pid_rows_all = []
     header = []
     # Go through all the data.
     for ts in tkeys:
@@ -260,11 +237,11 @@ def show_d_state(hostname, data_slices, show_only_defunct_processes=False):
             # column that currently does not exist.
             row = [timestamp] + line.split(None, PS_COLUMN_NAMES.get('STAT'))[:PS_COLUMN_NAMES.get('STAT')]
             line_after_stat = line.split(None, PS_COLUMN_NAMES.get('STAT'))[PS_COLUMN_NAMES.get('STAT'):][0]
-            pattern = re.compile('(?P<started>((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ([012][0-9]|30|31))|(\d\d:\d\d:\d\d))(?P<after_started>.*)')
+            pattern = re.compile(r'(?P<started>((Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec) ([012][0-9]|30|31))|(\d\d:\d\d:\d\d))(?P<after_started>.*)')
             search_object = pattern.search(line_after_stat)
             if search_object:
-              row.append(search_object.group('started'))
-              row += search_object.group('after_started').split(None, 2)
+                row.append(search_object.group('started'))
+                row += search_object.group('after_started').split(None, 2)
             # The process 'STAT' is padded with whitespaces for the regex to work in all cases.
             process_stat = row[PS_COLUMN_NAMES.get('STAT')].ljust(5)
             # If there is incorrect number of columns then skip.

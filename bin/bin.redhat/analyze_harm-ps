@@ -1,24 +1,22 @@
 #!/usr/bin/python2
 """
 The script parses ps data collected in a file by the script ha-resourcemon.
-- https://access.redhat.com/solutions/368393
+  - https://access.redhat.com/solutions/368393
 
 @author    : Shane Bradley
 @contact   : sbradley@redhat.com
 @version   : 0.1
 @copyright : GPLv2
-
 """
-import sys
 import logging
 import logging.handlers
 import os
 import os.path
-from optparse import OptionParser, Option, SUPPRESS_HELP
-from datetime import datetime
-import operator
 import re
+import sys
 import textwrap
+from datetime import datetime
+from optparse import Option, OptionParser
 
 # #####################################################################
 # Global vars:
@@ -328,9 +326,9 @@ def __get_options(version) :
                           help='show only defunct (D state) processes',
                           default=False)
 
- # Get the options and return the result.
-    (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
-    return (cmdLine_opts, cmdLine_args)
+    # Get the options and return the result.
+    (cmdline_opts, cmdline_args) = cmd_parser.parse_args()
+    return (cmdline_opts, cmdline_args)
 
 
 # ##############################################################################
@@ -343,11 +341,11 @@ class OptionParserExtended(OptionParser):
                               version='%s %s\n' %(self.__command_name, version),
                               description='%s \n'%(self.__command_name))
 
-    def print_help(self):
+    def print_help(self): # pylint: disable=W0221
         self.print_version()
-        examples_message = '\n'
         OptionParser.print_help(self)
-        #print examples_message
+        # examples_message = '\n'
+        # print examples_message
 
 
 class ExtendOption (Option):
@@ -356,121 +354,107 @@ class ExtendOption (Option):
     TYPED_ACTIONS = Option.TYPED_ACTIONS + ('extend',)
 
     def take_action(self, action, dest, opt, value, values, parser):
-        if (action == 'extend') :
-            valueList = []
+        if action == 'extend' :
+            value_list = []
             try:
-                for v in value.split(','):
+                for v in value.split(','): # pylint: disable=W0612,C0103
                     # Need to add code for dealing with paths if there is option for paths.
-                    newValue = value.strip().rstrip()
-                    if (len(newValue) > 0):
-                        valueList.append(newValue)
-            except:
+                    new_value = value.strip().rstrip()
+                    if len(new_value) > 0:
+                        value_list.append(new_value)
+            except: # pylint: disable=W0702
                 pass
             else:
-                values.ensure_value(dest, []).extend(valueList)
+                values.ensure_value(dest, []).extend(value_list)
         else:
             Option.take_action(self, action, dest, opt, value, values, parser)
-
 
 # ###############################################################################
 # Main Function
 # ###############################################################################
+def main():
+    # #######################################################################
+    # Get the options from the commandline.
+    # #######################################################################
+    (cmdline_opts, cmdline_args) = __get_options(VERSION_NUMBER)
+    # #######################################################################
+    # Setup the logger and create config directory
+    # #######################################################################
+    # Create the logger
+    log_level = logging.INFO
+    logger = logging.getLogger(MAIN_LOGGER_NAME)
+    logger.setLevel(log_level)
+    stream_handler = logging.StreamHandler()
+    stream_handler.setLevel(log_level)
+    stream_handler.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
+    logger.addHandler(stream_handler)
+    if cmdline_opts.enable_debug and not cmdline_opts.disable_logging:
+        logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
+        stream_handler.setLevel(logging.DEBUG)
+        message = 'Debugging has been enabled.'
+        logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+    if cmdline_opts.disable_logging:
+        stream_handler.setLevel(logging.CRITICAL)
+
+    # #######################################################################
+    # Check options
+    # #######################################################################
+    if not cmdline_opts.path_to_src_file:
+        message = 'A path to the file is required with the -p option.'
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        sys.exit(1)
+    elif not os.path.isfile(cmdline_opts.path_to_src_file):
+        message = 'The path does not exist or is not a file: %s' %(cmdline_opts.path_to_src_file)
+        logging.getLogger(MAIN_LOGGER_NAME).error(message)
+        sys.exit(1)
+
+    # #######################################################################
+    # Run main
+    # #######################################################################
+    message = 'Analyzing the file: %s' %(cmdline_opts.path_to_src_file)
+    logging.getLogger(MAIN_LOGGER_NAME).debug(message)
+
+    # filename: node42-20170820-230101-info-top.log
+    split_filename = cmdline_opts.path_to_src_file.rsplit('-', 5)
+    hour = split_filename[2][:2]
+    # Need to only capture data within that hour.
+    data_slices = {}
+    current_timestamp = ''
+    hostname = ''
+    for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
+        line = line.strip()
+        if line.startswith('#'):
+            if line.find('#UNAME') >= 0:
+                hostname = line.split('#UNAME=')[1].split()[1]
+            continue
+        regex = '^(?P<day>mon|tue|wed|thu|fri|sat|sun) .*'
+        rem = re.compile(regex)
+        match_object = rem.match(line.lower())
+        # Check if date/time line.
+        if match_object:
+            linesplit = line.split()
+            linesplit[2] = '%02d' %(int(linesplit[2]))
+            linesplit.pop(4)
+            line = ' '.join(linesplit)
+            date_time = datetime.strptime(line, DT_FORMAT)
+            if (hour == date_time.strftime('%H')):
+                current_timestamp = date_time.strftime(DT_FORMAT)
+                data_slices[current_timestamp] = []
+            else:
+                current_timestamp = ''
+        elif current_timestamp:
+            # Add all the lines for the current timestamp.
+            data_slices[current_timestamp].append(line)
+    # Print all the processes in D state.
+    show_d_state(hostname, data_slices, show_only_defunct_processes=cmdline_opts.show_only_defunct_processes)
+
+
+# ###############################################################################
+# Run main()
+# ###############################################################################
 if __name__ == '__main__':
     try:
-        # #######################################################################
-        # Get the options from the commandline.
-        # #######################################################################
-        (cmdline_opts, cmdline_args) = __get_options(VERSION_NUMBER)
-        # #######################################################################
-        # Setup the logger and create config directory
-        # #######################################################################
-        # Create the logger
-        logLevel = logging.INFO
-        logger = logging.getLogger(MAIN_LOGGER_NAME)
-        logger.setLevel(logLevel)
-        # Create a new status function and level.
-        logging.STATUS = logging.INFO + 2
-        logging.addLevelName(logging.STATUS, 'STATUS')
-
-        # Log to main system logger that script has started then close the
-        # handler before the other handlers are created.
-        sysLogHandler = logging.handlers.SysLogHandler(address = '/dev/log')
-        logger.addHandler(sysLogHandler)
-        logger.info('The script has started running.')
-        logger.removeHandler(sysLogHandler)
-
-        # Create a function for the STATUS_LEVEL since not defined by python. This
-        # means you can call it like the other predefined message
-        # functions. Example: logging.getLogger('loggerName').status(message)
-        setattr(logger, 'status', lambda *args: logger.log(logging.STATUS, *args))
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logLevel)
-        stream_handler.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
-        logger.addHandler(stream_handler)
-
-        # #######################################################################
-        # Set the logging levels.
-        # #######################################################################
-        if ((cmdline_opts.enable_debug) and (not cmdline_opts.disable_logging)):
-            logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
-            stream_handler.setLevel(logging.DEBUG)
-            message = 'Debugging has been enabled.'
-            logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-        if (cmdline_opts.disable_logging):
-            stream_handler.setLevel(logging.CRITICAL)
-        # #######################################################################
-        # Check options
-        # #######################################################################
-        if (not cmdline_opts.path_to_src_file):
-            message = 'A path to the file is required with the -p option.'
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            sys.exit(1)
-        elif (not os.path.isfile(cmdline_opts.path_to_src_file)):
-            message = 'The path does not exist or is not a file: %s' %(cmdline_opts.path_to_src_file)
-            logging.getLogger(MAIN_LOGGER_NAME).error(message)
-            sys.exit(1)
-
-        # #######################################################################
-        # Run main
-        # #######################################################################
-        message = 'Analyzing the file: %s' %(cmdline_opts.path_to_src_file)
-        logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-
-        # filename: node42-20170820-230101-info-top.log
-        split_filename = cmdline_opts.path_to_src_file.rsplit('-', 5)
-        date = split_filename[1]
-        hour = split_filename[2][:2]
-        # Need to only capture data within that hour.
-        data_slices = {}
-        cts = ''
-        hostname = ''
-        for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
-            line = line.strip()
-            if line.startswith('#'):
-                if line.find('#UNAME') >= 0:
-                    hostname = line.split('#UNAME=')[1].split()[1]
-                continue
-            regex = '^(?P<day>mon|tue|wed|thu|fri|sat|sun) .*'
-            rem = re.compile(regex)
-            mo = rem.match(line.lower())
-            # Check if date/time line.
-            if (mo):
-                linesplit = line.split()
-                linesplit[2] = '%02d' %(int(linesplit[2]))
-                linesplit.pop(4)
-                line = ' '.join(linesplit)
-                dt = datetime.strptime(line, DT_FORMAT)
-                if (hour == dt.strftime('%H')):
-                    cts = dt.strftime(DT_FORMAT)
-                    data_slices[cts] = []
-                else:
-                    cts = ''
-            elif (cts):
-                # Add all the lines for the current timestamp.
-                data_slices[cts].append(line)
-        # Print all the processes in D state.
-        show_d_state(hostname, data_slices, show_only_defunct_processes=cmdline_opts.show_only_defunct_processes)
-
+        main()
     except KeyboardInterrupt:
         print('')
         logging.getLogger(MAIN_LOGGER_NAME).error('This script will exit since control-c was executed by end user.')

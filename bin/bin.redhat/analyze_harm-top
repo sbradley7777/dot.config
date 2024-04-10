@@ -229,6 +229,10 @@ def __get_preamble_map(preamble):
     #   KiB Mem : 79230297+total, 22083852+free,  5549860 used, 56591456+buff/cache
     mem_total = __bytes_to_human('%sK' % (preamble[3].split(': ')[1].split()[0].split('+')[0].replace('k', '')))
     mem_free = __bytes_to_human('%sK' % (preamble[3].split('free')[0].strip().rsplit(' ', 1)[1].replace('k', '').replace('+', '')))
+    if preamble[3].split(': ')[0].startswith('MiB Mem'):
+        # MiB Mem :  31888.0 total,    366.7 free,  29502.6 used,   2018.7 buff/cache
+        mem_total = __bytes_to_human('%sM' % (preamble[3].split(': ')[1].split()[0].split('+')[0]))
+        mem_free = __bytes_to_human('%sM' % (preamble[3].split('free')[0].strip().rsplit(' ', 1)[1]))
     preamble_map['mem_free'] = '%s | Memory Total: %s' % (mem_free, mem_total)
     # The swap output comes in different versions:
     #   Swap:  2088956k total,        0k used,  2088956k free,  1820752k cached

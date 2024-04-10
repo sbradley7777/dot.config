@@ -28,9 +28,9 @@ MAIN_LOGGER_NAME = '%s' % (os.path.basename(sys.argv[0]))
 DT_FORMAT = '%a %b %d %H:%M:%S %Y'
 # The format used to display the date.
 DT_FORMAT_OUTPUT = '%Y-%m-%d %H:%M:%S'
-PS_COLUMN_NAMES = {'timestamp':0, 'USER':1, 'PID':2, 'PPID':3, '%CPU':4, '%MEM':5,
-                   'VSZ':6, 'RSS':7, 'TT':8, 'STAT':9, 'STARTED':10,
-                   'TIME':11, 'WCHAN':12, 'COMMAND':13}
+PS_COLUMN_NAMES = {'timestamp': 0, 'USER': 1, 'PID': 2, 'PPID': 3, '%CPU': 4, '%MEM': 5,
+                   'VSZ': 6, 'RSS': 7, 'TT': 8, 'STAT': 9, 'STARTED': 10,
+                   'TIME': 11, 'WCHAN': 12, 'COMMAND': 13}
 REGEX_PROCESSES_STAT_SLEEP_IDLE = '[SI][ s+N<lL][ l+s]'
 REGEX_PROCESSES_STAT_DEFUNCT = 'D'
 
@@ -40,10 +40,10 @@ REGEX_PROCESSES_STAT_DEFUNCT = 'D'
 # ####################################################################
 def get_data_from_file(path_to_filename) :
     lines = get_data_from_file_as_list(path_to_filename)
-    if not lines is None:
+    if lines is not None:
         data = ''
         for line in lines:
-            data = '%s%s' %(data, line)
+            data = '%s%s' % (data, line)
         return data
     return None
 
@@ -61,7 +61,7 @@ def get_data_from_file_as_list(path_to_filename) :
                     data.append(line.strip())
             return data
         except (IOError, os.error):
-            logging.getLogger(MAIN_LOGGER_NAME).error('An error occured reading the file: %s.' %(path_to_filename))
+            logging.getLogger(MAIN_LOGGER_NAME).error('An error occured reading the file: %s.' % (path_to_filename))
     return None
 
 
@@ -132,6 +132,7 @@ def tableize(rows, header):
     rows_copy = truncate_rows(rows)
     # Insert the header
     rows_copy.insert(0, header)
+
     def __format_item(item):
         locale.setlocale(locale.LC_NUMERIC, '')
         try:
@@ -149,16 +150,14 @@ def tableize(rows, header):
             if len(current_row) > 0:
                 converted_rows_to_str.append(current_row)
         # Figure out each column widths which is max column size for all rows.
-        widths = [ len(max(columns, key=len)) for columns in zip(*converted_rows_to_str) ]
+        widths = [len(max(columns, key=len)) for columns in zip(*converted_rows_to_str)]
         # Add seperator
-        formatted_table += '-+-'.join( '-' * width for width in widths) + '\n'
+        formatted_table += '-+-'.join('-' * width for width in widths) + '\n'
         # Add the header
         header, data = converted_rows_to_str[0], converted_rows_to_str[1:]
-        formatted_table += ' | '.join(format(title, '%ds' % width)
-                                      for width, title in zip(widths, header) ) + '\n'
-
+        formatted_table += ' | '.join(format(title, '%ds' % width)for width, title in zip(widths, header)) + '\n'
         # Add seperator from first row and header.
-        formatted_table += '-+-'.join( '-' * width for width in widths) + '\n'
+        formatted_table += '-+-'.join('-' * width for width in widths) + '\n'
         count = 0
         for row in data:
             row_string = ' | '.join(format(cdata, '%ds' % width) for width, cdata in zip(widths, row))
@@ -166,10 +165,9 @@ def tableize(rows, header):
                 count = count + 1
             # Add header ever 40 lines.
             if (count % 40) == 0:
-                row_string += '\n%s' %('-+-'.join( '-' * width for width in widths))
-                row_string += '\n%s' %(' | '.join(format(title, '%ds' % width)
-                                                  for width, title in zip(widths, header) ))
-                row_string += '\n%s' %('-+-'.join( '-' * width for width in widths))
+                row_string += '\n%s' % ('-+-'.join('-' * width for width in widths))
+                row_string += '\n%s' % (' | '.join(format(title, '%ds' % width)for width, title in zip(widths, header)))
+                row_string += '\n%s' % ('-+-'.join('-' * width for width in widths))
             formatted_table += row_string + '\n'
     return formatted_table
 
@@ -177,7 +175,7 @@ def tableize(rows, header):
 def __print_colorize_table(tfrmt):
     index = 1
     for line in tfrmt.split('\n'):
-        if index == 2 or (( (index % 2) != 0) and (not line.startswith('-'))):
+        if index == 2 or (((index % 2) != 0) and (not line.startswith('-'))):
             line = __colorize_line_background(line)
         print(line)
         index += 1
@@ -193,12 +191,13 @@ def __colorize_line_background(text):
     color = opencol + color_id + closecol
     return '%s%s%s' % (color, text, opencol + '0' + closecol)
 
+
 def __colorize_line_foreground(text):
     # Red = 31
     color_id = '31'
     opencol = '\033[1;'
     closecol = 'm'
-    color = opencol +  color_id + closecol
+    color = opencol + color_id + closecol
     return '%s%s%s' % (color, text, opencol + '0' + closecol)
 
 
@@ -212,7 +211,7 @@ def show_d_state(hostname, data_slices, show_only_defunct_processes=False):
     header = []
     # Go through all the data.
     for ts in tkeys:
-        dt = datetime.strptime('%s' %(ts), DT_FORMAT)
+        dt = datetime.strptime('%s' % (ts), DT_FORMAT)
         timestamp = dt.strftime(DT_FORMAT_OUTPUT)
         lines = data_slices.get(ts)
         if not lines:
@@ -269,9 +268,10 @@ def show_d_state(hostname, data_slices, show_only_defunct_processes=False):
                     prow.pop(PS_COLUMN_NAMES.get(cname))
         # Format and print the rows of ps lines that matched.
         if pid_rows:
-            print(__colorize_line_foreground('%s @%s | Number of matching processes: %d' %(ts, hostname, len(pid_rows))))
+            print(__colorize_line_foreground('%s @%s | Number of matching processes: %d' % (ts, hostname, len(pid_rows))))
             tfrmt = tableize(pid_rows, header)
             __print_colorize_table(tfrmt)
+
 
 # ##############################################################################
 # Get user selected options
@@ -313,10 +313,10 @@ class OptionParserExtended(OptionParser):
     def __init__(self, version) :
         self.__command_name = os.path.basename(sys.argv[0])
         OptionParser.__init__(self, option_class=ExtendOption,
-                              version='%s %s\n' %(self.__command_name, version),
-                              description='%s \n'%(self.__command_name))
+                              version='%s %s\n' % (self.__command_name, version),
+                              description='%s \n' % (self.__command_name))
 
-    def print_help(self): # pylint: disable=W0221
+    def print_help(self):   # pylint: disable=W0221
         self.print_version()
         OptionParser.print_help(self)
         # examples_message = '\n'
@@ -332,17 +332,18 @@ class ExtendOption (Option):
         if action == 'extend' :
             value_list = []
             try:
-                for v in value.split(','): # pylint: disable=W0612,C0103
+                for v in value.split(','):  # pylint: disable=W0612,C0103
                     # Need to add code for dealing with paths if there is option for paths.
                     new_value = value.strip().rstrip()
                     if len(new_value) > 0:
                         value_list.append(new_value)
-            except: # pylint: disable=W0702
+            except:  # noqa
                 pass
             else:
                 values.ensure_value(dest, []).extend(value_list)
         else:
             Option.take_action(self, action, dest, opt, value, values, parser)
+
 
 # ###############################################################################
 # Main Function
@@ -379,14 +380,14 @@ def main():
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         sys.exit(1)
     elif not os.path.isfile(cmdline_opts.path_to_src_file):
-        message = 'The path does not exist or is not a file: %s' %(cmdline_opts.path_to_src_file)
+        message = 'The path does not exist or is not a file: %s' % (cmdline_opts.path_to_src_file)
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         sys.exit(1)
 
     # #######################################################################
     # Run main
     # #######################################################################
-    message = 'Analyzing the file: %s' %(cmdline_opts.path_to_src_file)
+    message = 'Analyzing the file: %s' % (cmdline_opts.path_to_src_file)
     logging.getLogger(MAIN_LOGGER_NAME).debug(message)
 
     # filename: node42-20170820-230101-info-top.log
@@ -408,7 +409,7 @@ def main():
         # Check if date/time line.
         if match_object:
             linesplit = line.split()
-            linesplit[2] = '%02d' %(int(linesplit[2]))
+            linesplit[2] = '%02d' % (int(linesplit[2]))
             linesplit.pop(4)
             line = ' '.join(linesplit)
             date_time = datetime.strptime(line, DT_FORMAT)

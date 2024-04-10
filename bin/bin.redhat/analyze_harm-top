@@ -26,7 +26,10 @@ from optparse import Option, OptionParser
 # #####################################################################
 VERSION_NUMBER = '0.1-1'
 MAIN_LOGGER_NAME = '%s' % (os.path.basename(sys.argv[0]))
-DT_FORMAT = '%Y%m%d %H:%M:%S'
+# The date format used in the file before each iteration of the data.
+DT_FORMAT_FILE_CONTENTS = '%Y%m%d %H:%M:%S'
+# The format used to display the date.
+DT_FORMAT_OUTPUT = '%Y-%m-%d %H:%M:%S'
 
 
 # #####################################################################
@@ -236,10 +239,10 @@ def print_top(top_chunks, number_of_processes):
     tkeys = list(top_chunks.keys())
     tkeys.sort()
     header = []
-
-    for ts in tkeys:
-        dt = datetime.strptime('%s' % (ts), DT_FORMAT)
-        lines = top_chunks.get(ts)
+    # Go through all the data.
+    for ts_key in tkeys:
+        timestamp = ts_key.strftime(DT_FORMAT_OUTPUT)
+        lines = top_chunks.get(ts_key)
         # Build the header and preamble
         preamble = []
         header = ['timestamp']
@@ -259,17 +262,16 @@ def print_top(top_chunks, number_of_processes):
             line = lines[index].strip()
             if not line:
                 continue
-            row = [str(dt)] + line.split()
+            row = [str(timestamp)] + line.split()
             if len(row) > 13:
                 modrow = []
                 for i in range(0, 12):
                     modrow.append(row.pop(0))
                 modrow.append(' '.join(row))
                 row = modrow
-            row += [preamble_map['load average'], preamble_map['cpu_idle'],
-                    preamble_map['mem_free'], preamble_map['swap_used']]
+            row += [preamble_map['load average'], preamble_map['cpu_idle'], preamble_map['mem_free'], preamble_map['swap_used']]
             pid_rows.append(row)
-        print(__colorize_line_foreground('%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s) | Number of matching processes: %d' % (str(dt),
+        print(__colorize_line_foreground('%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s) | Number of matching processes: %d' % (ts_key,
                                                                                                                                                           preamble_map['load average'],
                                                                                                                                                           preamble_map['cpu_idle'],
                                                                                                                                                           preamble_map['mem_free'],
@@ -417,18 +419,18 @@ def main():
 
     # Need to only capture data within that hour.
     top_chunks = {}
-    cts = ''
+    last_timestamp = ''
     for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
         if line.startswith('top - '):
             timestamp = line.split()[2]
-            dt = datetime.strptime('%s %s' % (date, timestamp), DT_FORMAT)
-            if hour == dt.strftime('%H'):
-                cts = dt.strftime(DT_FORMAT)
-                top_chunks[cts] = []
+            date_time = datetime.strptime('%s %s' % (date, timestamp), DT_FORMAT_FILE_CONTENTS)
+            if hour == date_time.strftime('%H'):
+                last_timestamp = date_time
+                top_chunks[last_timestamp] = []
             else:
-                cts = ''
-        if cts:
-            top_chunks[cts].append(line)
+                last_timestamp = ''
+        if last_timestamp:
+            top_chunks[last_timestamp].append(line)
     # Print all the iterations.
     print_top(top_chunks, cmdline_opts.number_of_processes)
 

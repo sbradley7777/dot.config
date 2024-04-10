@@ -292,7 +292,7 @@ def show_d_state(hostname, data_slices):
                     prow.pop(PS_COLUMN_NAMES.get(cname))
         # Format and print the rows of ps lines that matched.
         if (pid_rows):
-            print(__colorize_line_foreground('%s @%s' %(ts, hostname)))
+            print(__colorize_line_foreground('%s @%s | Number of matching processes: %d' %(ts, hostname, len(pid_rows))))
             tfrmt = tableize(pid_rows, header)
             __print_colorize_table(tfrmt)
 

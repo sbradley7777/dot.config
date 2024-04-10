@@ -33,6 +33,7 @@ PS_COLUMN_NAMES = {'timestamp':0, 'USER':1, 'PID':2, 'PPID':3, '%CPU':4, '%MEM':
                    'VSZ':6, 'RSS':7, 'TT':8, 'STAT':9, 'STARTED':10,
                    'TIME':11, 'WCHAN':12, 'COMMAND':13}
 REGEX_PROCESSES_STAT_SLEEP_IDLE = '[SI][ s+N<lL][ l+s]'
+REGEX_PROCESSES_STAT_DEFUNCT = 'D'
 
 
 # #####################################################################
@@ -224,10 +225,11 @@ def __colorize_line_foreground(text):
     color = opencol +  color_id + closecol
     return '%s%s%s' % (color, text, opencol + '0' + closecol)
 
+
 # ##############################################################################
 # parse and print data
 # ##############################################################################
-def show_d_state(hostname, data_slices):
+def show_d_state(hostname, data_slices, show_only_defunct_processes=False):
     max_command_length = 120
     # The file is sorted into bins to capture all top data captured at
     # specific time.
@@ -265,21 +267,23 @@ def show_d_state(hostname, data_slices):
             if search_object:
               row.append(search_object.group('started'))
               row += search_object.group('after_started').split(None, 2)
+            # The process 'STAT' is padded with whitespaces for the regex to work in all cases.
             process_stat = row[PS_COLUMN_NAMES.get('STAT')].ljust(5)
-            # Only include processes that are 'D' state.
-            # REGEX_PROCESSES_STAT_DEFUNCT = 'D'
-            # pattern = re.compile(REGEX_PROCESSES_STAT_DEFUNCT)
-            # search_object = pattern.search(process_stat)
-            # if not search_object or len(row) != len(list(PS_COLUMN_NAMES.keys())):
-            #    continue
-
-            # If the process is in sleep/idle state or incorrect number of columns then skip it. The process 'STAT' is padded
-            # with whitespaces for the regex to work in all cases.
-            pattern = re.compile(REGEX_PROCESSES_STAT_SLEEP_IDLE)
-            search_object = pattern.search(process_stat)
-            if search_object or len(row) != len(list(PS_COLUMN_NAMES.keys())):
-                continue
-            pid_rows.append(row)
+            # If there is incorrect number of columns then skip.
+            if len(row) == len(list(PS_COLUMN_NAMES.keys())):
+                if show_only_defunct_processes:
+                    # Only include processes that are 'D' state.
+                    pattern = re.compile(REGEX_PROCESSES_STAT_DEFUNCT)
+                    search_object = pattern.search(process_stat)
+                    if not search_object:
+                        continue
+                # If the process is in sleep/idle stat state then skip.
+                if not show_only_defunct_processes:
+                    pattern = re.compile(REGEX_PROCESSES_STAT_SLEEP_IDLE)
+                    search_object = pattern.search(process_stat)
+                    if search_object:
+                        continue
+                pid_rows.append(row)
         # Pad command header before removing items.
         if ('COMMAND' in PS_COLUMN_NAMES):
             header[PS_COLUMN_NAMES.get('COMMAND')] = header[PS_COLUMN_NAMES.get('COMMAND')].ljust(125)
@@ -303,12 +307,12 @@ def __get_options(version) :
     cmd_parser = OptionParserExtended(version)
     cmd_parser.add_option('-d', '--debug',
                           action='store_true',
-                          dest='enableDebugLogging',
+                          dest='enable_debug',
                           help='enables debug logging',
                           default=False)
     cmd_parser.add_option('-q', '--quiet',
                           action='store_true',
-                          dest='disableLoggingToConsole',
+                          dest='disable_logging',
                           help='disables logging to console',
                           default=False)
     cmd_parser.add_option('-p', '--path_to_filename',
@@ -318,6 +322,11 @@ def __get_options(version) :
                           type='string',
                           metavar='<input filename>',
                           default='')
+    cmd_parser.add_option('-D', '--defunct_processes_only',
+                          action='store_true',
+                          dest='show_only_defunct_processes',
+                          help='show only defunct (D state) processes',
+                          default=False)
 
  # Get the options and return the result.
     (cmdLine_opts, cmdLine_args) = cmd_parser.parse_args()
@@ -402,12 +411,12 @@ if __name__ == '__main__':
         # #######################################################################
         # Set the logging levels.
         # #######################################################################
-        if ((cmdline_opts.enableDebugLogging) and (not cmdline_opts.disableLoggingToConsole)):
+        if ((cmdline_opts.enable_debug) and (not cmdline_opts.disable_logging)):
             logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
             stream_handler.setLevel(logging.DEBUG)
             message = 'Debugging has been enabled.'
             logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-        if (cmdline_opts.disableLoggingToConsole):
+        if (cmdline_opts.disable_logging):
             stream_handler.setLevel(logging.CRITICAL)
         # #######################################################################
         # Check options
@@ -460,7 +469,7 @@ if __name__ == '__main__':
                 # Add all the lines for the current timestamp.
                 data_slices[cts].append(line)
         # Print all the processes in D state.
-        show_d_state(hostname, data_slices)
+        show_d_state(hostname, data_slices, show_only_defunct_processes=cmdline_opts.show_only_defunct_processes)
 
     except KeyboardInterrupt:
         print('')

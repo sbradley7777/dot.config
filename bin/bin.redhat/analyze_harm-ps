@@ -8,6 +8,7 @@ The script parses ps data collected in a file by the script ha-resourcemon.
 @version   : 0.1
 @copyright : GPLv2
 """
+import argparse
 import locale
 import logging
 import logging.handlers
@@ -17,7 +18,6 @@ import re
 import sys
 import textwrap
 from datetime import datetime
-from optparse import Option, OptionParser
 
 # #####################################################################
 # Global vars:
@@ -276,73 +276,35 @@ def show_d_state(hostname, data_slices, show_only_defunct_processes=False):
 # ##############################################################################
 # Get user selected options
 # ##############################################################################
-def __get_options(version) :
-    cmd_parser = OptionParserExtended(version)
-    cmd_parser.add_option('-d', '--debug',
-                          action='store_true',
-                          dest='enable_debug',
-                          help='enables debug logging',
-                          default=False)
-    cmd_parser.add_option('-q', '--quiet',
-                          action='store_true',
-                          dest='disable_logging',
-                          help='disables logging to console',
-                          default=False)
-    cmd_parser.add_option('-p', '--path_to_filename',
-                          action='store',
-                          dest='path_to_src_file',
-                          help='the path to the filename that will be parsed',
-                          type='string',
-                          metavar='<input filename>',
-                          default='')
-    cmd_parser.add_option('-D', '--defunct_processes_only',
-                          action='store_true',
-                          dest='show_only_defunct_processes',
-                          help='show only defunct (D state) processes',
-                          default=False)
-
-    # Get the options and return the result.
-    (cmdline_opts, cmdline_args) = cmd_parser.parse_args()
-    return (cmdline_opts, cmdline_args)
-
-
-# ##############################################################################
-# OptParse classes for commandline options
-# ##############################################################################
-class OptionParserExtended(OptionParser):
-    def __init__(self, version) :
-        self.__command_name = os.path.basename(sys.argv[0])
-        OptionParser.__init__(self, option_class=ExtendOption,
-                              version='%s %s\n' % (self.__command_name, version),
-                              description='%s \n' % (self.__command_name))
-
-    def print_help(self):   # pylint: disable=W0221
-        self.print_version()
-        OptionParser.print_help(self)
-        # examples_message = '\n'
-        # print examples_message
-
-
-class ExtendOption (Option):
-    ACTIONS = Option.ACTIONS + ('extend',)
-    STORE_ACTIONS = Option.STORE_ACTIONS + ('extend',)
-    TYPED_ACTIONS = Option.TYPED_ACTIONS + ('extend',)
-
-    def take_action(self, action, dest, opt, value, values, parser):
-        if action == 'extend' :
-            value_list = []
-            try:
-                for v in value.split(','):  # pylint: disable=W0612,C0103
-                    # Need to add code for dealing with paths if there is option for paths.
-                    new_value = value.strip().rstrip()
-                    if len(new_value) > 0:
-                        value_list.append(new_value)
-            except:  # noqa
-                pass
-            else:
-                values.ensure_value(dest, []).extend(value_list)
-        else:
-            Option.take_action(self, action, dest, opt, value, values, parser)
+def __get_options() :
+    epilog = ''
+    parseargs_ns = argparse.ArgumentParser(prog=os.path.basename(__file__),
+                                           description='The script outputs formatted top output generated ha-resourcemon',
+                                           epilog=epilog,
+                                           formatter_class=argparse.RawDescriptionHelpFormatter)
+    parseargs_ns.add_argument('-d', '--debug',
+                              action='store_true',
+                              dest='enable_debug',
+                              help='enables debug logging',
+                              default=False)
+    parseargs_ns.add_argument('-q', '--quiet',
+                              action='store_true',
+                              dest='disable_logging',
+                              help='disables logging to console',
+                              default=False)
+    parseargs_ns.add_argument('-p', '--path_to_filename',
+                              action='store',
+                              dest='path_to_src_file',
+                              help='the path to the filename that will be parsed',
+                              type=str,
+                              metavar='<input filename>',
+                              default='')
+    parseargs_ns.add_argument('-D', '--defunct_processes_only',
+                              action='store_true',
+                              dest='show_only_defunct_processes',
+                              help='show only defunct (D state) processes',
+                              default=False)
+    return parseargs_ns.parse_args()
 
 
 # ###############################################################################
@@ -352,7 +314,7 @@ def main():
     # #######################################################################
     # Get the options from the commandline.
     # #######################################################################
-    (cmdline_opts, cmdline_args) = __get_options(VERSION_NUMBER)
+    parseargs_ns = __get_options()
     # #######################################################################
     # Setup the logger and create config directory
     # #######################################################################
@@ -364,40 +326,40 @@ def main():
     stream_handler.setLevel(log_level)
     stream_handler.setFormatter(logging.Formatter('%(levelname)s %(message)s'))
     logger.addHandler(stream_handler)
-    if cmdline_opts.enable_debug and not cmdline_opts.disable_logging:
+    if parseargs_ns.enable_debug and not parseargs_ns.disable_logging:
         logging.getLogger(MAIN_LOGGER_NAME).setLevel(logging.DEBUG)
         stream_handler.setLevel(logging.DEBUG)
         message = 'Debugging has been enabled.'
         logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-    if cmdline_opts.disable_logging:
+    if parseargs_ns.disable_logging:
         stream_handler.setLevel(logging.CRITICAL)
 
     # #######################################################################
     # Check options
     # #######################################################################
-    if not cmdline_opts.path_to_src_file:
+    if not parseargs_ns.path_to_src_file:
         message = 'A path to the file is required with the -p option.'
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         sys.exit(1)
-    elif not os.path.isfile(cmdline_opts.path_to_src_file):
-        message = 'The path does not exist or is not a file: %s' % (cmdline_opts.path_to_src_file)
+    elif not os.path.isfile(parseargs_ns.path_to_src_file):
+        message = 'The path does not exist or is not a file: %s' % (parseargs_ns.path_to_src_file)
         logging.getLogger(MAIN_LOGGER_NAME).error(message)
         sys.exit(1)
 
     # #######################################################################
     # Run main
     # #######################################################################
-    message = 'Analyzing the file: %s' % (cmdline_opts.path_to_src_file)
+    message = 'Analyzing the file: %s' % (parseargs_ns.path_to_src_file)
     logging.getLogger(MAIN_LOGGER_NAME).debug(message)
 
     # filename: node42-20170820-230101-info-top.log
-    split_filename = cmdline_opts.path_to_src_file.rsplit('-', 5)
+    split_filename = parseargs_ns.path_to_src_file.rsplit('-', 5)
     hour = split_filename[2][:2]
     # Need to only capture data within that hour.
     data_slices = {}
     last_timestamp = ''
     hostname = ''
-    for line in get_data_from_file_as_list(cmdline_opts.path_to_src_file):
+    for line in get_data_from_file_as_list(parseargs_ns.path_to_src_file):
         line = line.strip()
         if line.startswith('#'):
             if line.find('#UNAME') >= 0:
@@ -421,8 +383,8 @@ def main():
         elif last_timestamp:
             # Add all the lines for the current timestamp.
             data_slices[last_timestamp].append(line)
-    # Print all the processes in D state.
-    show_d_state(hostname, data_slices, show_only_defunct_processes=cmdline_opts.show_only_defunct_processes)
+    # Print all the iterations.
+    show_d_state(hostname, data_slices, show_only_defunct_processes=parseargs_ns.show_only_defunct_processes)
 
 
 # ###############################################################################

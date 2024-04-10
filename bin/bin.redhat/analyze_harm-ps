@@ -115,7 +115,7 @@ def truncate_rows(rows, max_item_length=125):
                 insert_after_row += 1
         # Increment the row index
         rindex += 1
-    """
+    """  # pylint: disable=W0105
     return rows_copy
 
 

@@ -234,7 +234,7 @@ def __get_preamble_map(preamble):
     return preamble_map
 
 
-def print_top(top_chunks, number_of_processes):
+def print_top(hostname, top_chunks, number_of_processes):
     # The file is sorted into bins to capture all top data captured at specific time.
     tkeys = list(top_chunks.keys())
     tkeys.sort()
@@ -273,12 +273,13 @@ def print_top(top_chunks, number_of_processes):
                 row = modrow
             row += [preamble_map['load average'], preamble_map['cpu_idle'], preamble_map['mem_free'], preamble_map['swap_used']]
             pid_rows.append(row)
-        print(__colorize_line_foreground('%s - (Load Average: %s) (CPU idle: %s) (Memory Free: %s) (Swap Used: %s) | Number of matching processes: %d' % (ts_key,
-                                                                                                                                                          preamble_map['load average'],
-                                                                                                                                                          preamble_map['cpu_idle'],
-                                                                                                                                                          preamble_map['mem_free'],
-                                                                                                                                                          preamble_map['swap_used'],
-                                                                                                                                                          len(pid_rows))))
+        print(__colorize_line_foreground('%s @%s | Number of matching processes: %d'% (ts_key,
+                                                                                       hostname,
+                                                                                       len(pid_rows))))
+        print(__colorize_line_foreground('Load Average: %s | CPU idle: %s | Memory Free: %s | Swap Used: %s' %(preamble_map['load average'],
+                                                                                                               preamble_map['cpu_idle'],
+                                                                                                               preamble_map['mem_free'],
+                                                                                                               preamble_map['swap_used'])))
         tfrmt = tableize(pid_rows, header)
         __print_colorize_table(tfrmt)
 
@@ -378,6 +379,7 @@ def main():
 
     # filename: node42-20170820-230101-info-top.log
     split_filename = parseargs_ns.path_to_src_file.rsplit('-', 4)
+    hostname = os.path.basename(parseargs_ns.path_to_src_file).rsplit('-', 4)[0]
     date = split_filename[1]
     hour = split_filename[2][:2]
 
@@ -396,7 +398,7 @@ def main():
         if last_timestamp:
             top_chunks[last_timestamp].append(line)
     # Print all the iterations.
-    print_top(top_chunks, parseargs_ns.number_of_processes)
+    print_top(hostname, top_chunks, parseargs_ns.number_of_processes)
 
 
 # ###############################################################################

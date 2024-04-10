@@ -3,13 +3,16 @@
 The script parses top data collected in a file by the script ha-resourcemon.
   - https://access.redhat.com/solutions/368393
 
-For best results then use a black background and white (or green) foreground.
+
+NOTES:
+* For best results then use a black background and white (or green) foreground.
+* We cannot filter out processes that in state "sleep" or "idle" because some of those processes are consuming a lot of
+  resources and you want to see that information.
 
 @author    : Shane Bradley
 @contact   : sbradley@redhat.com
 @version   : 0.1
 @copyright : GPLv2
-
 """
 import argparse
 import locale
@@ -246,8 +249,9 @@ def print_top(hostname, top_chunks, number_of_processes):
         # Build the header and preamble
         preamble = []
         header = ['timestamp']
-        for line in lines:
-            line = line.strip()
+        # The first six lines is header and column names.
+        for index in range(0, 6):
+            line = lines.pop(0)
             if line.startswith('PID'):  # pylint: disable=R1723
                 header += line.split()
                 break
@@ -258,7 +262,7 @@ def print_top(hostname, top_chunks, number_of_processes):
         # Create data structure for the pid rows.
         pid_rows = []
         # The first 6 lines we can skip.
-        for index in range(6, (number_of_processes + 6)):
+        for index in range(0, number_of_processes):
             line = lines[index].strip()
             if not line:
                 continue
@@ -376,13 +380,11 @@ def main():
     # #######################################################################
     message = 'Analyzing the file: %s' % (parseargs_ns.path_to_src_file)
     logging.getLogger(MAIN_LOGGER_NAME).debug(message)
-
     # filename: node42-20170820-230101-info-top.log
     split_filename = parseargs_ns.path_to_src_file.rsplit('-', 4)
     hostname = os.path.basename(parseargs_ns.path_to_src_file).rsplit('-', 4)[0]
     date = split_filename[1]
     hour = split_filename[2][:2]
-
     # Need to only capture data within that hour.
     top_chunks = {}
     last_timestamp = ''

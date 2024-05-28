@@ -37,7 +37,7 @@ import time
 import platform
 import shutil
 from copy import deepcopy
-import ConfigParser
+import configparser
 # #####################################################################
 # Global vars:
 # #####################################################################
@@ -53,19 +53,19 @@ class InstallerConfigurationFile:
         self.__path_to_config_file = path_to_config_file
 
     def __get_sections(self):
-        config_parser = ConfigParser.ConfigParser()
+        config_parser = configparser.ConfigParser()
         config_parser.read(self.__path_to_config_file)
         return config_parser.sections()
 
     def __get_section_map(self, section_name):
-        config_parser = ConfigParser.ConfigParser()
+        config_parser = configparser.ConfigParser()
         config_parser.read(self.__path_to_config_file)
         if (config_parser.has_section(section_name)):
             section_map = {}
             for item in InstallerConfigurationFile.SECTION_ITEMS:
                 try:
                     section_map[item] = config_parser.get(section_name, item)
-                except ConfigParser.NoOptionError:
+                except configparser.NoOptionError:
                     section_map[item] = ""
             return ConfigurationFile(section_map.get("src_path"),
                                      section_map.get("dst_path"),
@@ -329,7 +329,7 @@ def write_to_file(path_to_filename, data="", append_to_file=False):
                 fout.write(data + "\n")
                 fout.close()
                 return True
-            except UnicodeEncodeError, e:
+            except UnicodeEncodeError as e:
                 message = "There was a unicode encode error writing to the file: %s." %(path_to_filename)
                 logging.getLogger(MAIN_LOGGER_NAME).error(message)
                 return False
@@ -468,7 +468,7 @@ class OptionParserExtended(OptionParser):
         self.print_version()
         examples_message = "\n"
         OptionParser.print_help(self)
-        print examples_message
+        print(examples_message)
 
 
 class ExtendOption (Option):
@@ -581,7 +581,7 @@ if __name__ == "__main__":
             prompt = " [y/n] "
             while True:
                 sys.stdout.write(question + prompt)
-                choice = raw_input().lower()
+                choice = input().lower()
                 if (choice in valid):
                     if (valid.get(choice)):
                         # If yes, or y then exit loop and continue.

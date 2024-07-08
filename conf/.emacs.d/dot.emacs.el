@@ -4,12 +4,26 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (message "Loading package management and MELPA repository.")
 (require 'package)
-(add-to-list 'package-archives
-	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
-(add-to-list 'package-archives
-	     '("marmalade" . "http://marmalade-repo.org/packages/"))
+(setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
+(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/"))
 ;; The init will load all the packages into the load path.
 (package-initialize)
+
+(add-to-list 'package-pinned-packages '("gnu-elpa-keyring-update" . "gnu"))
+
+;; Install or update the key required for "melpa".
+;;   - https://stackoverflow.com/questions/5701388/where-can-i-find-the-public-key-for-gnu-emacs
+(unless (package-installed-p 'gnu-elpa-keyring-update)
+  ;; Save default value of `package-check-signature' variable
+  (defvar package-check-signature-default package-check-signature)
+  ;; Disable signature checking
+  (setq package-check-signature nil)
+  ;; Download package archives (without signature checking)
+  (package-refresh-contents)
+  ;; Install package `gnu-elpa-keyring-update' (without signature checking)
+  (package-install 'gnu-elpa-keyring-update t)
+  ;; Restore `package-check-signature' value to default.
+  (setq package-check-signature package-check-signature-default))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load all the libraries under the directory: ~/.emacs.d/site-lisp
@@ -47,6 +61,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Set location of any changes to emacs while running.
 (setq custom-file "~/.emacs.d/site-lisp/custom.el")
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Last message before initialization is complete.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

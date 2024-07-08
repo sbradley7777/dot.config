@@ -2,17 +2,14 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Package management on Emacs v.24 or higher only.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(when (> emacs-major-version 23)
-  ;; http://melpa.milkbox.net/#/getting-started
-  (message "Loading package management and MELPA repository.")
-  (require 'package)
-  (add-to-list 'package-archives
-	       '("melpa" . "http://melpa.milkbox.net/packages/") t)
-  (add-to-list 'package-archives
-	       '("marmalade" . "http://marmalade-repo.org/packages/"))
-  ;; The init will load all the packages into the load path.
-  (package-initialize)
-)
+(message "Loading package management and MELPA repository.")
+(require 'package)
+(add-to-list 'package-archives
+	     '("melpa" . "http://melpa.milkbox.net/packages/") t)
+(add-to-list 'package-archives
+	     '("marmalade" . "http://marmalade-repo.org/packages/"))
+;; The init will load all the packages into the load path.
+(package-initialize)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; UI tweaks via emacs menu:
@@ -43,12 +40,6 @@
 (load-library "my-prefs.el")
 ;; Load all misc preferences
 (load-library "my-theme.el")
-
-;; The htmlize lib is used for producing html pages out of buffer and only works
-;; on emacs 23 or above.
-(when (> emacs-major-version 22)
-  (require 'htmlize)
-)
 
 ;; Load VIM modeline: https://github.com/cinsk/emacs-vim-modeline
 ;;(add-to-path 'load-path "emacs-vim-modeline")

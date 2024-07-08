@@ -25,15 +25,10 @@
 (setq-default show-trailing-whitespace t)
 ;; Set title
 (setq-default frame-title-format (list "My Emacs %b: %f"))
-
 ;; Turn off read only mode with .patch files
 (setq diff-default-read-only nil)
 ;; Follow symlinks and don't ask.
 (setq vc-follow-symlinks t)
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Line Preferences:
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Always end a file with a newline, t to enable
 (setq require-final-newline t)
 ;; Wrap at col 70
@@ -98,14 +93,6 @@ Non-interactive arguments are Begin End Regexp"
     (lambda ()
         (setq indent-tabs-mode nil)
         (infer-indentation-style)))
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Load slang mode support for event scripts in clustering:
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(autoload 'slang-mode "slang-mode"
-  "Mode for editing slang source files")
-(setq auto-mode-alist
-      (append '(("\\.sl$" . slang-mode)) auto-mode-alist))
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load yaml mode support

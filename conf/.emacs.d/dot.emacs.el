@@ -15,7 +15,7 @@
 ;; UI tweaks via emacs menu:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Set location of any changes to emacs while running.
-(setq custom-file "~/.emacs.d/site-lisp/my-custom.el")
+(setq custom-file "~/.emacs.d/site-lisp/custom.el")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load all the libraries under the directory: ~/.emacs.d/site-lisp
@@ -31,15 +31,15 @@
 ;;      (load-library lib))
 
 ;; Load my personal configuration files
-(load-library "my-filearchive.el")
+(load-library "filearchive.el")
 ;; Load all the keyboard and hotkeys preferences
-(load-library "my-hotkeys.el")
+(load-library "hotkeys.el")
 ;; Load all functions defined.
-(load-library "my-functions.el")
+(load-library "functions.el")
 ;; Load all misc preferences
-(load-library "my-prefs.el")
+(load-library "prefs.el")
 ;; Load all misc preferences
-(load-library "my-theme.el")
+(load-library "theme.el")
 
 ;; Load VIM modeline: https://github.com/cinsk/emacs-vim-modeline
 ;;(add-to-path 'load-path "emacs-vim-modeline")

@@ -94,13 +94,3 @@ Non-interactive arguments are Begin End Regexp"
         (setq indent-tabs-mode nil)
         (infer-indentation-style)))
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Load yaml mode support
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Install emacs-yaml-mode
-(require 'yaml-mode)
-(add-to-list 'auto-mode-alist '("\\.yml\\'" . yaml-mode))
-(add-to-list 'auto-mode-alist '("\\.yaml\\'" . yaml-mode))
-(add-hook 'yaml-mode-hook
-	  '(lambda ()
-             (define-key yaml-mode-map "\C-m" 'newline-and-indent)))

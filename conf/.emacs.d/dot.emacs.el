@@ -12,12 +12,6 @@
 (package-initialize)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; UI tweaks via emacs menu:
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Set location of any changes to emacs while running.
-(setq custom-file "~/.emacs.d/site-lisp/custom.el")
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load all the libraries under the directory: ~/.emacs.d/site-lisp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Add the site-lisp directory to load path
@@ -30,24 +24,30 @@
 ;;      (message lib))
 ;;      (load-library lib))
 
-;; Load my personal configuration files
+;; Load my personal configuration files.
 (load-library "filearchive.el")
-;; Load all the keyboard and hotkeys preferences
+;; Load all the keyboard and hotkeys preferences.
 (load-library "hotkeys.el")
 ;; Load all functions defined.
 (load-library "functions.el")
-;; Load all misc preferences
+;; Load all misc preferences.
 (load-library "prefs.el")
-;; Load all misc preferences
+;; Load all theme preferences.
 (load-library "theme.el")
+;; Load all mode preferences.
+(load-library "modes.el")
 
 ;; Load VIM modeline: https://github.com/cinsk/emacs-vim-modeline
-;;(add-to-path 'load-path "emacs-vim-modeline")
 (message "Loading emacs-vim-modeline.")
 (require 'vim-modeline)
 (add-to-list 'find-file-hook 'vim-modeline/do)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; UI tweaks via emacs menu:
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Set location of any changes to emacs while running.
+(setq custom-file "~/.emacs.d/site-lisp/custom.el")
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Last Message before Initialization is Complete:
+;; Last message before initialization is complete.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (message "Loading of the Emacs configuration file has completed.")

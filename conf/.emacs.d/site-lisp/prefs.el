@@ -39,29 +39,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Tabs and Spaces Preferences:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Python does not like spaces and tabs mixed together. There is some tools that
-;; can help with this if you encounter some werid tab issue.
-;;
-;; Python prefers spacing over tabs.
-;;
-;; Use built in tool to search for bad tabbing.
-;; $ python -m tabnanny ~/somefile.py
-;;
-;; There is a tool in most python packages for reindenting python files and
-;; there is also one on github as well that can be searched for. The tool is
-;; called: reindent.py. If not on system, then download from here:
-;; - http://svn.python.org/projects/python/trunk/Tools/scripts/reindent.py
-;;
-;; Be careful because it will default to recursize:
-;; $ reindent.py ~/somefile.py
-
-;; Show tabs as 4 spaces
-;;(setq-default tab-width 4)
-;; No tabs, just spaces are used
-;;(setq-default indent-tabs-mode nil)
-
-;; Article where the tab functions are found:
-;; http://www.emacswiki.org/emacs/NoTabs
+;; - http://www.emacswiki.org/emacs/NoTabs
 (defun how-many-region (begin end regexp &optional interactive)
   "Print number of non-trivial matches for REGEXP in region.
 Non-interactive arguments are Begin End Regexp"

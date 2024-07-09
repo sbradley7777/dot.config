@@ -35,6 +35,7 @@
 (defvar myPackages
   '(spacemacs-theme ;; Theme
     elpy
+    yaml-mode
     )
   )
 

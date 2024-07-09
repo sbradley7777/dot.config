@@ -34,6 +34,7 @@
 ;; myPackages contains a list of package names
 (defvar myPackages
   '(spacemacs-theme ;; Theme
+    elpy
     )
   )
 
@@ -43,14 +44,31 @@
             (package-install package)))
       myPackages)
 
-;; Customize theme.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Configure the theme
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   - https://melpa.org/#/?q=theme&sort=downloads&asc=false
 ;;   - https://github.com/nashamri/spacemacs-theme?tab=readme-ov-file#override-themes-colors
 (custom-set-variables '(spacemacs-theme-custom-colors
       '(
         (bg1 . "#000000")
 	)))
+(custom-set-variables
+ '(spacemacs-theme-comment-bg nil)
+ '(spacemacs-theme-custom-colors (quote ((bg1 . "#000000")))))
+(custom-set-faces
+ )
+;; Load the theme.
 (load-theme 'spacemacs-dark t)
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; Enable elpy.
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(setq python-shell-interpreter "/usr/bin/python3")
+(setq elpy-rpc-python-command "/usr/bin/python3")
+(elpy-enable)
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load all the libraries under the directory: ~/.emacs.d/site-lisp
@@ -77,6 +95,8 @@
 ;; (load-library "theme.el")
 ;; Load all mode preferences.
 (load-library "modes.el")
+;; Load all changes made within emacs.
+(load-library "custom.el")
 
 ;; Load VIM modeline: https://github.com/cinsk/emacs-vim-modeline
 (message "Loading emacs-vim-modeline.")

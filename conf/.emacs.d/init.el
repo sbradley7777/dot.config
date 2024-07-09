@@ -3,6 +3,7 @@
 ;; Package management on Emacs v.24 or higher only.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (message "Loading package management and MELPA repository.")
+(require 'cl)
 (require 'package)
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 ;;(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -32,9 +33,12 @@
 ;; Install and load packages
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; myPackages contains a list of package names
+;;   - https://github.com/nashamri/spacemacs-theme
+;;   - https://github.com/jorgenschaefer/elpy?tab=readme-ov-file
 (defvar myPackages
-  '(spacemacs-theme ;; Theme
+  '(spacemacs-theme ;; Theme.
     elpy
+    company         ;; Used by elpy.
     yaml-mode
     )
   )
@@ -73,32 +77,14 @@
 ;; Load all the libraries under the directory: ~/.emacs.d/site-lisp
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Add the site-lisp directory to load path
-(add-to-list 'load-path "~/.emacs.d/site-lisp")
+(setq custom-libraries (concat user-emacs-directory "site-lisp"))
+(add-to-list 'load-path custom-libraries)
 
 ;; Do a loop to automatically load all the files under that directory.
-;;(loop for lib in (directory-files "~/.emacs.d/site-lisp/" 't "elc?$" 't) do
-;;      (load-library lib))
-;;(loop for lib in (directory-files "~/.emacs.d/site-lisp/" 't "\.elc?$" 't) do
-;;      (message lib))
-;;      (load-library lib))
+(loop for filename in (directory-files custom-libraries 't "\.elc?$" 't) do
+      (load-library (file-name-base filename)))
 
-;; Load my personal configuration files.
-(load-library "filearchive.el")
-;; Load all the keyboard and hotkeys preferences.
-(load-library "hotkeys.el")
-;; Load all functions defined.
-(load-library "functions.el")
-;; Load all misc preferences.
-(load-library "prefs.el")
-;; Load all theme preferences. This is comment out because loading a packaged theme.
-;; (load-library "theme.el")
-;; Load all mode preferences.
-(load-library "modes.el")
-
-;; Load VIM modeline: https://github.com/cinsk/emacs-vim-modeline
-(message "Loading emacs-vim-modeline.")
-(require 'vim-modeline)
-(add-to-list 'find-file-hook 'vim-modeline/do)
+;; Removed  https://github.com/cinsk/emacs-vim-modeline
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; UI tweaks via emacs menu:

@@ -62,14 +62,12 @@
 ;; Load the theme.
 (load-theme 'spacemacs-dark t)
 
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enable elpy.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (setq python-shell-interpreter "/usr/bin/python3")
 (setq elpy-rpc-python-command "/usr/bin/python3")
 (elpy-enable)
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load all the libraries under the directory: ~/.emacs.d/site-lisp
@@ -96,8 +94,6 @@
 ;; (load-library "theme.el")
 ;; Load all mode preferences.
 (load-library "modes.el")
-;; Load all changes made within emacs.
-(load-library "custom.el")
 
 ;; Load VIM modeline: https://github.com/cinsk/emacs-vim-modeline
 (message "Loading emacs-vim-modeline.")
@@ -107,7 +103,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; UI tweaks via emacs menu:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; Set location of any changes to emacs while running.
+;; Set location of any changes to emacs while running. These changes are not
+;; loaded when emacs restarts.
 (setq custom-file "~/.emacs.d/site-lisp/custom.el")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

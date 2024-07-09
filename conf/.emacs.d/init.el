@@ -3,7 +3,7 @@
 ;; Package management on Emacs v.24 or higher only.
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (message "Loading package management and MELPA repository.")
-(require 'cl)
+(require 'cl-lib)
 (require 'package)
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 ;;(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -81,7 +81,7 @@
 (add-to-list 'load-path custom-libraries)
 
 ;; Do a loop to automatically load all the files under that directory.
-(loop for filename in (directory-files custom-libraries 't "\.elc?$" 't) do
+(cl-loop for filename in (directory-files custom-libraries 't "\.elc?$" 't) do
       (load-library (file-name-base filename)))
 
 ;; Removed  https://github.com/cinsk/emacs-vim-modeline

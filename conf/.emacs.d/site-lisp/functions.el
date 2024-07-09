@@ -18,11 +18,11 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Compile ~/.emacs:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun autocompile nil
-  "compile itself if ~/.emacs"
-  (interactive)
-  (require 'bytecomp)
-  (if (string= (buffer-file-name) (expand-file-name (concat default-directory ".emacs")))
-      (byte-compile-file (buffer-file-name))))
-(add-hook 'after-save-hook 'autocompile)
+;;(defun autocompile nil
+;;  "compile itself if ~/.emacs"
+;;  (interactive)
+;;  (require 'bytecomp)
+;;  (if (string= (buffer-file-name) (expand-file-name (concat default-directory ".emacs")))
+;;      (byte-compile-file (buffer-file-name))))
+;;(add-hook 'after-save-hook 'autocompile)
 

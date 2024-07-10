@@ -37,9 +37,8 @@
 ;;   - https://github.com/jorgenschaefer/elpy?tab=readme-ov-file
 (defvar myPackages
   '(spacemacs-theme ;; Theme.
-    elpy
-    company         ;; Used by elpy.
     yaml-mode
+    elpy
     )
   )
 

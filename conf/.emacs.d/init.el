@@ -36,7 +36,8 @@
 ;;   - https://github.com/nashamri/spacemacs-theme
 ;;   - https://github.com/jorgenschaefer/elpy?tab=readme-ov-file
 (defvar myPackages
-  '(spacemacs-theme ;; Theme.
+  '(spacemacs-theme
+    zenburn-theme
     yaml-mode
     elpy
     )
@@ -53,17 +54,23 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   - https://melpa.org/#/?q=theme&sort=downloads&asc=false
 ;;   - https://github.com/nashamri/spacemacs-theme?tab=readme-ov-file#override-themes-colors
-(custom-set-variables '(spacemacs-theme-custom-colors
-      '(
-        (bg1 . "#000000")
-	)))
-(custom-set-variables
- '(spacemacs-theme-comment-bg nil)
- '(spacemacs-theme-custom-colors (quote ((bg1 . "#000000")))))
-(custom-set-faces
- )
+;;(custom-set-variables '(spacemacs-theme-custom-colors
+;;      '(
+;;        (bg1 . "#000000")
+;;	)))
+;;(custom-set-variables
+;; '(spacemacs-theme-comment-bg nil)
+;; '(spacemacs-theme-custom-colors (quote ((bg1 . "#000000")))))
+;;(custom-set-faces
+;; )
 ;; Load the theme.
-(load-theme 'spacemacs-dark t)
+;; (load-theme 'spacemacs-dark t)
+
+;; - https://github.com/bbatsov/zenburn-emacs
+(setq zenburn-override-colors-alist
+      '(("zenburn-bg"  . "#000000")
+        ))
+(load-theme 'zenburn t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Enable elpy.

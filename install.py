@@ -142,7 +142,7 @@ CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.pat
                                   ConfigurationFile("bash/.aliases.sx", os.path.join(os.getenv("HOME"), ".aliases.sx"), platform="Linux"),
                                   ConfigurationFile("bash/.functions.sh", os.path.join(os.getenv("HOME"), ".functions.sh")),
                                   #ConfigurationFile("conf/.emacs.d/dot.emacs.el", os.path.join(os.getenv("HOME"), ".emacs")),
-                                  #ConfigurationFile("conf/.emacs.d", os.path.join(os.getenv("HOME"), ".emacs.d")),
+                                  ConfigurationFile("conf/.emacs.d", os.path.join(os.getenv("HOME"), ".emacs.d")),
                                   ConfigurationFile("bin/bin.utils", os.path.join(os.getenv("HOME"), "bin/bin.utils")),
                                   ConfigurationFile("bin/bin.clusterha_analyze", os.path.join(os.getenv("HOME"), "bin/bin.clusterha_analyze"), platform="Linux"),
                                   ConfigurationFile("bash/.functions-osx.sh", os.path.join(os.getenv("HOME"), ".functions-osx.sh"), platform="Darwin"),

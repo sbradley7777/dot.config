@@ -3,5 +3,5 @@
 ##############################################################################
 # SX commands
 ##############################################################################
-alias sxconsole='~/git/sx/sxconsole'
-alias sxcrun='~/git/sx/sxconsole -R ~/Downloads -N -e cluster,storage,networking '
+alias sxconsole='~/github/sx/sxconsole'
+alias sxcrun='~/github/sx/sxconsole -R ~/Downloads -N -e cluster,storage,networking '

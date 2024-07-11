@@ -52,24 +52,25 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Configure the theme
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; List of themes
 ;;   - https://melpa.org/#/?q=theme&sort=downloads&asc=false
+;; Set variables for theme.
 ;;   - https://github.com/nashamri/spacemacs-theme?tab=readme-ov-file#override-themes-colors
-;;(custom-set-variables '(spacemacs-theme-custom-colors
-;;      '(
-;;        (bg1 . "#000000")
-;;	)))
 ;;(custom-set-variables
 ;; '(spacemacs-theme-comment-bg nil)
 ;; '(spacemacs-theme-custom-colors (quote ((bg1 . "#000000")))))
-;;(custom-set-faces
-;; )
+;;(custom-set-faces)
 ;; Load the theme.
+;;   - https://github.com/nashamri/spacemacs-theme
 ;; (load-theme 'spacemacs-dark t)
 
-;; - https://github.com/bbatsov/zenburn-emacs
+;; Set variables for theme.
+;;  - https://github.com/bbatsov/zenburn-emacs?tab=readme-ov-file#customization
 (setq zenburn-override-colors-alist
       '(("zenburn-bg"  . "#000000")
         ))
+;; Load the theme.
+;;   - https://github.com/bbatsov/zenburn-emacs
 (load-theme 'zenburn t)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -90,14 +91,15 @@
 (cl-loop for filename in (directory-files custom-libraries 't "\.elc?$" 't) do
       (load-library (file-name-base filename)))
 
-;; Removed  https://github.com/cinsk/emacs-vim-modeline
+;; Removed  emacs-vim modeline and its corresponding file.
+;;   - https://github.com/cinsk/emacs-vim-modeline
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; UI tweaks via emacs menu:
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Set location of any changes to emacs while running. These changes are not
 ;; loaded when emacs restarts.
-(setq custom-file "~/.emacs.d/site-lisp/custom.el")
+(setq custom-file "~/.emacs.d/custom_prefs.el")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Last message before initialization is complete.

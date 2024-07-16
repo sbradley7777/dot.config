@@ -7,8 +7,7 @@
 (require 'package)
 (setq gnutls-algorithm-priority "NORMAL:-VERS-TLS1.3")
 ;;(add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
-(add-to-list 'package-archives
-             '("melpa-stable" . "https://stable.melpa.org/packages/") t)
+(add-to-list 'package-archives '("melpa-stable" . "https://stable.melpa.org/packages/") t)
 ;; The init will load all the packages into the load path.
 (package-initialize)
 (add-to-list 'package-pinned-packages '("gnu-elpa-keyring-update" . "gnu"))
@@ -40,6 +39,8 @@
     zenburn-theme
     yaml-mode
     elpy
+    flycheck
+    pylint
     )
   )
 
@@ -79,6 +80,11 @@
 (setq python-shell-interpreter "/usr/bin/python3")
 (setq elpy-rpc-python-command "/usr/bin/python3")
 (elpy-enable)
+;; use flycheck, not flymake with elpy
+(when (require 'flycheck nil t)
+  (setq elpy-modules (delq 'elpy-module-flymake elpy-modules))
+  (add-hook 'elpy-mode-hook 'flycheck-mode)
+  (flycheck-add-next-checker 'python-flake8 'python-pylint))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Load all the libraries under the directory: ~/.emacs.d/site-lisp

@@ -24,7 +24,7 @@ EXAMPLES:
     $ $script_name -p <path to the glocktop file> -l
 
   Parse the glocktop file for particular filesystem name.
-    $ $script_name -p <path to the glocktop file> -n <name of the gfs2 filesystem> -s 2
+    $ $script_name -p <path to the glocktop file> -n <name of the gfs2 filesystem>
 
   List the count for each function that processes are in.
     $ $script_name -p <path to the glocktop file> -f
@@ -92,6 +92,7 @@ if [ -z $filesystem_name ] || [ ! -n $filesystem_name ]; then
 	echo "ERROR: A filesystem name (-n) is required. The script will exit.";
 	exit 1;
     fi
+else
     # Verify the filesystem name exists in the glocktop file.
     filesystem_name_exists=1;
     mapfile -t fs_names < <( list_filesystems $path_to_file )
@@ -121,7 +122,7 @@ fi
 
 # Show the count of functions that processes are in.
 if (( $show_function_count == 0 )); then
-    show_function_count $path_to_file
+    show_function_count $path_to_file;
     exit;
 fi
 

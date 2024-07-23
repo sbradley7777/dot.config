@@ -65,17 +65,15 @@ list_filesystems() {
 }
 
 show_function_count() {
-    if [[ -n $2 ]]; then
-	echo $2;
-        sed s/"^@"/"\n@"/g $1 | grep -v -ie "Held SH" -ie "S G Waiting" -ie "S P Waiting" | awk " /@ $2/,/^$/" | grep "H:" | cut -d "]" -f 2 | cut -d "[" -f 1 | sort | uniq -c | sort -rnk1;
-    else
+    fs_names=( $2 )
+    if [ ${#fs_names[@]} -eq 0 ]; then
 	mapfile -t fs_names < <( list_filesystems $1 )
-	for fs_name in "${fs_names[@]}"; do
-	    echo $fs_name;
-	    sed s/"^@"/"\n@"/g $1 | grep -v -ie "Held SH" -ie "S G Waiting" -ie "S P Waiting" | awk " /@ $fs_name/,/^$/" | grep "H:" | cut -d "]" -f 2 | cut -d "[" -f 1 | sort | uniq -c | sort -rnk1;
-	    echo -e "\n";
-	done
     fi
+    for fs_name in "${fs_names[@]}"; do
+	echo $fs_name;
+	sed s/"^@"/"\n@"/g $1 | grep -v -ie "Held SH" -ie "S G Waiting" -ie "S P Waiting" | awk " /@ $fs_name/,/^$/" | grep "H:" | cut -d "]" -f 2 | cut -d "[" -f 1 | sort | uniq -c | sort -rnk1;
+	echo -e "\n";
+    done
 }
 
 # ####################################################################

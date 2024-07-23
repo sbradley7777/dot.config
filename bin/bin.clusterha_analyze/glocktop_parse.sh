@@ -96,11 +96,23 @@ if [[ "$prefix_space_size" =~ ^[-+]?([0-9][[:digit:]]*)$ && "$prefix_space_size"
     exit 1;
 fi
 
-# Verify that a filesystem name was given.
+# Verify that a filesystem name was given and it exists.
 if [ -z $filesystem_name ] || [ ! -n $filesystem_name ]; then
-    # Do not error out if empty $filesystem_name when -f option is enabled.
+    # Do not error out if empty $filesystem_name when -l or -f option is enabled.
     if (( $show_function_count != 0 )) && (( $list_filesystems != 0 )); then
 	echo "ERROR: A filesystem name (-n) is required. The script will exit.";
+	exit 1;
+    fi
+    # Verify the filesystem name exists in the glocktop file.
+    filesystem_name_exists=1;
+    mapfile -t fs_names < <( list_filesystems $path_to_file )
+    for fs_name in "${fs_names[@]}"; do
+	if [[ "$fs_name" == "$filesystem_name" ]]; then
+	    filesystem_name_exists=0;
+	fi
+    done
+    if (( $filesystem_name_exists != 0 )); then
+	echo "ERROR: The filesystem name \"$filesystem_name\" was not found in the file: $path_to_file";
 	exit 1;
     fi
 fi
@@ -124,18 +136,6 @@ if (( $show_function_count == 0 )); then
     exit;
 fi
 
-# Verify the filesystem name exists in the glocktop file.
-found_filesystem_name=1;
-mapfile -t fs_names < <( list_filesystems $path_to_file )
-for fs_name in "${fs_names[@]}"; do
-    if [[ "$fs_name" == "$filesystem_name" ]]; then
-	found_filesystem_name=0;
-    fi
-done
-if (( $found_filesystem_name != 0 )); then
-    echo "ERROR: The filesystem name \"$filesystem_name\" was not found in the file: $path_to_file";
-    exit 1;
-fi
 # Print the parsed data. The "sed" command will add a new line before each @ so that we have seperation for our
 # first "awk" command. The second awk command add prefix spacing to each line.
 sed s/"^@"/"\n@"/g $path_to_file | awk "/@ $filesystem_name/,/^$/" | grep -ie "@" -ie "G\:" -ie "H\: "| grep -v -ie "Held SH" -ie "S G Waiting" -ie "S P Waiting" -ie ended | awk -v prefix_spacing="$(printf "%*s" $prefix_space_size)" '{print prefix_spacing $0}';

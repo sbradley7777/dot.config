@@ -94,10 +94,25 @@ show_function_count() {
     done
 }
 
-summarize_filesystem() {
-    echo "Future feature";
-    echo $1;
-    echo $2;
+summarize_filesystem_as_csv() {
+    fs_name=$2;
+    glocks_dump=$(show_glocks $1 $fs_name);
+    hostname=$(echo "$glocks_dump" | grep "@" | head -n 1 | awk '{print $2}');
+    # Get the start, stop, and duration time.
+    start_time=$(echo "$glocks_dump" | grep "@" | head -n 1 | awk '{print $3 " " $4 " " $5 " " $6 " " $7}');
+    stop_time=$(echo "$glocks_dump" | grep "@" | tail -n 1 | awk '{print $3 " " $4 " " $5 " " $6 " " $7}');
+    start_time_epoch=$(date -d "$start_time" +"%s");
+    stop_time_epoch=$(date -d "$stop_time" +"%s");
+    capture_time_secs="$((stop_time_epoch-start_time_epoch))";
+    capture_time=$(date -d@$capture_time_secs -u +%H:%M:%S);
+    # Count the number of DLM waiters. This does not remove duplicates that span multiple iterations.
+    # Search for the string "dlm\:". The counts the "*" which represents 1 DLM waiter.
+    dlm_waiters_count=0;
+    # Counts the number of times that a demote time warning was logged. This does not remove duplicates that span multiple iterations.
+    # Searches for the string "** demote time is greater than 0 **" in glocktop file.
+    glock_demote_warning_count=$(echo "$glocks_dump" | grep 'demote time is greater than 0' | wc -l);
+    # Then create a comma seperated line for the summary.
+    echo "$hostname,$start_time,$stop_time,$capture_time,$dlm_waiters_count,$glock_demote_warning_count";
 }
 
 show_summary() {
@@ -105,9 +120,13 @@ show_summary() {
     if [ ${#fs_names[@]} -eq 0 ]; then
         mapfile -t fs_names < <( list_filesystems $1 )
     fi
+    fs_summaries="";
     for fs_name in "${fs_names[@]}"; do
-	summarize_filesystem $1 $fs_name;
+	fs_summary=$(summarize_filesystem_as_csv $1 $fs_name);
+	fs_summaries+="$fs_summary"$'\n';
+
     done
+    echo "$fs_summaries" | sed '1i Hostname,Start Time,Stop Time,Capture Time,DLM Waiters Count,Glock Demote Warning Count' | column -s, -t;
 }
 
 

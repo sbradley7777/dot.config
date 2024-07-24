@@ -74,13 +74,13 @@ while getopts "hp:n:lfs" opt; do
     esac
 done
 
+list_filesystems() {
+   grep "@" $1 | awk '{print $2}' | sort | uniq;
+}
+
 show_glocks() {
     # Do not include processes that no longer exist ( grep -v -ie ended).
     sed s/"^@"/"\n@"/g $1 | awk "/@ $2/,/^$/" | grep -ie "@" -ie "G\:" -ie "H\: "| grep -v -ie "Held SH" -ie "S G Waiting" -ie "S P Waiting" -ie ended;
-}
-
-list_filesystems() {
-   grep "@" $1 | awk '{print $2}' | sort | uniq;
 }
 
 show_function_count() {

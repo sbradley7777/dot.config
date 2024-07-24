@@ -109,7 +109,7 @@ summarize_filesystem_as_csv() {
 
     # Count the number of DLM waiters. This does not remove duplicates that span multiple iterations.
     # Search for the string "dlm\:". The counts the "*" which represents 1 DLM waiter.
-    dlm_waiters_count=0;
+    dlm_waiters_count=$(echo "$glocks_dump" | grep -ie "dlm\:" | cut -d "[" -f2 | cut -d "]" -f 1 | tr -d '[:space:]' | wc -m);
 
     # Counts the number of times that a demote time warning was logged. This does not remove duplicates that span multiple iterations.
     # Searches for the string "** demote time is greater than 0 **" in glocktop file.

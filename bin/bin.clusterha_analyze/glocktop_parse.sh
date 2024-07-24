@@ -123,12 +123,6 @@ summarize_filesystem_as_csv() {
     echo "$hostname,$start_time,$stop_time,$capture_time,$dlm_waiters_count,$glock_demote_warning_count";
 }
 
-show_dlm_activity () {
-    glocks_dump=$(show_glocks $1 $fs_name);
-    echo "$glocks_dump" | grep -ie "dlm\:";
-
-}
-
 show_summary() {
     fs_names=( $2 )
     if [ ${#fs_names[@]} -eq 0 ]; then
@@ -145,7 +139,7 @@ show_summary() {
 
     # Show DLM activity for each filesystem.
     for fs_name in "${fs_names[@]}"; do
-	dlm_activity=$(show_dlm_activity $1 $fs_name);
+	dlm_activity=$(show_glocks $1 $fs_name | grep -ie "dlm\:");
 	if [ ! -z "$dlm_activity" ] || [ -n "$dlm_activity" ]; then
 	   echo -e "\nDLM Waiters for $fs_name";
 	   echo "$dlm_activity" | awk -v prefix="  " '{print prefix $0}';

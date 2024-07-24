@@ -75,6 +75,7 @@ while getopts "hp:n:lfs" opt; do
 done
 
 show_glocks() {
+    # Do not include processes that no longer exist ( grep -v -ie ended).
     sed s/"^@"/"\n@"/g $1 | awk "/@ $2/,/^$/" | grep -ie "@" -ie "G\:" -ie "H\: "| grep -v -ie "Held SH" -ie "S G Waiting" -ie "S P Waiting" -ie ended;
 }
 
@@ -89,7 +90,7 @@ show_function_count() {
     fi
     for fs_name in "${fs_names[@]}"; do
 	echo $fs_name;
-	sed s/"^@"/"\n@"/g $1 | awk "/@ $fs_name/,/^$/" | grep "H:" | grep -v -ie "Held SH" -ie "S G Waiting" -ie "S P Waiting" | cut -d "]" -f 2 | cut -d "[" -f 1 | sort | uniq -c | sort -rnk1;
+	show_glocks $1 $fs_name | grep "H:" | cut -d "]" -f 2 | cut -d "[" -f 1 | sort | uniq -c | sort -rnk1;
     done
 }
 

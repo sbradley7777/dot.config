@@ -116,6 +116,7 @@ summarize_filesystem_as_csv() {
     glock_demote_warning_count=$(echo "$glocks_dump" | grep 'demote time is greater than 0' | wc -l);
 
     # Add spacing to the values so that they will be right aligned.
+    capture_time=$(echo "$capture_time" | awk '{printf "%12s", $1}');
     dlm_waiters_count=$(echo "$dlm_waiters_count" | awk '{printf "%17d", $1}');
     glock_demote_warning_count=$(echo "$glock_demote_warning_count" | awk '{printf "%26d", $1}');
     # Then create a comma seperated line for the summary.

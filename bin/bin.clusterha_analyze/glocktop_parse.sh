@@ -98,6 +98,7 @@ summarize_filesystem_as_csv() {
     fs_name=$2;
     glocks_dump=$(show_glocks $1 $fs_name);
     hostname=$(echo "$glocks_dump" | grep "@" | head -n 1 | awk '{print $2}');
+
     # Get the start, stop, and duration time.
     start_time=$(echo "$glocks_dump" | grep "@" | head -n 1 | awk '{print $3 " " $4 " " $5 " " $6 " " $7}');
     stop_time=$(echo "$glocks_dump" | grep "@" | tail -n 1 | awk '{print $3 " " $4 " " $5 " " $6 " " $7}');
@@ -105,12 +106,18 @@ summarize_filesystem_as_csv() {
     stop_time_epoch=$(date -d "$stop_time" +"%s");
     capture_time_secs="$((stop_time_epoch-start_time_epoch))";
     capture_time=$(date -d@$capture_time_secs -u +%H:%M:%S);
+
     # Count the number of DLM waiters. This does not remove duplicates that span multiple iterations.
     # Search for the string "dlm\:". The counts the "*" which represents 1 DLM waiter.
     dlm_waiters_count=0;
+
     # Counts the number of times that a demote time warning was logged. This does not remove duplicates that span multiple iterations.
     # Searches for the string "** demote time is greater than 0 **" in glocktop file.
     glock_demote_warning_count=$(echo "$glocks_dump" | grep 'demote time is greater than 0' | wc -l);
+
+    # Add spacing to the values so that they will be right aligned.
+    dlm_waiters_count=$(echo "$dlm_waiters_count" | awk '{printf "%17d", $1}');
+    glock_demote_warning_count=$(echo "$glock_demote_warning_count" | awk '{printf "%26d", $1}');
     # Then create a comma seperated line for the summary.
     echo "$hostname,$start_time,$stop_time,$capture_time,$dlm_waiters_count,$glock_demote_warning_count";
 }

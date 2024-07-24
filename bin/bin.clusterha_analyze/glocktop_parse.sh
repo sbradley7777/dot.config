@@ -24,14 +24,20 @@ EXAMPLES:
   List the gfs2 filesystems in the glocktop file.
     $ $script_name -p <path to the glocktop file> -l
 
-  Parse the glocktop file for particular filesystem name.
+  Parse the glocktop file for a particular filesystem name.
     $ $script_name -p <path to the glocktop file> -n <name of the gfs2 filesystem>
 
   List the count for each function that processes are in.
     $ $script_name -p <path to the glocktop file> -f
 
-  Show summary of glocktop file.
+  List the count for each function that processes are in for a particular filesystem name.
+    $ $script_name -p <path to the glocktop file> -n <name of the gfs2 filesystem> -f
+
+  Show summary of a glocktop file.
     $ $script_name -p <path to the glocktop file> -s
+
+  Show summary of a glocktop file for a particular filesystem name.
+    $ $script_name -p <path to the glocktop file> -n <name of the gfs2 filesystem> -s
 
 EOF
 }

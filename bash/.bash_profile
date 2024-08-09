@@ -4,7 +4,9 @@
 ##############################################################################
 # Environment Variables
 ##############################################################################
-export EDITOR="emacs";
+export VISUAL="emacs -nw";
+export EDITOR="$VISUAL";
+
 export TODAY=`date '+%F_%s'`;
 
 # GREP_OPTIONS no longer supported on fedora and have to use aliases.
@@ -13,7 +15,7 @@ export GREP_COLOR='0;31';
 ##############################################################################
 # History preferences
 ##############################################################################
-# Set to empty variable to have unlimited size. 
+# Set to empty variable to have unlimited size.
 export HISTSIZE=;
 export HISTFILESIZE=$HISTSIZE;
 export HISTCONTROL=ignoredups;

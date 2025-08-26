@@ -1,4 +1,9 @@
+
 ##Introduction
+
+MOVED these emacs configuration files to another repo: [sbradley7777/emacs.d: Emacs configuration files](https://github.com/sbradley7777/emacs.d). These files **no longer** be installed by the `install.py` script.
+
+
 The `emacs.d` collection of files contains the main `.emacs` configuration file and the site-lisp directory that contains some .el files used by the main configuration file.
 
 ## How to install

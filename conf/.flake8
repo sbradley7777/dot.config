@@ -1,7 +1,0 @@
-[flake8]
-# Black and flake8 conflicted and had to ignore W503 and E203
-# https://sinead.tech/code/python-black-and-flake8-pre-commit-hooks/
-ignore = E501,W503,E203
-max-line-length = 127
-exclude = .*, *__pycache__*, README.md, venv/*, requirements.txt
-filename = *

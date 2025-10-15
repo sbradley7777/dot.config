@@ -144,13 +144,7 @@ CONFIGURATION_FILES_TO_INSTALL = [ConfigurationFile("bash/.bash_profile", os.pat
                                   ConfigurationFile("bin/bin.utils", os.path.join(os.getenv("HOME"), "bin/bin.utils")),
                                   ConfigurationFile("bin/bin.clusterha_analyze", os.path.join(os.getenv("HOME"), "bin/bin.clusterha_analyze"), platform="Linux"),
                                   ConfigurationFile("bash/.functions-osx.sh", os.path.join(os.getenv("HOME"), ".functions-osx.sh"), platform="Darwin"),
-                                  ConfigurationFile("python", os.path.join(os.getenv("HOME"), "python")),
-                                  ConfigurationFile("conf/.gitconfig", os.path.join(os.getenv("HOME"), ".gitconfig"), platform="Darwin"),
-                                  ConfigurationFile("conf/.gitconfig.rhel", os.path.join(os.getenv("HOME"), ".gitconfig"), platform="Linux"),
-                                  ConfigurationFile("conf/.gitignore", os.path.join(os.getenv("HOME"), ".gitignore")),
-                                  ConfigurationFile("conf/.flake8", os.path.join(os.getenv("HOME"), ".flake8")),
-                                  ConfigurationFile("conf/.pylintrc", os.path.join(os.getenv("HOME"), ".pylintrc"))]
-# ConfigurationFile("conf/.git-templates/hooks/pre-commit", os.path.join(os.getenv("HOME"), ".git-templates/hooks/pre-commit"))]
+                                  ConfigurationFile("python", os.path.join(os.getenv("HOME"), "python"))]
 
 
 # ##############################################################################
